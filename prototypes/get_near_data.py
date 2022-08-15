@@ -1,126 +1,97 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 30 13:26:03 2022
+This is a prototype implementation of a helper function to extract data near
+a specific point
 
+Created on Thu Jun 30 13:26:03 2022
 @author: bruzewskis
 """
 
 from scipy.io import netcdf
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import pickle
 import os
 
-
-tgt = '/Users/bruzewskis/Documents/Projects/bifrost_isbas/isbas/test/intf/'
-for r,d,f in os.walk(tgt):
-    for file in f:
-        if file.endswith('.grd'):
-            file = netcdf.netcdf_file(os.path.join(r, file))
-
-            n = 26
-            stride = 30
-            picks = np.arange(n*stride, (n+1)*stride)
-            
-            # Name these for easier referencing
-            x = file.variables['x']
-            y = file.variables['y']
-            z = file.variables['z']
-            
-            # Grab full copies just for testing, delete later
-            xd = x[:].copy()
-            yd = y[:].copy()
-            zd = z[:].copy()
-            
-            out = (xd,yd,zd)
-            name = r.split('/')[-1] + '.p'
-            print(name)
-            pickle.dump(out, open(name, 'wb'))
-            
-            file.close()
-
-# # Pick out coordinates we want, wrapping as if meshgridded
-# # xt = np.take(file.variables['z'][picks%], picks, mode='wrap')
-# xt = x[picks%x.shape[0]].copy()
-# yt = y[picks//x.shape[0]].copy()
-
-# # Find correct indices and just pluck out those
-# zind = np.unravel_index(picks, z.shape)
-# zt = z[zind].copy()
-
-# # Compare
-# fig = plt.figure(figsize=(10,5))
-# plt.subplot2grid((1,2),(0,0))
-# plt.scatter(xt, yt, c=zt, vmin=zd.min(), vmax=zd.max())
-# plt.xlim(xd.min()-0.01, xd.max()+0.01)
-# plt.ylim(yd.min()-0.01, yd.max()+0.01)
-
-# X,Y = np.meshgrid(xd,yd)
-# plt.subplot2grid((1,2),(0,1))
-# plt.pcolormesh(X,Y,zd, shading='auto')
-# plt.show()
-
-# def get_near_data_moore(x,y,image,x0,y0,numpix=10):
+def get_near_data_moore(x,y,image,x0,y0,numpix=20, max_moore=5, ax=None):
     
+    # This is how we would deal with a non-uniform spacing
+    xp = np.interp(x0, x, np.arange(len(x)))
+    yp = np.interp(y0, y, np.arange(len(y)))
     
-#     # This is how we would deal with a non-uniform spacing
-#     xp = np.round(np.interp(x0, x, np.arange(len(x)))).astype(int)
-#     yp = np.round(np.interp(y0, y, np.arange(len(y)))).astype(int)
+    min_size = np.ceil(np.sqrt(numpix)).astype(int)
+    for moore_size in np.arange(min_size,10):
+        moore_rad = moore_size/2
+        
+        if not ax is None:
+            pxscale = x[1] - x[0]
+            r = moore_rad * pxscale
+            size = moore_size * pxscale
+            ax.add_artist(Rectangle((x0-r,y0-r),size,size, fc='none', ec='k', ls='--', lw=1) )
+        
+        xmin = np.ceil( xp - moore_rad ).astype(int)
+        ymin = np.ceil( yp - moore_rad ).astype(int)
+        xmax = xmin + moore_size
+        ymax = ymin + moore_size
+        
+        subim = image[ymin:ymax, xmin:xmax]
+        if np.sum(~np.isnan(subim))>=numpix:
+            #return slice(ymin, ymax), slice(xmin, xmax)
+            break
+    else:
+        print('Too big, discard this point')
     
-#     # Expand moore until you exceed some threshold, account for nans
+    # Generate coordinates
+    xs = x[xmin:xmax]
+    ys = y[ymin:ymax]
+    XS,YS = np.meshgrid(xs, ys)
+    xn, yn = XS.ravel(), YS.ravel()
+    return xn,yn,np.nanmean(subim),np.nanmedian(subim)
     
-#     goodpix = 0
-#     while goodpix>numpix:
-#         break
-    
-#     mr = 2
-#     # Deal with image edges
-#     lxp = max([xp-mr,0])
-#     lyp = max([yp-mr,0])
-    
-#     # Extract the subim
-#     subim = image[lyp:yp+mr+1, lxp:xp+mr+1]
-    
-#     # Generate coordinates
-#     xs = x[lxp:xp+mr+1]
-#     ys = y[lyp:yp+mr+1]
-#     XS,YS = np.meshgrid(xs, ys)
-#     xn, yn = XS.ravel(), YS.ravel()
-    
-#     return xn,yn,np.mean(subim),np.median(subim)
-    
-# def get_near_data(X,Y,image,x0,y0,numpix):
-#     # get the mean and median of numpix points near x0,y0, and also return list of
-#     # the numpix nearest non-nan X,Y coordinates
-#     distarr=np.sqrt((X-x0)**2+(Y-y0)**2)
-#     distmask=np.ma.array(distarr,mask=np.isnan(image))
-#     nearindx=np.ma.argsort(distmask.ravel())[0:numpix]
-#     meannear=np.mean(image.ravel()[nearindx])
-#     mediannear=np.median(image.ravel()[nearindx])
-#     xn=X.ravel()[nearindx]
-#     yn=Y.ravel()[nearindx]
-#     return xn,yn,meannear,mediannear
+def get_near_data(X,Y,image,x0,y0,numpix):
+    # get the mean and median of numpix points near x0,y0, and also return list of
+    # the numpix nearest non-nan X,Y coordinates
+    distarr=np.sqrt((X-x0)**2+(Y-y0)**2)
+    distmask=np.ma.array(distarr,mask=np.isnan(image))
+    nearindx=np.ma.argsort(distmask.ravel())[0:numpix]
+    meannear=np.mean(image.ravel()[nearindx])
+    mediannear=np.median(image.ravel()[nearindx])
+    xn=X.ravel()[nearindx]
+    yn=Y.ravel()[nearindx]
+    return xn,yn,meannear,mediannear
 
-# def ref_igrams(X,Y,data,reflon,reflat,refrad):
-#     xn,yn,meannear,mediannear=get_near_data(X,Y,data,reflon,reflat,refrad)
-#     data -= mediannear
-#     return data
+def ref_igrams(X,Y,data,reflon,reflat,refrad):
+    xn,yn,meannear,mediannear=get_near_data(X,Y,data,reflon,reflat,refrad)
+    data -= mediannear
+    return data
 
-# x0 = 103.696
-# y0 = 1.215
-# # test = ref_igrams(X, Y, zd, x0, y0, 10)
+tgt = '/Users/bruzewskis/Documents/Projects/BISBAS/prototypes/pickled'
+x = pickle.load(open(f'{tgt}/xvec.p', 'rb'))
+y = pickle.load(open(f'{tgt}/yvec.p', 'rb'))
+X,Y = np.meshgrid(x,y)
+z = pickle.load(open(f'{tgt}/datamatrix.p', 'rb'))[3]
+z[20,19] = np.nan
 
-# xn1,yn1,mean1,median1 = get_near_data(X,Y,zd,x0,y0,10)
-# xn2,yn2,mean2,median2 = get_near_data_moore(xd,yd,zd,x0,y0,10)
-# print(mean1, median1)
-# print(mean2, median2)
+x0 = 103.6901 + 0.009 * 0.9
+y0 = 1.210 + 0.009 * 0.3
 
-# plt.figure(figsize=(6,5), dpi=300)
-# plt.pcolormesh(X,Y,zd, shading='nearest')
-# plt.colorbar()
-# plt.scatter(xn1, yn1, ec='w', fc='none', s=25, marker='d')
-# plt.scatter(xn2, yn2, ec='k', fc='none', s=60, marker='s')
-# plt.scatter(x0, y0, s=5)
-# plt.xlim(103.65,103.75)
-# plt.ylim(1.15,1.25)
+fig = plt.figure(figsize=(6,5), dpi=300)
+ax = fig.add_subplot()
+plt.pcolormesh(X,Y,z, shading='nearest')
+plt.colorbar()
+
+n = 9
+xn1,yn1,mean1,median1 = get_near_data(X,Y,z,x0,y0, n)
+xn2,yn2,mean2,median2 = get_near_data_moore(x,y,z,x0,y0, n, ax=ax)
+print(mean1, median1)
+print(mean2, median2)
+
+plt.scatter(xn1, yn1, ec='w', fc='none', s=60, marker='s', label='Eric')
+plt.scatter(xn2, yn2, ec='w', fc='none', s=200, marker='o', label='Seth')
+plt.legend()
+plt.scatter(x0, y0, s=50, ec='k', fc='w')
+plt.xlim(x0-0.05, x0+0.05)
+plt.ylim(y0-0.05, y0+0.05)
+plt.title(f'Requested {n} points around reference')
