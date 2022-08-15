@@ -16,6 +16,12 @@ import logging
 import argparse
 import configparser
 
+import bifrost as bf
+
+from bisblocks import *
+from reader import DataStack
+
+
 __version__ = 0.1
 
 
@@ -23,14 +29,15 @@ def main(args):
     
     ##### Setup a logger #####
     logger = logging.getLogger(__name__)
-    logFormat = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logFormat = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s', 
+                                  datefmt='%Y-%m-%d %H:%M:%S')
     logFormat.converter = time.gmtime
     
     # Decide to write to file or stdout
     if args.log is None:
         logHandler = logging.StreamHandler(sys.stdout)
     else:
-        logHandler = WatchedFileHandler(args.log)
+        logHandler = logging.FileHandler(args.log)
     logHandler.setFormatter(logFormat)
     logger.addHandler(logHandler)
     
@@ -85,17 +92,51 @@ def main(args):
     
     ##### Read and set up data #####
     
-    # read baseline table
-    logger.info(f'Reading baselines from {baselines}')
+    # Read in the baseline table
+    logger.info(f'Attempting to read baselines from {baselines}')
     currdir=os.getcwd()
     # ids,jdates,dates,bperp = ts_func.read_baselines(os.path.join(currdir,baselines))
     
-    # get dates of all interferogram pairs and convert to integer indexes
-    logger.info(f'Reading list of interferograms from {intfs}')
+    # Read dates of all interferogram pairs and convert to integer indexes
+    logger.info(f'Attempt to read intf list from {intfs}')
     # igram_ids = ts_func.get_igram_ids(SAT, os.path.join(currdir,intfs), ids)
-    
-    
-    
+
+    # Read in data as a virtual memory object
+    logger.info(f'Attempt to read interferograms from {currdir}')
+    # use the prototype reader function
+
+    ##### Set up tools we'll use later #####
+
+    # Build G matrix
+
+    # Extract reference point intf stack
+
+    ##### Timeseries pipeline #####
+
+    # PIPELINE1: Model GPS points for detrending
+    with None as PIPELINE1:
+        pass
+
+    # Reference intfs to reference point
+
+    # Optionally check data
+
+    # Invert timeseries
+
+    # Convert rad->mm
+
+
+    # PIPELINE2: above + below 
+    with None as PIPELINE2:
+        pass
+
+    # Optionally detrend
+    # if we don't want to detrend, we can pass a null model
+
+    # Optionally calculate rate
+    # we can maybe look at higher-order rates or peicewise stuff
+
+    # Optionally plot
 
 if __name__=='__main__':
     globalstart=time.time()
