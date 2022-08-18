@@ -19,19 +19,24 @@ class IntfRead(object):
     File read object
     '''
     def __init__(self, filename, gulp_size, dtype):
-        # Initialize our reader object
-        self.step = 0
-        self.reader = DataStack.read(filename)
+        if True: #if regions is None
+            # Initialize our reader object
+            self.step = 0
+            self.reader = DataStack.read(filename)
 
-        # Double check this gulp-size is acceptable
-        imsize = self.reader.imsize
-        if imsize%gulp_size==0:
-            self.gulp_size = gulp_size
+            # Double check this gulp-size is acceptable
+            imsize = self.reader.imsize
+            if imsize%gulp_size==0:
+                self.gulp_size = gulp_size
+            else:
+                raise ValueError('Gulp must evenly divide image size')
+
+            # Set dtype, maybe we should check this
+            self.dtype = dtype
         else:
-            raise ValueError('Gulp must evenly divide image size')
-
-        # Set dtype, maybe we should check this
-        self.dtype = dtype
+            # for region in region find moore size
+            # pick biggest moore size and pump to gulp_size
+            # set up data around region
 
     def read(self):
         # Figure out what to read and read it
@@ -77,7 +82,7 @@ class IntfReadBlock(bfp.SourceBlock):
         ohdr = {'name': filename,
                 '_tensor': {
                         'dtype':  self.dtype,
-                        'shape':  [-1, self.gulp_size], #This line needs changing
+                        'shape':  [-1, self.gulp_size, 3], #This line needs changing
                         },
                 }
         return [ohdr]
@@ -85,8 +90,8 @@ class IntfReadBlock(bfp.SourceBlock):
     def on_data(self, reader, ospans):
         indata = reader.read()
 
-        if indata.shape[0] == self.gulp_size:
-            ospans[0].data[0] = indata
+        if indata.shape[1] == self.gulp_size:
+            ospans[0].data[...] = indata
             return [1]
         else:
             return [0]
