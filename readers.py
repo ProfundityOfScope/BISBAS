@@ -23,14 +23,25 @@ class DataStack(object):
         # Figure out image properties
         self.imshape = self.file_objs[0].variables['z'].shape #unsafe if empty
         self.imsize = np.product(self.imshape)
+
+        # Establish grid convention
+        dims = self.file_objs[0].dimensions
+        if 'lon' in dims and 'lat' in dims:
+            self.xgrd = 'lon'
+            self.ygrd = 'lat'
+        elif 'x' in dims and 'y' in dims:
+            self.xgrid = 'x'
+            self.ygrid = 'y'
+        else:
+            raise KeyError('File gridding does not follow any known standard')
         
         # Figure out object properties
         self.shape = (len(self.file_objs), self.imsize, 3)
         self.size = np.product(self.shape)
         
         # Save some data for later use
-        self._xarr = self.file_objs[0].variables['x'][:].copy()
-        self._yarr = self.file_objs[0].variables['y'][:].copy()
+        self._xarr = self.file_objs[0].variables[self.xgrd][:].copy()
+        self._yarr = self.file_objs[0].variables[self.ygrd][:].copy()
     
     @classmethod
     def read(cls, directory):
@@ -71,8 +82,8 @@ class DataStack(object):
         data = np.empty((np.size(self, 0), len(newkey), np.size(self,2)))
         for i in range(len(self.file_objs)):
             file = self.file_objs[i]
-            x = file.variables['x']
-            y = file.variables['y']
+            x = file.variables[self.xgrd]
+            y = file.variables[self.ygrd]
             z = file.variables['z']
     
             xt = x[newkey%x.shape[0]].copy()
@@ -90,45 +101,61 @@ class DataStack(object):
         # Use this to dump data out to files
         pass
     
-    def data_near(self, x0, y0, num):
+    def data_near(self, x0, y0, chunk_size):
         
         # This is how we would deal with a non-uniform spacing
         xp = np.interp(x0, self._xarr, np.arange(len(self._xarr)))
         yp = np.interp(y0, self._yarr, np.arange(len(self._yarr)))
         
+        # How far to look around
+        chunk_rad = chunk_size/2
+        
+        # Find corners
+        xmin = np.ceil( xp - chunk_rad ).astype(int)
+        ymin = np.ceil( yp - chunk_rad ).astype(int)
+        xmax = xmin + chunk_size
+        ymax = ymin + chunk_size
+        
+        # Extracts data inside those corners
+        xind = np.arange(xmin, xmax)
+        yind = np.arange(ymin, ymax)
+        coords = np.array(np.meshgrid(xind, yind)).reshape(2,-1)
+        subdata = self.__getitem__(np.ravel_multi_index( coords, self.imshape ))
+
+        return subdata
+
+    def find_best_chunk_size(self, x0, y0, num):
+        
         min_size = np.ceil(np.sqrt(num)).astype(int)
-        for moore_size in np.arange(min_size,10):
-            moore_rad = moore_size/2
-            
-            # Find corners
-            xmin = np.ceil( xp - moore_rad ).astype(int)
-            ymin = np.ceil( yp - moore_rad ).astype(int)
-            xmax = xmin + moore_size
-            ymax = ymin + moore_size
-            
-            # Extracts data inside those corners
-            xind = np.arange(xmin, xmax)
-            yind = np.arange(ymin, ymax)
-            coords = np.array(np.meshgrid(xind, yind)).reshape(2,-1)
-            subdata = self.__getitem__(np.ravel_multi_index( coords, self.imshape ))
+        for chunk_size in np.arange(min_size,100):
+            subdata = self.data_near(x0, y0, chunk_size)
             
             # Check to see if we have enough good pixels
             num_good_per_date = np.sum(~np.isnan(subdata[:,:,2]), axis=1)
             if np.all(num_good_per_date >= num):
-                return subdata
+                return chunk_size
         else:
             raise ValueError('Not enough good pixels near this point')
+
     
     def __del__(self):
         for file in self.file_objs:
             file.close()
 
 if __name__=='__main__':
-    tgt = '/Users/bruzewskis/Documents/Projects/bifrost_isbas/isbas/test/intf/'
+    tgt = '/Users/bruzewskis/Documents/Projects/BISBAS/testing/intf/'
     
     b = DataStack.read(tgt)
-    data = b[:]
     print(b.shape)
-            
+
+    n = 10
+    xr = np.random.normal(255.3, 0.1, n)
+    yr = np.random.normal(36.6, 0.1, n)
+
+    rads = np.zeros(n)
+    for i in range(n):
+        rads[i] = b.find_best_chunk_size(xr[i], yr[i], 10)
+    print(rads)
+    print(max(rads))         
             
     

@@ -16,10 +16,10 @@ import logging
 import argparse
 import configparser
 
-import bifrost as bf
+#import bifrost as bf
 
-from bisblocks import *
-from reader import DataStack
+#from bisblocks import *
+import readers
 
 
 __version__ = 0.1
@@ -114,8 +114,8 @@ def main(args):
     ##### Timeseries pipeline #####
 
     # PIPELINE1: Model GPS points for detrending
-    with None as PIPELINE1:
-        pass
+    #with something as PIPELINE1:
+    #    pass
 
     # Reference intfs to reference point
 
@@ -127,8 +127,8 @@ def main(args):
 
 
     # PIPELINE2: above + below 
-    with None as PIPELINE2:
-        pass
+    #with something as PIPELINE2:
+    #    pass
 
     # Optionally detrend
     # if we don't want to detrend, we can pass a null model
