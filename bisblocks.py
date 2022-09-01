@@ -8,18 +8,23 @@ Created on Sun Aug 14 23:38:03 2022
 """
 
 import numpy as np
+import logging
 
 import bifrost.pipeline as bfp
 from bifrost.dtype import name_nbit2numpy
 
 from reader import DataStack
 
+__version__ = 0.1
+
+blockslogger = logging.getLogger('__main__')
+
 class IntfRead(object):
     '''
     File read object
     '''
-    def __init__(self, filename, gulp_size, dtype):
-        if True: #if regions is None
+    def __init__(self, filename, gulp_size, dtype, regions=None):
+        if regions is None:
             # Initialize our reader object
             self.step = 0
             self.reader = DataStack.read(filename)
@@ -37,6 +42,7 @@ class IntfRead(object):
             # for region in region find moore size
             # pick biggest moore size and pump to gulp_size
             # set up data around region
+            pass
 
     def read(self):
         # Figure out what to read and read it
@@ -64,10 +70,11 @@ class IntfReadBlock(bfp.SourceBlock):
         gulp_nframe (int): Number of frames in a gulp. (Ask Ben / Miles for good explanation)
         dtype (bifrost dtype string): dtype, e.g. f32, cf32
     """
-    def __init__(self, filenames, gulp_size, gulp_nframe, dtype, *args, **kwargs):
+    def __init__(self, filenames, gulp_size, gulp_nframe, dtype, regions=None, *args, **kwargs):
         super().__init__(filenames, gulp_nframe, *args, **kwargs)
         self.dtype = dtype
         self.gulp_size = gulp_size
+        self.regions = regions
 
     def create_reader(self, filename):
         # Log line about reading
@@ -76,7 +83,7 @@ class IntfReadBlock(bfp.SourceBlock):
         nbits = int(self.dtype[len(dcode):])
         np_dtype = name_nbit2numpy(dcode, nbits)
 
-        return IntfRead(filename, self.gulp_size, np_dtype)
+        return IntfRead(filename, self.gulp_size, np_dtype, regions=self.regions)
 
     def on_sequence(self, ireader, filename):
         ohdr = {'name': filename,

@@ -21,7 +21,6 @@ import configparser
 #from bisblocks import *
 import readers
 
-
 __version__ = 0.1
 
 

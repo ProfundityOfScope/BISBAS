@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jul 14 12:22:08 2022
+Temp text up here
 
+Created on Thu Jul 14 12:22:08 2022
 @author: bruzewskis
 """
 
 import numpy as np
 import os
+import logging
 from scipy.io import netcdf
+
+__version__ = 0.1
+
+readerslogger = logging.getLogger('__main__')
 
 class DataStack(object):
     '''
@@ -23,13 +29,16 @@ class DataStack(object):
         # Figure out image properties
         self.imshape = self.file_objs[0].variables['z'].shape #unsafe if empty
         self.imsize = np.product(self.imshape)
+        readerslogger.debug(f'Found {len(self.file_objs)} files with shape {self.imshape}')
 
         # Establish grid convention
         dims = self.file_objs[0].dimensions
         if 'lon' in dims and 'lat' in dims:
+            readerslogger.debug('Lon/Lat coordinates inferred from data')
             self.xgrd = 'lon'
             self.ygrd = 'lat'
         elif 'x' in dims and 'y' in dims:
+            readerslogger.debug('X/Y coordinates inferred from data')
             self.xgrid = 'x'
             self.ygrid = 'y'
         else:
@@ -38,6 +47,7 @@ class DataStack(object):
         # Figure out object properties
         self.shape = (len(self.file_objs), self.imsize, 3)
         self.size = np.product(self.shape)
+        readerslogger.debug(f'Images will be treated as a {self.shape} object')
         
         # Save some data for later use
         self._xarr = self.file_objs[0].variables[self.xgrd][:].copy()
@@ -106,7 +116,8 @@ class DataStack(object):
         # This is how we would deal with a non-uniform spacing
         xp = np.interp(x0, self._xarr, np.arange(len(self._xarr)))
         yp = np.interp(y0, self._yarr, np.arange(len(self._yarr)))
-        
+        readerslogger.debug(f'Requested reference around pixel x:{xp:.0f}, y:{yp:.0f}')
+
         # How far to look around
         chunk_rad = chunk_size/2
         
@@ -132,6 +143,7 @@ class DataStack(object):
             
             # Check to see if we have enough good pixels
             num_good_per_date = np.sum(~np.isnan(subdata[:,:,2]), axis=1)
+            readerslogger.debug(f'Chunk size of {chunk_size} found {num_good_per_date} valid pixels')
             if np.all(num_good_per_date >= num):
                 return chunk_size
         else:
