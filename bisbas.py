@@ -118,40 +118,38 @@ def main(args):
 
     # Extract reference point intf stack
     temp_reader = readers.DataStack.read(files)
-    print(reflon, reflat, refnum)
     best_chunk_size = temp_reader.find_best_chunk_size(reflon, reflat, refnum)
-    print(best_chunk_size)
-    ref_stack = temp_reader.get_data_near(reflon, reflat, best_chunk_size)
-    logger.info(f'Extracting reference stack, hopefully {ref_stack.shape}')
+    ref_stack = temp_reader.data_near(reflon, reflat, best_chunk_size)
+    median_stack = np.median(ref_stack[:,:,2], axis=1)
+    logger.info(f'Extracted {median_stack.size} median values to reference to')
 
     # Generate regions for model creation
+    
 
     ##### Timeseries pipeline #####
 
     # PIPELINE1: Model GPS points for detrending
     #with something as PIPELINE1:
-    #    pass
 
-    # Reference intfs to reference point
+        # Reference intfs to reference point
 
-    # Optionally check data
+        # Optionally check data
 
-    # Invert timeseries
+        # Invert timeseries
 
-    # Convert rad->mm
+        # Convert rad->mm
 
 
     # PIPELINE2: above + below 
     #with something as PIPELINE2:
-    #    pass
 
-    # Optionally detrend
-    # if we don't want to detrend, we can pass a null model
+        # Optionally detrend
+        # if we don't want to detrend, we can pass a null model
 
-    # Optionally calculate rate
-    # we can maybe look at higher-order rates or peicewise stuff
+        # Optionally calculate rate
+        # we can maybe look at higher-order rates or peicewise stuff
 
-    # Optionally plot
+        # Optionally plot
 
 if __name__=='__main__':
     globalstart=time.time()
