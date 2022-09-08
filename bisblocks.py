@@ -13,7 +13,7 @@ import logging
 import bifrost.pipeline as bfp
 from bifrost.dtype import name_nbit2numpy
 
-from reader import DataStack
+from readers import DataStack
 
 __version__ = 0.1
 
@@ -24,11 +24,13 @@ class IntfRead(object):
     File read object
     '''
     def __init__(self, filename, gulp_size, dtype, regions=None):
-        if regions is None:
-            # Initialize our reader object
-            self.step = 0
-            self.reader = DataStack.read(filename)
+        # Initialize our reader object
+        self.step = 0
+        self.reader = DataStack.read(filename)
+        self.dtype = dtype
 
+        # We have a separate pipeline for streaming reference points
+        if self.regions is None:
             # Double check this gulp-size is acceptable
             imsize = self.reader.imsize
             if imsize%gulp_size==0:
@@ -36,18 +38,18 @@ class IntfRead(object):
             else:
                 raise ValueError('Gulp must evenly divide image size')
 
-            # Set dtype, maybe we should check this
-            self.dtype = dtype
+            # Generate regions for entire image
+            self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
         else:
-            # for region in region find moore size
-            # pick biggest moore size and pump to gulp_size
-            # set up data around region
-            pass
+            # Manually set gulp size
+            self.gulp_size = len(regions[0])
+
+            # Set regions from input
+            self.regions = regions
 
     def read(self):
         # Figure out what to read and read it
-        picks = np.arange(self.step*self.gulp_size, (self.step+1)*self.gulp_size)
-        d = self.reader[picks]
+        d = self.reader[self.regions[self.step]]
         self.step += 1
         
         return d.astype(self.dtype)

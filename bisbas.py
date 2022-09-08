@@ -20,6 +20,7 @@ import configparser
 
 #from bisblocks import *
 import readers
+import helpers
 
 __version__ = 0.1
 
@@ -92,23 +93,38 @@ def main(args):
     ##### Read and set up data #####
     
     # Read in the baseline table
-    logger.info(f'Attempting to read baselines from {baselines}')
-    currdir=os.getcwd()
-    # ids,jdates,dates,bperp = ts_func.read_baselines(os.path.join(currdir,baselines))
+    path = os.getcwd()
+    bl_dir = os.path.join(path, baselines)
+    ids, jdates, dates, bperp = readers.read_baselines(bl_dir)
+    logger.info(f'Read {len(ids)} baselines from {baselines}')
     
     # Read dates of all interferogram pairs and convert to integer indexes
-    logger.info(f'Attempt to read intf list from {intfs}')
-    # igram_ids = ts_func.get_igram_ids(SAT, os.path.join(currdir,intfs), ids)
-
-    # Read in data as a virtual memory object
-    logger.info(f'Attempt to read interferograms from {currdir}')
-    # use the prototype reader function
+    intfs_dir = os.path.join(path, intfs)
+    igram_ids = readers.get_igram_ids(SAT, intfs_dir, ids)
+    logger.info(f'Read {len(igram_ids)} interferogram ids from {intfs}')
 
     ##### Set up tools we'll use later #####
 
+    # Figure out the order we'll want to read in the intfs
+    files = []
+    for igram in igram_ids:
+        jd0, jd1 = jdates[igram]
+        files.append( f'{path}/intf/{jd0}_{jd1}/{unwrapfile}' )
+    logger.info(f'Ordered {len(files)} files to be read')
+
     # Build G matrix
+    G = helpers.make_gmatrix(igram_ids, dates)
+    logger.info(f'Created G-matrix with shape {G.shape}')
 
     # Extract reference point intf stack
+    temp_reader = readers.DataStack.read(files)
+    print(reflon, reflat, refnum)
+    best_chunk_size = temp_reader.find_best_chunk_size(reflon, reflat, refnum)
+    print(best_chunk_size)
+    ref_stack = temp_reader.get_data_near(reflon, reflat, best_chunk_size)
+    logger.info(f'Extracting reference stack, hopefully {ref_stack.shape}')
+
+    # Generate regions for model creation
 
     ##### Timeseries pipeline #####
 
