@@ -100,7 +100,7 @@ def main(args):
     
     # Read dates of all interferogram pairs and convert to integer indexes
     intfs_dir = os.path.join(path, intfs)
-    igram_ids = readers.get_igram_ids(SAT, intfs_dir, ids)
+    igram_ids = readers.read_igram_ids(SAT, intfs_dir, ids)
     logger.info(f'Read {len(igram_ids)} interferogram ids from {intfs}')
 
     ##### Set up tools we'll use later #####
@@ -124,7 +124,7 @@ def main(args):
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
     # Generate regions for model creation
-    
+
 
     ##### Timeseries pipeline #####
 
