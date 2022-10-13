@@ -130,3 +130,5 @@ dmypy.json
 testing*/
 prototypes/pickled/*
 *.DS_Store
+*.png
+*.jpg
