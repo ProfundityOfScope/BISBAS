@@ -27,7 +27,7 @@ class DataStack():
     requested data for you
     '''
 
-    def __init__(self, file_objs: list) -> None:
+    def __init__(self, file_objs: list, mode='r') -> None:
         '''
         Generate the class from available files provided.
 
@@ -93,16 +93,76 @@ class DataStack():
 
         file_objs = []
         for file in files:
-            file_obj = netcdf.netcdf_file(file) #mmap
+            file_obj = netcdf.netcdf_file(file, 'r') #mmap
             file_objs.append(file_obj)
 
         new_stack = cls(file_objs)
         return new_stack
 
     @classmethod
-    def empty(cls, directory: str, num_dates, xcoords: np.ndarray,
-              ycoords: np.ndarray) -> DataStack:
-        '''TODO: Loop through and create empty files, then wrap a Datastack'''
+    def empty_like(cls, other: DataStack, directory: str, dates: np.ndarray) -> DataStack:
+        '''TODO: Make this work, not sure why it doesn't, some weird key error'''
+
+        # Everything we need for X
+        kx = other.xgrd
+        nx = other._xarr.size
+        lx = kx if kx=='x' else 'longitude'
+        ux = None if kx=='x' else 'degrees_east'
+        x_f32 = other._xarr.astype(np.float32)
+        x_ar = np.float32([other._xarr.min(), other._xarr.max()])
+
+        # Everything we need for Y
+        ky = other.ygrd
+        ny = other._yarr.size
+        ly = ky if ky=='y' else 'latitude'
+        uy = None if ky=='y' else 'degrees_north'
+        y_f32 = other._yarr.astype(np.float32)
+        y_ar = np.float32([other._yarr.min(), other._yarr.max()])
+        readerslogger.debug(f'{nx} and {ny} and {kx} and {ky}')
+
+        # Everything we need for Z
+        z_f32 = np.full((ny,nx), np.nan, dtype=np.float32)
+        z_ar = np.float32([-999,999])
+
+        # Loop over files we need to create
+        os.makedirs(directory, exist_ok=True)
+        file_objs = []
+        for i, date in enumerate(dates):
+            fname = f'{directory}/ts_mm_{date:04d}.grd'
+            file = netcdf.netcdf_file(fname, 'w')
+
+            # Set up meta-data and whatnot
+            file.title = 'Created using scipy.io.netcdf'
+
+            # Set of axes
+            file.node_offset = 0
+            file.Conventions = 'COARDS/CF-1.0'
+            file.createDimension(kx, nx)
+            file.createDimension(ky, ny)
+            xvar = file.createVariable(kx, np.float32, (kx,))
+            yvar = file.createVariable(ky, np.float32, (ky,))
+            zvar = file.createVariable('z', np.float32, (ky, kx))
+
+            # Meta variable info
+            xvar.long_name = lx
+            yvar.long_name = ly
+            xvar.units = ux
+            yvar.units = uy
+
+            # Assignments
+            xvar[:] = x_f32
+            yvar[:] = y_f32
+            zvar[:] = z_f32
+            
+            xvar.actual_range = x_ar
+            yvar.actual_range = y_ar
+            zvar.actual_range = z_ar
+
+            readerslogger.debug(f'Generated empty file ts_mm_{date:04d}.grd')
+            file_objs.append(file)
+
+        new_stack = cls(file_objs)
+        return new_stack
 
     def __getitem__(self, key: np.ndarray | slice ) -> np.ndarray:
         '''
@@ -160,6 +220,24 @@ class DataStack():
 
     def __setitem__(self, key: np.ndarray, value: float) -> None:
         '''TODO: Use this to dump data out to files '''
+
+        # Evaluate key to be safe
+        if isinstance(key, np.ndarray):
+            # All good, we like arrays
+            newkey = key
+        elif isinstance(key, slice):
+            # Slices are a pain with how we index, convert
+            newkey = np.arange(self.imsize)[key]
+        else:
+            # Yell if we have to
+            readerslogger.error('__getitem__ only accepts slices or arrays')
+            raise IndexError('__getitem__ only accepts slices or arrays')
+
+        for i, file in enumerate(self.file_objs):
+            
+            z = self.file_objs[i].variables['z']
+            zind = np.unravel_index(newkey, z.shape)
+            z[zind] = value[i]
 
     def data_near(self, x0: float, y0: float, chunk_size: int) -> np.ndarray:
         '''
@@ -280,8 +358,9 @@ class DataStack():
 
             # Check to see if we have enough good pixels
             num_good_per_date = np.sum(~np.isnan(subdata[:,:,2]), axis=1)
+            mngpd = np.min(num_good_per_date)
+            readerslogger.debug(f'chunk_size={chunk_size} worst intf has {mngpd} valid pixels')
             if np.all(num_good_per_date >= num):
-                readerslogger.debug(f'Chunk size of {chunk_size} has enough good pixels')
                 best = chunk_size
                 break
         else:
@@ -307,7 +386,7 @@ def read_baselines(fname):
 
     ids=strdat[sortorder]
     jdates=np.array([str(int(np.floor(i))) for i in numdat[sortorder,0]])
-    dates=numdat[sortorder,1]
+    dates=numdat[sortorder,1].astype(int)
     bperp=numdat[sortorder,2]
 
     return ids,jdates,dates,bperp
@@ -335,6 +414,15 @@ def read_igram_ids(sat, fname, ids):
         id1=np.where(ids==strid1)[0][0]
         igram_ids[i] = np.array([id0, id1])
     return igram_ids
+
+def read_wavelength_conversion(prmfile: str) -> float:
+    with open(prmfile) as f:
+        for line in f:
+            if 'wavelen' in line:
+                wavelen=float(line.split()[2])
+    conv = (-1000)*wavelen/(4*np.pi)
+    readerslogger.debug(f'Wavelength is {wavelen}')
+    return conv
 
 def stack_read_test():
     ''' Dummy doc string '''

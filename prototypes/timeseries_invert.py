@@ -67,6 +67,7 @@ def censored_least_squares(G, data):
     
     rhs = np.dot(G.T, M * data).T[:,:,None]
     T = np.matmul(G.T[None,:,:], M.T[:,:,None] * G[None,:,:])
+    print(M.shape, rhs.shape, T.shape)
     return np.squeeze(np.linalg.solve(T, rhs)).T
 
 def reconstruct_ts(model, dates):

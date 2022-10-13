@@ -37,7 +37,3 @@ def make_gmatrix(ids, dates):
         readerslogger.error('G is of incorrect order')
         raise ValueError('G is of incorrect order')
     return G
-
-def create_file_order(path, igrams, unwrap, jdates):
-
-	return files

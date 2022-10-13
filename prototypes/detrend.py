@@ -1,57 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jul 14 14:57:07 2022
+Created on Mon Sep 12 12:56:00 2022
 
 @author: bruzewskis
 """
 
+import os
+from scipy.io import netcdf
 import numpy as np
 import matplotlib.pyplot as plt
-from time import time
-import pickle
-import os
-
-def detrend_fitpoints(X,Y,ts,gpsdat,trendparams=3):
-    '''
-    The plan for this one is to generate everything up to m=np.dot... ahead
-    of time. For this we'll need to grab the timeseries data around each GPS
-    point, then construct the model as a function of time basically. Said model
-    as a function of time can then be used to reconstruct a section of the bulk
-    model on the fly in the GPU
-    '''
-    # for each date, fit a trend to velocities near the GPS points
-    # (note, is there some better network-based way to do this?)
-    #
-    onemat=np.ones(np.shape(X))
-    
-    #estimate trends for each time series component
-    for i in range(np.size(ts,0)):
-        #extract data around the GPS points for use in fit equations
-        G,d=construct_gpsconstraint(i,ts[i],gpsdat,X,Y)
-        
-        #select the specified number of trend parameters
-        G=G[:,0:trendparams]
-        
-        #invert for a trend that matches the value around given GPS points
-        m=np.dot(np.linalg.inv(G),d)
-        
-        
-        print(i, G.shape, d.shape, m.shape)
-        
-        #reconstruct the model - a bit ugly here dealing with unknown number of trendparams
-        model = reconstruct_model_nparams(trendparams,m,X,Y,onemat)  
-        print(i, model.shape)
-            
-        ts[i]=ts[i]-model
-
-    return ts
+from matplotlib.colors import Normalize, LogNorm, SymLogNorm
+from matplotlib.patches import Rectangle
 
 
-def detrend_constraints(X,Y,ts,gpsdat,trendparams=3):
+def detrend_constraints(x,y,image,gpsdat,trendparams=3, num=None):
     # for each date, remove a trend by fitting to the entire image,
     # but using a small number of GPS as constraints
     #
+    
+    X,Y = np.meshgrid(x,y)
     onemat=np.ones(np.shape(X))
         
     #determine which method to use
@@ -61,36 +29,78 @@ def detrend_constraints(X,Y,ts,gpsdat,trendparams=3):
         invmethod='pinv'
     
     #estimate trends for each time series component
-    for i in range(np.size(ts,0)):
-        #extract data around the GPS points for use in constraint equations
-        C,z=construct_gpsconstraint(i,ts[i],gpsdat,X,Y)
-        
-        #remove nan points from the data and form G matrix
-        d=ts[i].ravel()
-        indx=~np.isnan(d)
-        x=X.ravel()[indx]
-        y=Y.ravel()[indx]
-        onevec=onemat.ravel()[indx]
-        d=d[indx]
-        #Create the trend -fitting matrix
-        #assumes 6 parameters here (this is the maximum for now), then remove extra parameters before fitting     
-        G=np.column_stack([onevec,x,y,x**2,y**2,x*y])
-        
-        #select the specified number of trend parameters
-        G=G[:,0:trendparams]
-        C=C[:,0:trendparams]
-        
-        #invert for a trend subject to constraint that it matches the value around given GPS points
-        m=constrained_lsq(G,d,C,z,method=invmethod)
-        print(i, '\t', G.shape, m.shape, d.shape)
-        print('\t', C.shape, m.shape, z.shape)
-        
-        #reconstruct the model - a bit ugly here dealing with unknown number of trendparams
-        model = reconstruct_model_nparams(trendparams,m,X,Y,onemat)      
-            
-        ts[i]=ts[i]-model
+    #extract data around the GPS points for use in constraint equations
+    print('dummy1')
+    C1, z1 = construct_gpsconstraint(0,image, gpsdat,X, Y)
+    print('dummy2')
+    C2, z2 = construct_gpsconstraint2(image, gpsdat, x, y)
+    print('dummy3')
 
-    return ts
+    # Construct image constraints
+    G1, d1 = construct_imconstraint(image, x, y)
+    G2, d2 = construct_imconstraint2(image, x, y, num)  
+
+    # select the specified number of trend parameters
+    G1 = G1[:, :trendparams]
+    G2 = G2[:, :trendparams]
+    C1 = C1[:, :trendparams]
+    C2 = C2[:, :trendparams]
+
+    # invert for a trend subject to constraint that it matches the value around given GPS points
+    m1 = constrained_lsq(G1, d1, C1, z1, method=invmethod)
+    m2 = constrained_lsq2(G2, d2, C2, z2, invmethod)
+
+    # reconstruct the model
+    model1 = reconstruct_model_nparams(trendparams, m1, X, Y)     
+    model2 = reconstruct_model_nparams2(m2, x, y)
+
+    # # Draw it
+    # xd = np.linspace(x.min(), x.max(), 10)
+    # yd = np.linspace(y.min(), y.max(), 10)
+    # XD,YD = np.meshgrid(xd,yd)
+    # draw1 = reconstruct_model_nparams(trendparams, m1, XD, YD)
+    # draw2 = reconstruct_model_nparams2(m2, xd, yd) 
+    # ax = plt.subplot(projection='3d')
+    # ax.plot_surface(XD,YD,draw1, color='C2')
+    # ax.plot_surface(XD,YD,draw2, color='C3')
+    # ax.view_init(30,45+90)
+    # plt.show()
+
+    return image-model2
+
+def construct_imconstraint(image, x, y):
+
+    X, Y = np.meshgrid(x, y)
+    onemat = np.ones(np.shape(X))
+
+    d = image.ravel()
+    indx = ~np.isnan(d)
+    xG = X.ravel()[indx]
+    yG = Y.ravel()[indx]
+    onevec = onemat.ravel()[indx]
+    d = d[indx]
+    G = np.column_stack([onevec, xG, yG, xG**2, yG**2, xG*yG])
+
+    return G, d
+
+
+def construct_imconstraint2(image, x, y, num=None):
+
+    yind, xind = np.where(~np.isnan(image))
+    
+    if num is not None:
+        rc = np.random.randint(0, len(xind), num)
+        xind = xind[rc]
+        yind = yind[rc]
+    
+    xG = x[xind]
+    yG = y[yind]
+    oG = np.ones_like(xG, dtype=np.float)
+    d = image[yind, xind]
+    G = np.column_stack([oG, xG, yG, xG**2, yG**2, xG*yG])
+
+    return G, d
+
 
 def construct_gpsconstraint(imagenum,image,gpsdat,X,Y):
     # create the matrices used to fit a trend to values near the gps points
@@ -118,21 +128,38 @@ def construct_gpsconstraint(imagenum,image,gpsdat,X,Y):
             G=np.row_stack(( G,Gpoint ))
             d=np.row_stack(( d,dpoint )) 
             
-    return G,d
+    return G, d
 
-def reconstruct_model_nparams(trendparams,m,X,Y,onemat):
-    # given a model and a number of trend parameters, reconstruct the trend
+
+def construct_gpsconstraint2(image, gpsdat, x, y):
+    print('CONSTRUCT CONSTRAINTS')
+    # create the matrices used to fit a trend to values near the gps points
     #
-    model = {
-    1: lambda m,X,Y,onemat: m[0]*onemat,
-    2: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X,
-    3: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X+m[2]*Y,
-    4: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X+m[2]*Y+m[3]*X**2,
-    5: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X+m[2]*Y+m[3]*X**2+m[4]*Y**2,
-    6: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X+m[2]*Y+m[3]*X**2+m[4]*Y**2+m[5]*X*Y
-    }[trendparams](m,X,Y,onemat) 
-    
-    return model
+    for j in range(np.size(gpsdat, 0)):
+        x0 = gpsdat[j, 0]
+        y0 = gpsdat[j, 1]
+        numpix = int(gpsdat[j, 2])
+        if np.size(gpsdat, axis=1) == 4:
+            v0 = gpsdat[j, 3]  # use average velocity
+        else:
+            # TODO: FIX THIS
+            v0 = gpsdat[j, 3]  # use displacement at a particular epoch
+        
+             
+        xn,yn,meannear,mediannear=get_near_data2(x,y,image,x0,y0,numpix)
+        
+        #constraint equation is that the sum of trend values at all the selected points is equal to the sum of their mean
+        #assumes 6 parameters here (this is the maximum for now), remove extra parameters later before fitting
+        Gpoint=np.array([len(xn), np.sum(xn), np.sum(yn), np.sum(xn**2), np.sum(yn**2), np.sum(xn*yn)])
+        dpoint=len(xn)*(meannear-v0)
+        if (j==0):
+            G=np.array(Gpoint,ndmin=2)
+            d=dpoint
+        else:
+            G=np.row_stack(( G,Gpoint ))
+            d=np.row_stack(( d,dpoint )) 
+            
+    return G,d
 
 def get_near_data(X,Y,image,x0,y0,numpix):
     # get the mean and median of numpix points near x0,y0, and also return list of
@@ -146,6 +173,63 @@ def get_near_data(X,Y,image,x0,y0,numpix):
     yn=Y.ravel()[nearindx]
     return xn,yn,meannear,mediannear
 
+def get_near_data2(x, y, image, x0, y0, moore_size):
+    
+    # This is how we would deal with a non-uniform spacing
+    xp = np.interp(x0, x, np.arange(len(x)))
+    yp = np.interp(y0, y, np.arange(len(y)))
+
+    moore_rad = moore_size/2
+    xmin = np.ceil(xp - moore_rad).astype(int)
+    ymin = np.ceil(yp - moore_rad).astype(int)
+    xmax = xmin + moore_size
+    ymax = ymin + moore_size
+
+    subim = image[ymin:ymax, xmin:xmax]
+
+    # Generate coordinates
+    xs = x[xmin:xmax]
+    ys = y[ymin:ymax]
+    XS, YS = np.meshgrid(xs, ys)
+
+    good = ~np.isnan(subim.ravel())
+    xn = XS.ravel()[good]
+    yn = YS.ravel()[good]
+    meannear = np.nanmean(subim)
+    mednear = np.nanmedian(subim)
+
+    return xn, yn, meannear, mednear
+    
+def reconstruct_model_nparams(trendparams,m,X,Y):
+    # given a model and a number of trend parameters, reconstruct the trend
+    #
+    onemat = np.ones_like(X)
+    model = {
+    1: lambda m,X,Y,onemat: m[0]*onemat,
+    2: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X,
+    3: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X+m[2]*Y,
+    4: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X+m[2]*Y+m[3]*X**2,
+    5: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X+m[2]*Y+m[3]*X**2+m[4]*Y**2,
+    6: lambda m,X,Y,onemat: m[0]*onemat+m[1]*X+m[2]*Y+m[3]*X**2+m[4]*Y**2+m[5]*X*Y
+    }[trendparams](m,X,Y,onemat) 
+    
+    return model
+
+def reconstruct_model_nparams2(m, x, y):
+    print('RECONSTRUCT MODEL')
+    # New reconstruct, just needs m, X, and Y
+    # trendparams is inferred from length of m
+    # ones are generated based on X
+    
+    # Figure out terms
+    X,Y = np.meshgrid(x,y)
+    terms = np.array([np.ones_like(X), X, Y, X**2, Y**2, X*Y])
+    
+    # Truncate terms and multiply by coefficients, then sum
+    model = np.sum(m[:,None] * terms[:len(m)], axis=0)
+    
+    return model
+    
 def constrained_lsq(G,d,C,z=0,method='inv'):
     # minimize:   Gm = d 
     # subject to: Cm = z
@@ -170,67 +254,107 @@ def constrained_lsq(G,d,C,z=0,method='inv'):
         z=np.zeros((np.size(C,0),1)) #if z was given incorrectly (or it was left at the default zero)
     D=np.row_stack(( 2*np.dot(G.T,d),z ))
     #compute the model vector
-    print('clsq', K.shape, 'm = ', D.shape)
     if(method=='inv'):
         m=np.dot(np.linalg.inv(K),D)
     elif(method=='pinv'):
         m=np.dot(np.linalg.pinv(K),D)
     #separate the model from lagrange multipliers
     mm=m[0:np.size(G,1)]
-    return mm    
-    #ml=m[np.size(G,1),-1]
-    #return mm,ml
+    return mm
     
-def show_ts(ts):
-    fig = plt.figure(figsize=(5,5), dpi=216)
-    for i in range(len(ts)):
-        plt.subplot2grid((2,2), (i//2,i%2))
-        plt.imshow(ts[i], vmin=np.mean(ts)-4*np.std(ts), vmax=np.mean(ts)+3*np.std(ts))
-        plt.axis('off')
-    plt.tight_layout()
+def constrained_lsq2(G,d,C,z,method):
+    # MY STUFF
+    # Useful markers
+    nd = np.size(G, 0)
+    nt = np.size(G, 1)
+    ng = np.size(C, 0)
 
+    # Assemble K matrix
+    K = np.zeros((nt+ng, nt+ng))
+    K[:nt, :nt] = 2 * np.dot(G.T, G)
+    K[:nt, nt:] = C.T
+    K[nt:, :nt] = C
+
+    # Assemble D matrix
+    D = np.zeros((ng+nt, 1))
+    D[:nt] = 2 * np.dot(G.T, d.reshape((nd, 1)))
+    D[nt:] = z
+
+    # Check if we're safe to solve
+    if np.log10(np.linalg.cond(K)) > 8:
+        m, res, rank, sng = np.linalg.lstsq(K, D, None)
+    else:
+        m = np.linalg.solve(K, D)
+
+    return m[:nt]
+
+def imviz(x,y,z1,z2, sig, name):
+    
+    vl = np.nanmean(z1) - sig * np.nanstd(z1)
+    vh = np.nanmean(z1) + sig * np.nanstd(z1)
+    fig = plt.figure(figsize=(10,10), dpi=192)
+    ax = plt.subplot2grid((2,2),(0,0))
+    plt.pcolormesh(x, y, z1, shading='auto', norm=Normalize(vl, vh),
+                   cmap='Spectral')
+    plt.xlim(x.min(), x.max())
+    plt.ylim(y.min(), y.max())
+    plt.title('Mine')
+    
+    vl = np.nanmean(z2) - sig * np.nanstd(z2)
+    vh = np.nanmean(z2) + sig * np.nanstd(z2)
+    ax = plt.subplot2grid((2,2),(0,1))
+    plt.pcolormesh(x, y, z2, shading='auto', norm=Normalize(vl, vh),
+                   cmap='Spectral')
+    plt.xlim(x.min(), x.max())
+    plt.ylim(y.min(), y.max())
+    plt.title('Eric\'s')
+    
+    diff = z2 - z1
+    vs = sig * np.nanstd(diff)
+    ax = plt.subplot2grid((2,2),(1,0))
+    cb = plt.pcolormesh(x, y, diff, shading='auto', norm=Normalize(-vs, vs),
+                   cmap='Spectral')
+    
+    plt.xlim(x.min(), x.max())
+    plt.ylim(y.min(), y.max())
+    plt.title('Difference')
+    cax = plt.axes([0.54, 0.12, 0.03, 0.35])
+    plt.colorbar(cb, cax=cax)
+    
+    imname = name.replace('grd', 'png')
+    # plt.tight_layout()
+    plt.savefig(f'outims/{imname}', bbox_inches='tight')
+    plt.show()
+    
+def main():
+    # Get data
+    path = '/Users/bruzewskis/Documents/Projects/BISBAS/testing_fulldata/timeseries/'
+    # path = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_nodetrend/'
+    path2 = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_detrended/'
+    files = sorted(os.listdir(path))
+    
+    nanmap = np.zeros((3250,3900), dtype=int)
+    for file in files[10:11]:
+        print(file)
+        
+        # Get my data and detrend
+        with netcdf.netcdf_file(os.path.join(path, file), mode='r') as dat:
+            x = dat.variables['lon'][:]
+            y = dat.variables['lat'][:]
+            im = dat.variables['z'][:]
+        
+        # Get ground truth data
+        with netcdf.netcdf_file(os.path.join(path2, file), mode='r') as dat:
+            im_real = dat.variables['z'][:]
+        
+        # Generate some fake GPS points
+        gps = np.array([[255.3, 36.6, 10, 0]])
+        
+        imcorr = detrend_constraints(x, y, im, gps)
+        plt.hist((imcorr-im_real).ravel(), bins=np.linspace(-30,30), label='All', histtype=u'step')
+        plt.legend()
+        
+        return X,Y,imcorr, im_real
+            
 if __name__=='__main__':
-    
-    # Controls
-    detrend = True
-    constrained = True
-    gpsfile = 'gpsdat.csv'
-    
-    # Setup
-    xvec = pickle.load(open('pickled/xvec.p', 'rb'))
-    yvec = pickle.load(open('pickled/yvec.p', 'rb'))
-    ts = pickle.load(open('pickled/timeseries.p', 'rb'))
-    X,Y = np.meshgrid(xvec, yvec)
-    reflon = xvec[11]
-    reflat = yvec[15]
-    refnum = 10
-    
-    
-    # Look for a GPS file
-    if os.path.exists(gpsfile):
-        # If we find it, read it
-        print('Found a GPS file')
-        gpsdat = np.loadtxt(gpsfile)
-    else:
-        # If we don't we detrend to reference point
-        print('No GPS file found')
-        gpsdat = np.array([[reflon,reflat,refnum,0]])
-        # constrained = True
-        
-        if not constrained:
-            print('Forcing a constrained detrending')
-            constrained = True # force a constrained detrending
-        
-    # Perform detrending
-    if constrained:
-        print('Detrending using all data, with some constraint')
-        ts_d = detrend_constraints(X,Y,ts,gpsdat)
-    else:
-        print('Detrending using only data around gps points')
-        ts_d = detrend_fitpoints(X,Y,ts,gpsdat)
-        
-        
-    show_ts(ts_d)
-        
-        
-        
+    Xi,Yi,i1, i2 = main()

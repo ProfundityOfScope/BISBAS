@@ -15,10 +15,14 @@ import numpy as np
 import logging
 import argparse
 import configparser
+from tqdm import tqdm
+import multiprocessing as mp
+import pickle
 
 #import bifrost as bf
 
 #from bisblocks import *
+import fakeblocks
 import readers
 import helpers
 
@@ -103,6 +107,10 @@ def main(args):
     igram_ids = readers.read_igram_ids(SAT, intfs_dir, ids)
     logger.info(f'Read {len(igram_ids)} interferogram ids from {intfs}')
 
+    prm_dir = os.path.join(path, prmfile)
+    rad2mm_conv = readers.read_wavelength_conversion(prm_dir)
+    logger.info(f'Read unit conversion from {prmfile}')
+
     ##### Set up tools we'll use later #####
 
     # Figure out the order we'll want to read in the intfs
@@ -117,14 +125,14 @@ def main(args):
     logger.info(f'Created G-matrix with shape {G.shape}')
 
     # Extract reference point intf stack
-    temp_reader = readers.DataStack.read(files)
-    best_chunk_size = temp_reader.find_best_chunk_size(reflon, reflat, refnum)
-    ref_stack = temp_reader.data_near(reflon, reflat, best_chunk_size)
-    median_stack = np.median(ref_stack[:,:,2], axis=1)
+    read_stack = readers.DataStack.read(files)
+    best_chunk_size = read_stack.find_best_chunk_size(reflon, reflat, refnum)
+    ref_stack = read_stack.data_near(reflon, reflat, best_chunk_size)
+    median_stack = np.nanmedian(ref_stack[:,:,2], axis=1)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
     # Generate regions for model creation
-
+    # if we need to do this
 
     ##### Timeseries pipeline #####
 
@@ -150,6 +158,40 @@ def main(args):
         # we can maybe look at higher-order rates or peicewise stuff
 
         # Optionally plot
+
+    ##### FAKE PIPELINE TO DEMO #####
+
+    # Create a writer stack
+    outdir = os.path.join(os.getcwd(), 'timeseries')
+    os.makedirs(outdir, exist_ok=True)
+    write_stack = readers.DataStack.empty_like(read_stack, outdir, dates)
+
+    gulp = 1950
+    picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
+    #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
+    p = mp.Pool(mp.cpu_count()-1)
+
+    # Iterate over gulps
+    for i, pick in (pbar := tqdm(enumerate(picks), total=len(picks))):
+
+        # One day this will be a real pipeline
+        #b_read = fakeblocks.ReadBlock(['dir'], gulp)
+        b_read = read_stack[pick] # Kind of like a read block
+
+        b_reffed = fakeblocks.ReferenceBlock(b_read, median_stack)
+        b_checked = fakeblocks.CheckBlock(b_reffed) # Does nothing
+        b_ts = fakeblocks.GenTimeseriesBlock(b_checked, dates, G, p)
+        b_conv = fakeblocks.ConvertUnitsBlock(b_ts, rad2mm_conv)
+
+        #b_detrend = fakeblocks.DetrendBlock(b_conv, model=None)
+        #fakeblocks.WriteTimeseriesBlock(b_detrend)
+        #fakeblocks.WriteVelocityBlock(b_detrend, order)
+        write_stack[pick] = b_conv # Writes out to disk
+
+
+    # Do some plotting?
+    if makeplots:
+        logger.info('Plotting')
 
 if __name__=='__main__':
     globalstart=time.time()
