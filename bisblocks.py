@@ -9,6 +9,7 @@ Created on Sun Aug 14 23:38:03 2022
 
 import numpy as np
 import logging
+from datetime import datetime
 
 import bifrost.pipeline as bfp
 from bifrost.dtype import name_nbit2numpy
