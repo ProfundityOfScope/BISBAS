@@ -136,7 +136,7 @@ def main(args):
     #write_stack = readers.DataStack.empty_like(read_stack, outdir, dates)
 
     with bf.get_default_pipeline() as PIPELINE1:
-        b_read = bisblocks.IntfReadBlock([files], 1000, 1, 'f32')
+        b_read = bisblocks.IntfReadBlock([files], 1000, 1, 'f32', igram_ids)
         b_print = bisblocks.PrintStuffBlock(b_read)
 
         PIPELINE1.run()
