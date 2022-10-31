@@ -131,36 +131,6 @@ def main(args):
     median_stack = np.nanmedian(ref_stack[:,:,2], axis=1)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
-    # Generate regions for model creation
-    # if we need to do this
-
-    ##### Timeseries pipeline #####
-
-    # PIPELINE1: Model GPS points for detrending
-    #with something as PIPELINE1:
-
-        # Reference intfs to reference point
-
-        # Optionally check data
-
-        # Invert timeseries
-
-        # Convert rad->mm
-
-
-    # PIPELINE2: above + below 
-    #with something as PIPELINE2:
-
-        # Optionally detrend
-        # if we don't want to detrend, we can pass a null model
-
-        # Optionally calculate rate
-        # we can maybe look at higher-order rates or peicewise stuff
-
-        # Optionally plot
-
-    ##### FAKE PIPELINE TO DEMO #####
-
     # Create a writer stack
     outdir = os.path.join(os.getcwd(), 'timeseries')
     os.makedirs(outdir, exist_ok=True)
@@ -168,10 +138,12 @@ def main(args):
 
     gulp = 1950
     picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
-    #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
+    picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
     p = mp.Pool(mp.cpu_count()-1)
 
+
     # Iterate over gulps
+    # with blah as PIPELINE1:
     for i, pick in (pbar := tqdm(enumerate(picks), total=len(picks))):
 
         # One day this will be a real pipeline
@@ -183,15 +155,28 @@ def main(args):
         b_ts = fakeblocks.GenTimeseriesBlock(b_checked, dates, G, p)
         b_conv = fakeblocks.ConvertUnitsBlock(b_ts, rad2mm_conv)
 
-        #b_detrend = fakeblocks.DetrendBlock(b_conv, model=None)
-        #fakeblocks.WriteTimeseriesBlock(b_detrend)
-        #fakeblocks.WriteVelocityBlock(b_detrend, order)
-        write_stack[pick] = b_conv # Writes out to disk
+        # Writeblock
+        #bisblocks.GridWriteByPixel(b_conv, *args, **kwargs)
+        #bisblocks.MemMapWrite(b_conv, dothis=makeplots or detrend or calcrate) #<-optional
+        write_stack[pick] = b_conv # Writes out to disk, temporary for now
 
+    # Second pipeline over images for detrending and plotting
+    #with blah as PIPELINE2:
+        #im = bisblocks.MemMapRead(, style='image')
+        #im_gpu = blocks.copy(im, space='cuda')
+        
+        #im_detrend_gpu = bisblocks.DetrendImage(im_gpu, dothis=detrend) #<-optional
+        #im_detrend = blocks.copy(im_detrend_gpu, space='cuda_host')
+        #bisblocks.GridWriteByImage(im_detrend)
+        #bisblocks.MakeImagePlot(im_detrend or im?, dothis=makeplots) #<-optional but also multiple
 
-    # Do some plotting?
-    if makeplots:
-        logger.info('Plotting')
+    # Third pipeline for calcrate if we need to do that
+    #with blah as PIPELINE3:
+        #pixels = bisblocks.MemMapRead(, style='pixel')
+        #pixels_gpu = blocks.copy(pixels, space='cuda')
+        #vels_gpu = bisblocks.CalculateVels(pixels_gpu)
+        #vels = blocks.copy(vels_gpu, space='cuda')
+        #bisblocks.WriteVels(vels, doplot=makeplots)
 
 if __name__=='__main__':
     globalstart=time.time()

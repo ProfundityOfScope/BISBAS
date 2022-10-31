@@ -13,8 +13,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, LogNorm, SymLogNorm
 from matplotlib.patches import Rectangle
 
+from time import time
+import tracemalloc
 
-def detrend_constraints(x,y,image,gpsdat,trendparams=3, num=None):
+
+def detrend_constraints(x,y,image,gpsdat,trendparams=3):
     # for each date, remove a trend by fitting to the entire image,
     # but using a small number of GPS as constraints
     #
@@ -30,15 +33,12 @@ def detrend_constraints(x,y,image,gpsdat,trendparams=3, num=None):
     
     #estimate trends for each time series component
     #extract data around the GPS points for use in constraint equations
-    print('dummy1')
     C1, z1 = construct_gpsconstraint(0,image, gpsdat,X, Y)
-    print('dummy2')
     C2, z2 = construct_gpsconstraint2(image, gpsdat, x, y)
-    print('dummy3')
 
     # Construct image constraints
     G1, d1 = construct_imconstraint(image, x, y)
-    G2, d2 = construct_imconstraint2(image, x, y, num)  
+    G2, d2 = construct_imconstraint2(image, x, y)  
 
     # select the specified number of trend parameters
     G1 = G1[:, :trendparams]
@@ -84,18 +84,13 @@ def construct_imconstraint(image, x, y):
     return G, d
 
 
-def construct_imconstraint2(image, x, y, num=None):
+def construct_imconstraint2(image, x, y):
 
     yind, xind = np.where(~np.isnan(image))
     
-    if num is not None:
-        rc = np.random.randint(0, len(xind), num)
-        xind = xind[rc]
-        yind = yind[rc]
-    
     xG = x[xind]
     yG = y[yind]
-    oG = np.ones_like(xG, dtype=np.float)
+    oG = np.ones_like(xG, dtype=np.float64)
     d = image[yind, xind]
     G = np.column_stack([oG, xG, yG, xG**2, yG**2, xG*yG])
 
@@ -132,7 +127,6 @@ def construct_gpsconstraint(imagenum,image,gpsdat,X,Y):
 
 
 def construct_gpsconstraint2(image, gpsdat, x, y):
-    print('CONSTRUCT CONSTRAINTS')
     # create the matrices used to fit a trend to values near the gps points
     #
     for j in range(np.size(gpsdat, 0)):
@@ -216,7 +210,6 @@ def reconstruct_model_nparams(trendparams,m,X,Y):
     return model
 
 def reconstruct_model_nparams2(m, x, y):
-    print('RECONSTRUCT MODEL')
     # New reconstruct, just needs m, X, and Y
     # trendparams is inferred from length of m
     # ones are generated based on X
@@ -288,42 +281,22 @@ def constrained_lsq2(G,d,C,z,method):
 
     return m[:nt]
 
-def imviz(x,y,z1,z2, sig, name):
+def imviz(x,y,z1,z2, sig=2, name='dummy.grd'):
     
     vl = np.nanmean(z1) - sig * np.nanstd(z1)
     vh = np.nanmean(z1) + sig * np.nanstd(z1)
-    fig = plt.figure(figsize=(10,10), dpi=192)
+    fig = plt.figure(figsize=(12.5,10), dpi=192)
     ax = plt.subplot2grid((2,2),(0,0))
     plt.pcolormesh(x, y, z1, shading='auto', norm=Normalize(vl, vh),
                    cmap='Spectral')
+    plt.colorbar()
     plt.xlim(x.min(), x.max())
     plt.ylim(y.min(), y.max())
-    plt.title('Mine')
-    
-    vl = np.nanmean(z2) - sig * np.nanstd(z2)
-    vh = np.nanmean(z2) + sig * np.nanstd(z2)
-    ax = plt.subplot2grid((2,2),(0,1))
-    plt.pcolormesh(x, y, z2, shading='auto', norm=Normalize(vl, vh),
-                   cmap='Spectral')
-    plt.xlim(x.min(), x.max())
-    plt.ylim(y.min(), y.max())
-    plt.title('Eric\'s')
-    
-    diff = z2 - z1
-    vs = sig * np.nanstd(diff)
-    ax = plt.subplot2grid((2,2),(1,0))
-    cb = plt.pcolormesh(x, y, diff, shading='auto', norm=Normalize(-vs, vs),
-                   cmap='Spectral')
-    
-    plt.xlim(x.min(), x.max())
-    plt.ylim(y.min(), y.max())
-    plt.title('Difference')
-    cax = plt.axes([0.54, 0.12, 0.03, 0.35])
-    plt.colorbar(cb, cax=cax)
+    plt.title('Blah')
     
     imname = name.replace('grd', 'png')
     # plt.tight_layout()
-    plt.savefig(f'outims/{imname}', bbox_inches='tight')
+    plt.savefig(f'/Users/bruzewskis/Dropbox/bisbasgenmap.png', bbox_inches='tight')
     plt.show()
     
 def main():
@@ -333,28 +306,53 @@ def main():
     path2 = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_detrended/'
     files = sorted(os.listdir(path))
     
+    r = 500
+    xc = np.random.randint(r, 3900-r)
+    yc = np.random.randint(r, 2350-r)
+    print(f'{xc-r}:{xc+r}, {yc-r}:{yc+r}')
+    
     nanmap = np.zeros((3250,3900), dtype=int)
-    for file in files[10:11]:
-        print(file)
+    plt.figure(figsize=(8,5))
+    nf = 6
+    for file in files[nf:nf+1]:
         
+        num = None
         # Get my data and detrend
         with netcdf.netcdf_file(os.path.join(path, file), mode='r') as dat:
             x = dat.variables['lon'][:]
             y = dat.variables['lat'][:]
             im = dat.variables['z'][:]
+            
+        for xc in [x.min(), x.max()]:
+            for yc in [y.min(), y.max()]:
+                print(f'{yc} N {abs(xc-360)} W', end=', ')
+            
         
         # Get ground truth data
         with netcdf.netcdf_file(os.path.join(path2, file), mode='r') as dat:
             im_real = dat.variables['z'][:]
+            
         
         # Generate some fake GPS points
         gps = np.array([[255.3, 36.6, 10, 0]])
         
-        imcorr = detrend_constraints(x, y, im, gps)
-        plt.hist((imcorr-im_real).ravel(), bins=np.linspace(-30,30), label='All', histtype=u'step')
-        plt.legend()
+        im_corr = detrend_constraints(x, y, im, gps)
         
-        return X,Y,imcorr, im_real
-            
+    imviz(x,y,im_corr, im_real)
+        
+    return im_corr, im_real
+
+def method4(G, d):
+    
+    left = np.nansum(np.einsum('ij,jk->ijk', G.T, G), axis=1)
+    right = np.nansum(G.T * d, axis=1)
+    
+    return left, right
+
 if __name__=='__main__':
-    Xi,Yi,i1, i2 = main()
+    i1, i2 = main()
+    
+    
+    
+    
+    
