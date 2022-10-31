@@ -111,6 +111,6 @@ class PrintStuffBlock(bfp.SinkBlock):
     def on_data(self, ispan):
         now = datetime.now()
         if self.n_iter % 100 == 0:
-            print("[%s] %s" % (now, ispan.data))
+            print(f'{now} | {self.n_iter} | {ispan.data.shape}')
         self.n_iter += 1
     
