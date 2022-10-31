@@ -84,6 +84,8 @@ class IntfReadBlock(bfp.SourceBlock):
         nbits = int(self.dtype[len(dcode):])
         np_dtype = name_nbit2numpy(dcode, nbits)
 
+        blockslogger.debug('Am I making the block reader?')
+
         return IntfRead(filename, self.gulp_size, np_dtype, file_order=self.file_order)
 
     def on_sequence(self, ireader, filename):
