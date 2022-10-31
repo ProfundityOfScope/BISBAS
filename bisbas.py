@@ -18,7 +18,7 @@ import configparser
 import multiprocessing as mp
 import pickle
 
-#import bifrost as bf
+import bifrost as bf
 
 #from bisblocks import *
 import fakeblocks
@@ -137,7 +137,7 @@ def main(args):
 
     gulp = 1950
 
-    with bifrost.get_default_pipeline() as PIPELINE1:
+    with bf.get_default_pipeline() as PIPELINE1:
         pass
     #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
     #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
