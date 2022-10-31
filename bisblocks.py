@@ -111,7 +111,7 @@ class PrintStuffBlock(bfp.SinkBlock):
     def on_sequence(self, iseq):
         print("[%s]" % datetime.now())
         print(iseq.name)
-        pprint(iseq.header)
+        print(iseq.header)
         self.n_iter = 0
 
     def on_data(self, ispan):
