@@ -23,13 +23,10 @@ class IntfRead(object):
     '''
     File read object
     '''
-    def __init__(self, filename, gulp_size, dtype, ids, naming):
+    def __init__(self, filename, gulp_size, dtype, file_order):
 
         # Figure out order
-        files = []
-        for igram in igram_ids:
-            jd0, jd1 = jdates[igram]
-            files.append( f'{filename}/intf/{jd0}_{jd1}/{naming}' )
+        files = [ f'{filename}/{f}' for f in file_order ]
 
         # Initialize our reader object
         self.step = 0
@@ -72,12 +69,11 @@ class IntfReadBlock(bfp.SourceBlock):
         gulp_nframe (int): Number of frames in a gulp. (Ask Ben / Miles for good explanation)
         dtype (bifrost dtype string): dtype, e.g. f32, cf32
     """
-    def __init__(self, filenames, gulp_size, gulp_nframe, dtype, ids, naming, *args, **kwargs):
+    def __init__(self, filenames, gulp_size, gulp_nframe, dtype, file_order, *args, **kwargs):
         super().__init__(filenames, gulp_nframe, *args, **kwargs)
         self.dtype = dtype
         self.gulp_size = gulp_size
-        self.ids = ids
-        self.naming = naming
+        self.file_order = file_order
 
     def create_reader(self, filename):
         # Log line about reading
@@ -86,7 +82,7 @@ class IntfReadBlock(bfp.SourceBlock):
         nbits = int(self.dtype[len(dcode):])
         np_dtype = name_nbit2numpy(dcode, nbits)
 
-        return IntfRead(filename, self.gulp_size, np_dtype, ids=self.ids, naming=self.naming)
+        return IntfRead(filename, self.gulp_size, np_dtype, file_order=self.file_order)
 
     def on_sequence(self, ireader, filename):
         ohdr = {'name': filename,
