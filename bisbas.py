@@ -160,7 +160,7 @@ def main(args):
         # Writeblock
         #bisblocks.GridWriteByPixel(b_conv, *args, **kwargs)
         #bisblocks.MemMapWrite(b_conv, dothis=makeplots or detrend or calcrate) #<-optional
-        write_stack[pick] = b_conv # Writes out to disk, temporary for now
+        #write_stack[pick] = b_conv # Writes out to disk, temporary for now
 
     # Second pipeline over images for detrending and plotting
     #with blah as PIPELINE2:
