@@ -97,4 +97,20 @@ class IntfReadBlock(bfp.SourceBlock):
         else:
             return [0]
     
+class PrintStuffBlock(bfp.SinkBlock):
+    def __init__(self, iring, *args, **kwargs):
+        super(PrintStuffBlock, self).__init__(iring, *args, **kwargs)
+        self.n_iter = 0
+
+    def on_sequence(self, iseq):
+        print("[%s]" % datetime.now())
+        print(iseq.name)
+        pprint(iseq.header)
+        self.n_iter = 0
+
+    def on_data(self, ispan):
+        now = datetime.now()
+        if self.n_iter % 100 == 0:
+            print("[%s] %s" % (now, ispan.data))
+        self.n_iter += 1
     

@@ -136,7 +136,8 @@ def main(args):
     #write_stack = readers.DataStack.empty_like(read_stack, outdir, dates)
 
     with bf.get_default_pipeline() as PIPELINE1:
-        bisblocks.IntfReadBlock([files], 100, 1, 'f32')
+        b_read = bisblocks.IntfReadBlock([files], 100, 1, 'f32')
+        b_print = bisblocks.PrintStuffBlock(b_read)
     #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
     #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
     #p = mp.Pool(mp.cpu_count()-1)
