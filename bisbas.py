@@ -131,14 +131,12 @@ def main(args):
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
     # Create a writer stack
-    outdir = os.path.join(os.getcwd(), 'timeseries')
-    os.makedirs(outdir, exist_ok=True)
-    write_stack = readers.DataStack.empty_like(read_stack, outdir, dates)
-
-    gulp = 1950
+    #outdir = os.path.join(os.getcwd(), 'timeseries')
+    #os.makedirs(outdir, exist_ok=True)
+    #write_stack = readers.DataStack.empty_like(read_stack, outdir, dates)
 
     with bf.get_default_pipeline() as PIPELINE1:
-        bisblocks.IntfReadBlock([files])
+        bisblocks.IntfReadBlock([files], 100, 1, 'f32')
     #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
     #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
     #p = mp.Pool(mp.cpu_count()-1)
