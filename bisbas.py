@@ -137,23 +137,26 @@ def main(args):
     write_stack = readers.DataStack.empty_like(read_stack, outdir, dates)
 
     gulp = 1950
-    picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
-    picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
-    p = mp.Pool(mp.cpu_count()-1)
+
+    with bifrost.get_default_pipeline() as PIPELINE1:
+        pass
+    #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
+    #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
+    #p = mp.Pool(mp.cpu_count()-1)
 
 
     # Iterate over gulps
     # with blah as PIPELINE1:
-    for i, pick in (pbar := tqdm(enumerate(picks), total=len(picks))):
+    #for i, pick in (pbar := tqdm(enumerate(picks), total=len(picks))):
 
         # One day this will be a real pipeline
         #b_read = fakeblocks.ReadBlock(['dir'], gulp)
-        b_read = read_stack[pick] # Kind of like a read block
+        #b_read = read_stack[pick] # Kind of like a read block
 
-        b_reffed = fakeblocks.ReferenceBlock(b_read, median_stack)
-        b_checked = fakeblocks.CheckBlock(b_reffed) # Does nothing
-        b_ts = fakeblocks.GenTimeseriesBlock(b_checked, dates, G, p)
-        b_conv = fakeblocks.ConvertUnitsBlock(b_ts, rad2mm_conv)
+        #b_reffed = fakeblocks.ReferenceBlock(b_read, median_stack)
+        #b_checked = fakeblocks.CheckBlock(b_reffed) # Does nothing
+        #b_ts = fakeblocks.GenTimeseriesBlock(b_checked, dates, G, p)
+        #b_conv = fakeblocks.ConvertUnitsBlock(b_ts, rad2mm_conv)
 
         # Writeblock
         #bisblocks.GridWriteByPixel(b_conv, *args, **kwargs)
