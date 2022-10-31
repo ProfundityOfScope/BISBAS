@@ -23,29 +23,22 @@ class IntfRead(object):
     '''
     File read object
     '''
-    def __init__(self, filename, gulp_size, dtype, regions=None):
+    def __init__(self, filename, gulp_size, dtype):
         # Initialize our reader object
         self.step = 0
         self.reader = DataStack.read(filename)
         self.dtype = dtype
 
-        # We have a separate pipeline for streaming reference points
-        if self.regions is None:
-            # Double check this gulp-size is acceptable
-            imsize = self.reader.imsize
-            if imsize%gulp_size==0:
-                self.gulp_size = gulp_size
-            else:
-                raise ValueError('Gulp must evenly divide image size')
-
-            # Generate regions for entire image
-            self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
+        # Double check this gulp-size is acceptable
+        imsize = self.reader.imsize
+        if imsize%gulp_size==0:
+            self.gulp_size = gulp_size
         else:
-            # Manually set gulp size
-            self.gulp_size = len(regions[0])
+            raise ValueError('Gulp must evenly divide image size')
 
-            # Set regions from input
-            self.regions = regions
+        # Generate regions for entire image
+        self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
+
 
     def read(self):
         # Figure out what to read and read it
@@ -72,11 +65,10 @@ class IntfReadBlock(bfp.SourceBlock):
         gulp_nframe (int): Number of frames in a gulp. (Ask Ben / Miles for good explanation)
         dtype (bifrost dtype string): dtype, e.g. f32, cf32
     """
-    def __init__(self, filenames, gulp_size, gulp_nframe, dtype, regions=None, *args, **kwargs):
+    def __init__(self, filenames, gulp_size, gulp_nframe, dtype, *args, **kwargs):
         super().__init__(filenames, gulp_nframe, *args, **kwargs)
         self.dtype = dtype
         self.gulp_size = gulp_size
-        self.regions = regions
 
     def create_reader(self, filename):
         # Log line about reading
@@ -85,7 +77,7 @@ class IntfReadBlock(bfp.SourceBlock):
         nbits = int(self.dtype[len(dcode):])
         np_dtype = name_nbit2numpy(dcode, nbits)
 
-        return IntfRead(filename, self.gulp_size, np_dtype, regions=self.regions)
+        return IntfRead(filename, self.gulp_size, np_dtype)
 
     def on_sequence(self, ireader, filename):
         ohdr = {'name': filename,
