@@ -20,7 +20,7 @@ import pickle
 
 import bifrost as bf
 
-#from bisblocks import *
+import bisblocks
 import fakeblocks
 import readers
 import helpers
@@ -138,7 +138,7 @@ def main(args):
     gulp = 1950
 
     with bf.get_default_pipeline() as PIPELINE1:
-        pass
+        bisblocks.IntfReadBlock([files])
     #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
     #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
     #p = mp.Pool(mp.cpu_count()-1)
