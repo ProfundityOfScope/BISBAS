@@ -15,7 +15,6 @@ import numpy as np
 import logging
 import argparse
 import configparser
-from tqdm import tqdm
 import multiprocessing as mp
 import pickle
 
