@@ -75,6 +75,7 @@ class IntfReadBlock(bfp.SourceBlock):
         self.dtype = dtype
         self.gulp_size = gulp_size
         self.file_order = file_order
+        self.n_files = len(file_order)
 
     def create_reader(self, filename):
         # Log line about reading
@@ -89,7 +90,7 @@ class IntfReadBlock(bfp.SourceBlock):
         ohdr = {'name': filename,
                 '_tensor': {
                         'dtype':  self.dtype,
-                        'shape':  [-1, self.gulp_size, 3], #This line needs changing
+                        'shape':  [self.n_files, self.gulp_size, 3], #This line needs changing
                         },
                 }
         return [ohdr]
@@ -110,9 +111,6 @@ class PrintStuffBlock(bfp.SinkBlock):
         self.n_iter = 0
 
     def on_sequence(self, iseq):
-        print("[%s]" % datetime.now())
-        print(iseq.name)
-        print(iseq.header)
         self.n_iter = 0
 
     def on_data(self, ispan):
