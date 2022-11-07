@@ -99,7 +99,7 @@ class IntfReadBlock(bfp.SourceBlock):
 
     def on_data(self, reader, ospans):
         indata = reader.read()
-
+        blockslogger.debug('Reading something')
         if indata.shape[1] == self.gulp_pixels:
             ospans[0].data[...] = indata
             return [1]
