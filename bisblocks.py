@@ -54,6 +54,7 @@ class IntfRead(object):
 
             return d.astype(self.dtype)
         else:
+            blockslogger.debug(f'Entered stop condition on step {self.step}')
             return None
 
     def __enter__(self):
