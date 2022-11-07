@@ -49,7 +49,7 @@ class IntfRead(object):
         # Figure out what to read and read it
         d = self.reader[self.regions[self.step]]
         self.step += 1
-        print(d.shape)
+
         return d.astype(self.dtype)
 
     def __enter__(self):
@@ -89,7 +89,7 @@ class IntfReadBlock(bfp.SourceBlock):
         ohdr = {'name': filename,
                 '_tensor': {
                         'dtype':  self.dtype,
-                        'shape':  [len(self.file_order), self.gulp_size, 3], #This line needs changing
+                        'shape':  [-1, self.gulp_size, 3], #This line needs changing
                         },
                 }
         return [ohdr]
@@ -98,8 +98,8 @@ class IntfReadBlock(bfp.SourceBlock):
         indata = reader.read()
 
         if indata.shape[1] == self.gulp_size:
-            blockslogger.debug(f'BREAKS HERE {ospans[0].data.shape} and {indata.shape}')
-            ospans[0].data[...] = indata
+            blockslogger.debug(f'BREAKS HERE {ospans.data.shape} and {indata.shape}')
+            ospans.data[...] = indata
             return [1]
         else:
             return [0]
