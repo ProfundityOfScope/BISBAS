@@ -43,6 +43,7 @@ class IntfRead(object):
 
         # Generate regions for entire image
         self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
+        blockslogger.debug(f'Regions have shape {self.regions.shape}')
 
 
     def read(self):
