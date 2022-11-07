@@ -48,15 +48,10 @@ class IntfRead(object):
 
     def read(self):
         # Figure out what to read and read it
-        if self.step < self.regions.shape[0]:
-            d = self.reader[self.regions[self.step]]
-            self.step += 1
+        d = self.reader[self.regions[self.step]]
+        self.step += 1 if self.step < self.regions.shape[0] else 0
 
-            blockslogger.debug(f'Grabbed some data of shape {d.shape}')
-            return d.astype(self.dtype)
-        else:
-            blockslogger.debug(f'Entered stop condition on step {self.step}')
-            return None
+        return d.astype(self.dtype)
 
     def __enter__(self):
         return self
@@ -104,11 +99,9 @@ class IntfReadBlock(bfp.SourceBlock):
         indata = reader.read()
 
         if indata.shape[0] == self.gulp_pixels:
-            blockslogger.debug('Valid odata condition')
             ospans[0].data[...] = indata
             return [1]
         else:
-            blockslogger.debug('Invalid odata condition')
             return [0]
     
 class PrintStuffBlock(bfp.SinkBlock):
