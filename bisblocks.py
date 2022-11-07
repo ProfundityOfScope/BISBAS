@@ -51,6 +51,7 @@ class IntfRead(object):
         ind = self.step if self.step < self.regions.shape[0] else -1
         d = self.reader[self.regions[ind]]
         self.step += 1
+        blockslogger.debug(f'On step {self.step}')
 
         return d.astype(self.dtype)
 
