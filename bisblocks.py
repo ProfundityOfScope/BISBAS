@@ -47,10 +47,13 @@ class IntfRead(object):
 
     def read(self):
         # Figure out what to read and read it
-        d = self.reader[self.regions[self.step]]
-        self.step += 1
+        if self.step < self.regions.shape[0]:
+            d = self.reader[self.regions[self.step]]
+            self.step += 1
 
-        return d.astype(self.dtype)
+            return d.astype(self.dtype)
+        else:
+            return None
 
     def __enter__(self):
         return self
@@ -70,11 +73,11 @@ class IntfReadBlock(bfp.SourceBlock):
         gulp_nframe (int): Number of frames in a gulp. (Ask Ben / Miles for good explanation)
         dtype (bifrost dtype string): dtype, e.g. f32, cf32
     """
-    def __init__(self, filenames, gulp_size, gulp_nframe, dtype, file_order, *args, **kwargs):
-        super().__init__(filenames, gulp_nframe, *args, **kwargs)
+    def __init__(self, filenames, gulp_pixels, dtype, file_order, *args, **kwargs):
+        super().__init__(filenames, gulp_pixels, *args, **kwargs)
         self.dtype = dtype
-        self.gulp_size = gulp_size
         self.file_order = file_order
+        self.gulp_pixels = gulp_pixels
 
     def create_reader(self, filename):
         # Log line about reading
@@ -83,13 +86,13 @@ class IntfReadBlock(bfp.SourceBlock):
         nbits = int(self.dtype[len(dcode):])
         np_dtype = name_nbit2numpy(dcode, nbits)
 
-        return IntfRead(filename, self.gulp_size, np_dtype, file_order=self.file_order)
+        return IntfRead(filename, self.gulp_pixels, np_dtype, file_order=self.file_order)
 
     def on_sequence(self, ireader, filename):
         ohdr = {'name': filename,
                 '_tensor': {
                         'dtype':  self.dtype,
-                        'shape':  [-1, self.gulp_size, 3], #This line needs changing
+                        'shape':  [-1, len(self.file_order), 3], #This line needs changing
                         },
                 }
         return [ohdr]
@@ -97,8 +100,7 @@ class IntfReadBlock(bfp.SourceBlock):
     def on_data(self, reader, ospans):
         indata = reader.read()
 
-        if indata.shape[1] == self.gulp_size:
-            blockslogger.debug(f'BREAKS HERE {ospans[0].data.shape} and {indata.shape}')
+        if indata.shape[1] == self.gulp_pixels:
             ospans[0].data[...] = indata
             return [1]
         else:
