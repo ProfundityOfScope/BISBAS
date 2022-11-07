@@ -28,6 +28,7 @@ class IntfRead(object):
 
         # Figure out order
         files = [ f'{filename}/{f}' for f in file_order ]
+        self.files = files
 
         # Initialize our reader object
         self.step = 0
@@ -48,12 +49,14 @@ class IntfRead(object):
 
     def read(self):
         # Figure out what to read and read it
-        ind = self.step if self.step < self.regions.shape[0] else -1
-        d = self.reader[self.regions[ind]]
-        self.step += 1
-        blockslogger.debug(f'On step {self.step}')
+        if self.step < self.regions.shape[0]:
+            d = self.reader[self.regions[self.step]]
+            self.step += 1
+            blockslogger.debug(f'On step {self.step}')
 
-        return d.astype(self.dtype)
+            return d.astype(self.dtype)
+        else:
+            return np.empty((0, len(self.files), 3), dtype=self.dtype)
 
     def __enter__(self):
         return self
