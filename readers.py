@@ -207,7 +207,7 @@ class DataStack():
 
         newkey = self._validate_key(key)
 
-        data = np.empty((np.size(self, 0), len(newkey), np.size(self,2)))
+        data = np.empty((len(newkey), np.size(self,1), np.size(self,2)))
         for i, file in enumerate(self.file_objs):
             x = file.variables[self.xgrd]
             y = file.variables[self.ygrd]
@@ -228,17 +228,7 @@ class DataStack():
     def __setitem__(self, key: np.ndarray, value: float) -> None:
         '''TODO: Use this to dump data out to files '''
 
-        # Evaluate key to be safe
-        if isinstance(key, np.ndarray):
-            # All good, we like arrays
-            newkey = key
-        elif isinstance(key, slice):
-            # Slices are a pain with how we index, convert
-            newkey = np.arange(self.imsize)[key]
-        else:
-            # Yell if we have to
-            readerslogger.error('__getitem__ only accepts slices or arrays')
-            raise IndexError('__getitem__ only accepts slices or arrays')
+        newkey = self._validate_key(key)
 
         for i, file in enumerate(self.file_objs):
             
