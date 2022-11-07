@@ -48,8 +48,9 @@ class IntfRead(object):
 
     def read(self):
         # Figure out what to read and read it
-        d = self.reader[self.regions[self.step]]
-        self.step += 1 if self.step < self.regions.shape[0] else 0
+        ind = self.step if self.step < self.regions.shape[0] else -1
+        d = self.reader[self.regions[ind]]
+        self.step += 1
 
         return d.astype(self.dtype)
 
@@ -97,7 +98,7 @@ class IntfReadBlock(bfp.SourceBlock):
 
     def on_data(self, reader, ospans):
         indata = reader.read()
-        blockslogger.debug(f'read data of shape {indata.shape}')
+
         if indata.shape[0] == self.gulp_pixels:
             ospans[0].data[...] = indata
             return [1]
