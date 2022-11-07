@@ -64,7 +64,7 @@ class DataStack():
             raise KeyError('File gridding does not follow any known standard')
 
         # Figure out object properties
-        self.shape = (len(self.file_objs), self.imsize, 3)
+        self.shape = (self.imsize, len(self.file_objs), 3)
         self.size = np.product(self.shape)
         readerslogger.debug(f'Images will be treated as a {self.shape} object')
 
@@ -164,6 +164,23 @@ class DataStack():
         new_stack = cls(file_objs)
         return new_stack
 
+    def _validate_key(self, key: nd.ndarray | slice ) -> np.ndarray:
+
+
+        # Evaluate key to be safe
+        if isinstance(key, np.ndarray):
+            # All good, we like arrays
+            newkey = key
+        elif isinstance(key, slice):
+            # Slices are a pain with how we index, convert
+            newkey = np.arange(self.imsize)[key]
+        else:
+            # Yell if we have to
+            readerslogger.error('__getitem__ only accepts slices or arrays')
+            raise IndexError('__getitem__ only accepts slices or arrays')
+
+        return newkey
+
     def __getitem__(self, key: np.ndarray | slice ) -> np.ndarray:
         '''
         This is a specialized getitem, with the sole purpose of extracting
@@ -188,17 +205,7 @@ class DataStack():
 
         '''
 
-        # Evaluate key to be safe
-        if isinstance(key, np.ndarray):
-            # All good, we like arrays
-            newkey = key
-        elif isinstance(key, slice):
-            # Slices are a pain with how we index, convert
-            newkey = np.arange(self.imsize)[key]
-        else:
-            # Yell if we have to
-            readerslogger.error('__getitem__ only accepts slices or arrays')
-            raise IndexError('__getitem__ only accepts slices or arrays')
+        newkey = self._validate_key(key)
 
         data = np.empty((np.size(self, 0), len(newkey), np.size(self,2)))
         for i, file in enumerate(self.file_objs):
@@ -212,9 +219,9 @@ class DataStack():
             zind = np.unravel_index(newkey, z.shape)
             zt = z[zind].copy()
 
-            data[i,:,0] = xt
-            data[i,:,1] = yt
-            data[i,:,2] = zt
+            data[:,i,0] = xt
+            data[:,i,1] = yt
+            data[:,i,2] = zt
 
         return data
 
