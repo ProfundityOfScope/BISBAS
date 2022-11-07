@@ -139,7 +139,7 @@ def main(args):
         b_read = bisblocks.IntfReadBlock([path], 9750, 'f32', files)
         b_print = bisblocks.PrintStuffBlock(b_read)
 
-        PIPELINE1.run()
+    PIPELINE1.run()
     #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
     #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
     #p = mp.Pool(mp.cpu_count()-1)
