@@ -104,7 +104,7 @@ class IntfReadBlock(bfp.SourceBlock):
 
     def on_data(self, reader, ospans):
         indata = reader.read()
-        blockslogger.debug(f'indata has shape {indata.shape}')
+
         if indata.shape[0] == self.gulp_pixels:
             ospans[0].data[...] = indata
             return [1]
@@ -119,6 +119,7 @@ class PrintStuffBlock(bfp.SinkBlock):
     def on_sequence(self, iseq):
         self.n_iter = 0
         blockslogger.info(f'Call to on_sequence at {self.n_iter}')
+        blockslogger.info(f'On sequence looking header: {iseq.hdr}')
 
     def on_data(self, ispan):
         now = datetime.now()
