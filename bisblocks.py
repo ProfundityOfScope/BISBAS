@@ -104,9 +104,11 @@ class IntfReadBlock(bfp.SourceBlock):
         indata = reader.read()
 
         if indata.shape[1] == self.gulp_pixels:
+            blockslogger.debug('Valid odata condition')
             ospans[0].data[...] = indata
             return [1]
         else:
+            blockslogger.debug('Invalid odata condition')
             return [0]
     
 class PrintStuffBlock(bfp.SinkBlock):
