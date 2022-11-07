@@ -78,6 +78,9 @@ class IntfReadBlock(bfp.SourceBlock):
         self.dtype = dtype
         self.file_order = file_order
         self.gulp_pixels = gulp_pixels
+        
+        self.gulp_size = gulp_pixels
+        self.gulp_nframe = len(file_order)
 
     def create_reader(self, filename):
         # Log line about reading
