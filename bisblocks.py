@@ -89,7 +89,7 @@ class IntfReadBlock(bfp.SourceBlock):
         ohdr = {'name': filename,
                 '_tensor': {
                         'dtype':  self.dtype,
-                        'shape':  [-1, self.gulp_size, 3], #This line needs changing
+                        'shape':  [len(self.file_order), self.gulp_size, 3], #This line needs changing
                         },
                 }
         return [ohdr]
