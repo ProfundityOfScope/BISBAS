@@ -116,9 +116,10 @@ class PrintStuffBlock(bfp.SinkBlock):
 
     def on_sequence(self, iseq):
         self.n_iter = 0
+        blockslogger.info(f'Call to on_sequence at {self.n_iter}')
 
     def on_data(self, ispan):
         now = datetime.now()
-        print(f'{now} | {self.n_iter} | {ispan.data.shape}')
+        blockslogger.info(f'On {self.n_iter} | {ispan.data.shape}')
         self.n_iter += 1
     
