@@ -98,8 +98,8 @@ class IntfReadBlock(bfp.SourceBlock):
         indata = reader.read()
 
         if indata.shape[1] == self.gulp_size:
-            blockslogger.debug(f'BREAKS HERE {ospans.data.shape} and {indata.shape}')
-            ospans.data[...] = indata
+            blockslogger.debug(f'BREAKS HERE {ospans[0].data.shape} and {indata.shape}')
+            ospans[0].data[...] = indata
             return [1]
         else:
             return [0]
