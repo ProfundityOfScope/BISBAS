@@ -49,7 +49,7 @@ class IntfRead(object):
         # Figure out what to read and read it
         d = self.reader[self.regions[self.step]]
         self.step += 1
-        
+        print(d.shape)
         return d.astype(self.dtype)
 
     def __enter__(self):
@@ -82,8 +82,6 @@ class IntfReadBlock(bfp.SourceBlock):
         dcode = self.dtype.rstrip('0123456789')
         nbits = int(self.dtype[len(dcode):])
         np_dtype = name_nbit2numpy(dcode, nbits)
-
-        blockslogger.debug('Am I making the block reader?')
 
         return IntfRead(filename, self.gulp_size, np_dtype, file_order=self.file_order)
 
