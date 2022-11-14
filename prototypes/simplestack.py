@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import bifrost.pipeline as bfp
+from bifrost.blocks import SourceBlock
 from bifrost.dtype import name_nbit2numpy
 from datetime import datetime
 
@@ -44,7 +45,7 @@ class StackRead():
 	def __exit__(self, type, value, tb):
 		self.close()
 
-class StackReadBlock(bfp.SourceBlock):
+class StackReadBlock(SourceBlock):
 	""" Block for reading binary data from file and streaming it into a bifrost pipeline
 
 	Args:
@@ -54,7 +55,7 @@ class StackReadBlock(bfp.SourceBlock):
 		dtype (bifrost dtype string): dtype, e.g. f32, cf32
 	"""
 	def __init__(self, filenames, gulp_pixels, dtype, file_order, *args, **kwargs):
-		super().__init__(filenames, 1, *args, **kwargs)
+		super().__init__(gulp_pixels)
 		self.dtype = dtype
 		self.file_order = file_order
 		self.gulp_pixels = gulp_pixels
