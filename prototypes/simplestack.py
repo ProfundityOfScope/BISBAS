@@ -31,6 +31,7 @@ class StackRead():
 			self.step += 1
 			return outdata
 		except IndexError:
+			print(self.step, self.regions.shape)
 			return np.empty((0, len(self.file_objs)), dtype=self.dtype)
 
 	def __enter__(self):
