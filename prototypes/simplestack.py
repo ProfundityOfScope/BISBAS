@@ -24,10 +24,10 @@ class StackRead():
 		
 		try:
 			outdata = np.empty((self.gulp_size, len(self.file_objs)))
-			picks = self.regions(self.step)
+			picks = self.regions[self.step]
 			print(picks)
 			for i,fo in enumerate(self.file_objs):
-				outdata[:,i] = fo[self.regions[self.step]]
+				outdata[:,i] = fo[picks]
 
 			self.step += 1
 			return outdata
