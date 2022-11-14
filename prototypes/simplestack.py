@@ -19,7 +19,7 @@ class StackRead():
 		self.step = 0
 
 		self.regions = np.arange(0, fo.size).reshape(-1, gulp_size)
-		print(self.regions.shape)
+		print(self.regions[0]
 
 	def read(self):
 		
@@ -109,7 +109,7 @@ if __name__=='__main__':
 
 	with bfp.get_default_pipeline() as PIPELINE1:
 
-		b_read = StackReadBlock([path], 1000, 'f64', files)
+		b_read = StackReadBlock([path], 50, 'f64', files)
 		b_out = PrintStuffBlock(b_read)
 
 		PIPELINE1.run()
