@@ -32,7 +32,6 @@ class StackRead():
 			self.step += 1
 			return outdata
 		except IndexError:
-			print(self.step, self.regions.shape)
 			return np.empty((0, len(self.file_objs)), dtype=self.dtype)
 
 	def __enter__(self):
@@ -45,14 +44,7 @@ class StackRead():
 		self.close()
 
 class StackReadBlock(bfp.SourceBlock):
-	""" Block for reading binary data from file and streaming it into a bifrost pipeline
 
-	Args:
-		filenames (list): A list of filenames to open
-		gulp_size (int): Number of elements in a gulp (i.e. sub-array size)
-		gulp_nframe (int): Number of frames in a gulp. (Ask Ben / Miles for good explanation)
-		dtype (bifrost dtype string): dtype, e.g. f32, cf32
-	"""
 	def __init__(self, filenames, gulp_pixels, dtype, file_order, *args, **kwargs):
 		super().__init__(filenames, gulp_pixels, *args, **kwargs)
 		self.dtype = dtype
@@ -60,8 +52,6 @@ class StackReadBlock(bfp.SourceBlock):
 		self.gulp_pixels = gulp_pixels
 
 	def create_reader(self, filename):
-		# Log line about reading
-		# Do a lookup on bifrost datatype to numpy datatype
 		dcode = self.dtype.rstrip('0123456789')
 		nbits = int(self.dtype[len(dcode):])
 		np_dtype = name_nbit2numpy(dcode, nbits)
@@ -110,7 +100,7 @@ if __name__=='__main__':
 
 	with bfp.get_default_pipeline() as PIPELINE1:
 
-		b_read = StackReadBlock([path], 100, 'f64', files)
+		b_read = StackReadBlock([path], 3125, 'f64', files)
 		b_out = PrintStuffBlock(b_read)
 
 		PIPELINE1.run()

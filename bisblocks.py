@@ -111,7 +111,7 @@ class IntfReadBlock(bfp.SourceBlock):
         indata = reader.read()
 
         if indata.shape[0] == self.gulp_pixels:
-            blockslogger.debug(f'In on_data {ospans[0].data.shape}')
+            blockslogger.debug(f'In IntfReadBlock.on_data | shape: {ospans[0].data.shape} | mean: {np.mean(ospans[0].data[:,:,2])}')
             ospans[0].data[...] = indata
             return [1]
         else:
