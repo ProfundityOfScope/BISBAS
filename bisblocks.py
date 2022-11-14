@@ -48,16 +48,19 @@ class IntfRead(object):
 
 
     def read(self):
-        # Figure out what to read and read it
-        if self.step < self.regions.shape[0]:
-            d = self.reader[self.regions[self.step]]
+
+        try:
+            # We try to read files
+            picks = self.regions[self.step]
+            d = self.reader[picks]
             self.step += 1
 
             if self.step%100==0:
                 blockslogger.debug(f'On step {self.step}')
 
             return d.astype(self.dtype)
-        else:
+        except IndexError:
+            # Catch the index error if we're past the end
             return np.empty((0, len(self.files), 3), dtype=self.dtype)
 
     def __enter__(self):
