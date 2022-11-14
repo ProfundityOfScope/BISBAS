@@ -5,7 +5,7 @@ import bifrost.pipeline as bfp
 from bifrost.dtype import name_nbit2numpy
 from datetime import datetime
 
-def StackRead(object):
+class StackRead():
 
 	def __init__(self, dirname, gulp_size, dtype, forder):
 
