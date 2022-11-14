@@ -46,6 +46,8 @@ class IntfRead(object):
         self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
         blockslogger.debug(f'Regions have shape {self.regions.shape}')
 
+        blockslogger.debug(f'The first region: {self.regions[0]}')
+
 
     def read(self):
 
