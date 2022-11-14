@@ -19,13 +19,13 @@ class StackRead():
 		self.step = 0
 
 		self.regions = np.arange(0, fo.size).reshape(-1, gulp_size)
+		print(self.regions.shape)
 
 	def read(self):
 		
 		try:
 			outdata = np.empty((self.gulp_size, len(self.file_objs)))
 			picks = self.regions[self.step]
-			print(picks)
 			for i,fo in enumerate(self.file_objs):
 				outdata[:,i] = fo[picks]
 
