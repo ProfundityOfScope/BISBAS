@@ -90,14 +90,12 @@ class PrintStuffBlock(bfp.SinkBlock):
 		self.n_iter = 0
 
 	def on_sequence(self, iseq):
-		print("[%s]" % datetime.now())
-		print(iseq.name)
+		print(f'[{datetime.now():s}] ON_SEQUENCE: {iseq.name}')
 		self.n_iter = 0
 
 	def on_data(self, ispan):
 		now = datetime.now()
-		if self.n_iter % 100 == 0:
-			print("[%s] %s" % (now, ispan.data))
+		print(f'[{now:s}] {self.n_iter} : {ispan.data.shape}')
 		self.n_iter += 1
 
 if __name__=='__main__':
