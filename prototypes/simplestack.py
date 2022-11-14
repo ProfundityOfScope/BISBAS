@@ -61,7 +61,8 @@ class StackReadBlock(bfp.SourceBlock):
 		nbits = int(self.dtype[len(dcode):])
 		np_dtype = name_nbit2numpy(dcode, nbits)
 
-		return StackRead(dirname=filename, gulp_size=self.gulp_pixels, dtype=np_dtype, forder=self.file_order)
+		reader = StackRead(filename, self.gulp_pixels, np_dtype, self.file_order)
+		return reader
 
 	def on_sequence(self, ireader, filename):
 		ohdr = {'name': filename,
