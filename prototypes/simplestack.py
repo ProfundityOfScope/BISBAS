@@ -6,6 +6,7 @@ from bifrost.dtype import name_nbit2numpy
 from datetime import datetime
 
 def StackRead():
+	
 	def __init__(self, dirname, gulp_size, dtype, forder):
 
 		self.file_objs = []
