@@ -22,13 +22,15 @@ class StackRead():
 
 	def read(self):
 		
-		outdata = np.empty((self.gulp_size, len(self.file_objs)))
+		try:
+			outdata = np.empty((self.gulp_size, len(self.file_objs)))
+			for i,fo in enumerate(self.file_objs):
+				outdata[:,i] = fo[self.regions[self.step]]
 
-		for i,fo in enumerate(self.file_objs):
-			outdata[:,i] = fo[self.regions[self.step]]
-
-		self.step += 1
-		return outdata
+			self.step += 1
+			return outdata
+		except IndexError:
+			return np.empty((0, len(self.file_objs)), dtype=self.dtype)
 
 	def __enter__(self):
 		return self
