@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import bifrost.pipeline as bfp
-from bifrost.blocks import SourceBlock
+from bifrost.block import SourceBlock
 from bifrost.dtype import name_nbit2numpy
 from datetime import datetime
 
