@@ -6,7 +6,7 @@ from bifrost.dtype import name_nbit2numpy
 from datetime import datetime
 
 def StackRead():
-	
+
 	def __init__(self, dirname, gulp_size, dtype, forder):
 
 		self.file_objs = []
@@ -61,7 +61,7 @@ class StackReadBlock(bfp.SourceBlock):
 		nbits = int(self.dtype[len(dcode):])
 		np_dtype = name_nbit2numpy(dcode, nbits)
 
-		return StackRead(filename, self.gulp_pixels, np_dtype, self.file_order)
+		return StackRead(dirname=filename, gulp_size=self.gulp_pixels, dtype=np_dtype, forder=self.file_order)
 
 	def on_sequence(self, ireader, filename):
 		ohdr = {'name': filename,
