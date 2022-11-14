@@ -54,7 +54,7 @@ class StackReadBlock(bfp.SourceBlock):
 		dtype (bifrost dtype string): dtype, e.g. f32, cf32
 	"""
 	def __init__(self, filenames, gulp_pixels, dtype, file_order, *args, **kwargs):
-		super().__init__(filenames, gulp_pixels, *args, **kwargs)
+		super().__init__(filenames, 1, *args, **kwargs)
 		self.dtype = dtype
 		self.file_order = file_order
 		self.gulp_pixels = gulp_pixels
