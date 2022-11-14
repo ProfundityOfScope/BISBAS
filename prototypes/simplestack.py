@@ -24,6 +24,8 @@ class StackRead():
 		
 		try:
 			outdata = np.empty((self.gulp_size, len(self.file_objs)))
+			picks = self.regions(self.step)
+			print(picks)
 			for i,fo in enumerate(self.file_objs):
 				outdata[:,i] = fo[self.regions[self.step]]
 
@@ -90,12 +92,12 @@ class PrintStuffBlock(bfp.SinkBlock):
 		self.n_iter = 0
 
 	def on_sequence(self, iseq):
-		print(f'[{datetime.now():s}] ON_SEQUENCE: {iseq.name}')
+		print(f'[{datetime.now()}] ON_SEQUENCE: {iseq.name}')
 		self.n_iter = 0
 
 	def on_data(self, ispan):
 		now = datetime.now()
-		print(f'[{now:s}] {self.n_iter} : {ispan.data.shape}')
+		print(f'[{now}] {self.n_iter} : {ispan.data.shape}')
 		self.n_iter += 1
 
 if __name__=='__main__':
