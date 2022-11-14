@@ -94,13 +94,18 @@ class PrintStuffBlock(bfp.SinkBlock):
 if __name__=='__main__':
 
 	import os
+	import argparse as ap
+
+	parser = ap.ArgumentParser()
+	parser.add_argument('n', type=int)
+	args = parser.parse_args()
 
 	path = os.path.join(os.getcwd(), 'fakeims')
 	files = sorted([ os.path.join(path, f) for f in os.listdir(path) ])
 
 	with bfp.get_default_pipeline() as PIPELINE1:
 
-		b_read = StackReadBlock([path], 3125, 'f64', files)
+		b_read = StackReadBlock([path], args.n, 'f64', files)
 		b_out = PrintStuffBlock(b_read)
 
 		PIPELINE1.run()
