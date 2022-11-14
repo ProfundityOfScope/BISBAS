@@ -19,7 +19,7 @@ class StackRead():
 		self.step = 0
 
 		self.regions = np.arange(0, fo.size).reshape(-1, gulp_size)
-		print(self.regions[0]
+		print(self.regions[0])
 
 	def read(self):
 		
