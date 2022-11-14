@@ -46,7 +46,7 @@ class StackRead():
 class StackReadBlock(bfp.SourceBlock):
 
 	def __init__(self, filenames, gulp_pixels, dtype, file_order, *args, **kwargs):
-		super().__init__(filenames, 1*kwargs)
+		super().__init__(filenames, **kwargs)
 		self.dtype = dtype
 		self.file_order = file_order
 		self.gulp_pixels = gulp_pixels
