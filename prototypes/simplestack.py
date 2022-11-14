@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 import bifrost.pipeline as bfp
 from bifrost.dtype import name_nbit2numpy
-from datatime import datetime
+from datetime import datetime
 
 def StackRead():
 	def __init__(self, dirname, gulp_size, dtype, forder):
