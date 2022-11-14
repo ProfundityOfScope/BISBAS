@@ -97,7 +97,7 @@ class PrintStuffBlock(bfp.SinkBlock):
 
 	def on_data(self, ispan):
 		now = datetime.now()
-		print(f'[{now}] {self.n_iter} : {ispan.data.shape}')
+		print(f'[{now}] {self.n_iter} : {ispan.data.shape} : {np.mean(ispan.data):.2f}')
 		self.n_iter += 1
 
 if __name__=='__main__':
@@ -109,7 +109,7 @@ if __name__=='__main__':
 
 	with bfp.get_default_pipeline() as PIPELINE1:
 
-		b_read = StackReadBlock([path], 50, 'f64', files)
+		b_read = StackReadBlock([path], 100, 'f64', files)
 		b_out = PrintStuffBlock(b_read)
 
 		PIPELINE1.run()
