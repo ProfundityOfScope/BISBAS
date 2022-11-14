@@ -90,7 +90,6 @@ class PrintStuffBlock(bfp.SinkBlock):
 	def on_sequence(self, iseq):
 		print("[%s]" % datetime.now())
 		print(iseq.name)
-		pprint(iseq.header)
 		self.n_iter = 0
 
 	def on_data(self, ispan):
@@ -105,9 +104,6 @@ if __name__=='__main__':
 
 	path = os.path.join(os.getcwd(), 'fakeims')
 	files = sorted([ os.path.join(path, f) for f in os.listdir(path) ])
-
-	r = StackRead(path, 1000, np.float64, files)
-	print('DID THAT', '='*20)
 
 	with bfp.get_default_pipeline() as PIPELINE1:
 
