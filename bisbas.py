@@ -137,7 +137,7 @@ def main(args):
 
     with bf.get_default_pipeline() as PIPELINE1:
         b_read = bisblocks.IntfReadBlock([path], 13_000, 'f32', files)
-        b_reffed = bisblocks.ReferenceBlock(b_read, ref_stack)
+        b_reffed = bisblocks.ReferenceBlock(b_read, median_stack)
         b_print = bisblocks.PrintStuffBlock(b_reffed)
 
         PIPELINE1.run()
