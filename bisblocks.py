@@ -158,7 +158,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         zdata = idata[0,:,:,2]
         M = ~np.isnan(zdata)
         A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :])
-        B = np.nansum(self.G.T[:, :, None] * (M*dataz).T[None, :, :], axis=1).T
+        B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
 
         # Mask out low-rank values
         lowrank = np.linalg.matrix_rank(A) != len(dates) - 1
@@ -171,7 +171,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         # Turn it into a cumulative timeseries
         datediffs = (self.dates - np.roll(self.dates, 1))[1:]
         changes = datediffs[None,:] * model
-        ts = np.zeros((1,np.size(dataz,0), len(self.dates),3))
+        ts = np.zeros((1,np.size(zdata,0), len(self.dates),3))
         ts[:, :, 1:, 2] = np.cumsum(changes, axis=1)
 
         odata[...] = ts
