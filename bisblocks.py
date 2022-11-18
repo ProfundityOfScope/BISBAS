@@ -163,7 +163,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         print(A[0], B[0])
 
         # Mask out low-rank values
-        lowrank = np.linalg.matrix_rank(A) != self.nd - 1
+        lowrank = np.argwhere(np.linalg.matrix_rank(A) != self.nd - 1)[0]
         print(lowrank[0])
         A[lowrank,:,:] = np.eye(self.nd-1)
         B[lowrank,:] = np.full(self.nd-1, np.nan)
