@@ -144,7 +144,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
         ohdr['name'] += '_as_ts'
-        ohdr['_tensor']['shape'] = [-1, self.gulp_pixels, len(self.dates), 3]
+        ohdr['_tensor']['shape'][2] = len(self.dates)
         return ohdr
 
     def on_data(self, ispan, ospan):
