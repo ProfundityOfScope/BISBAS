@@ -84,7 +84,7 @@ class IntfReadBlock(bfp.SourceBlock):
         dtype (bifrost dtype string): dtype, e.g. f32, cf32
     """
     def __init__(self, filenames, gulp_pixels, dtype, file_order, *args, **kwargs):
-        super().__init__(filenames, gulp_pixels, *args, **kwargs)
+        super().__init__(filenames, 1, *args, **kwargs)
         self.dtype = dtype
         self.file_order = file_order
         self.gulp_pixels = gulp_pixels
@@ -102,7 +102,7 @@ class IntfReadBlock(bfp.SourceBlock):
         ohdr = {'name': filename,
                 '_tensor': {
                         'dtype':  self.dtype,
-                        'shape':  [-1, len(self.file_order), 3], #This line needs changing
+                        'shape':  [-1, self.gulp_pixels, len(self.file_order), 3], #This line needs changing
                         },
                 }
         return [ohdr]
@@ -119,7 +119,7 @@ class IntfReadBlock(bfp.SourceBlock):
     
 class PrintStuffBlock(bfp.SinkBlock):
     def __init__(self, iring, *args, **kwargs):
-        super(PrintStuffBlock, self).__init__(iring, *args, **kwargs)
+        super().__init__(iring, *args, **kwargs)
         self.n_iter = 0
 
     def on_sequence(self, iseq):
