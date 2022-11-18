@@ -63,7 +63,7 @@ class StackReadBlock(bfp.SourceBlock):
 		ohdr = {'name': filename,
 				'_tensor': {
 						'dtype':  self.dtype,
-						'shape':  [-1, len(self.file_order)],
+						'shape':  [-1, self.gulp_pixels, len(self.file_order)],
 						},
 				}
 		return [ohdr]
