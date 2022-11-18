@@ -120,7 +120,7 @@ class ReferenceBlock(bfp.TransformBlock):
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
         ohdr["name"] += "_referenced"
-        return ohdr
+        return [ohdr]
 
     def on_data(self, ispan, ospan):
         in_nframe  = ispan.nframe
@@ -142,12 +142,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         self.G = G
 
     def on_sequence(self, iseq):
-        ohdr = {'name': iseq.header['name']+'_as_ts',
-                '_tensor': {
-                        'dtype':  self.dtype,
-                        'shape':  [-1, self.gulp_pixels, len(self.dates), 3], #This line needs changing
-                        },
-                }
+        ohdr = deepcopy(iseq.header)
+        ohdr['name'] += '_as_ts'
+        ohdr['_tensor']['shape'] = [-1, self.gulp_pixels, len(self.dates), 3]
         return [ohdr]
 
     def on_data(self, ispan, ospan):
