@@ -158,9 +158,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         # Set up matrices to solve
         zdata = idata[0,:,:,2]
         M = ~np.isnan(zdata)
-        A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :])
-        print(A.dtype)
+        A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
         B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
+        print(A.dtype, B.dtype)
 
         # Mask out low-rank values
         lowrank = np.linalg.matrix_rank(A) != self.nd - 1
