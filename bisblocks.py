@@ -157,16 +157,17 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
         # Set up matrices to solve
         zdata = idata[0,:,:,2]
+        print(type(idata), type(zdata))
         M = ~np.isnan(zdata)
         A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
         B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
         print(A[0], B[0])
 
         # Mask out low-rank values
-        lowrank = np.argwhere(np.linalg.matrix_rank(A) != self.nd - 1)[0]
+        lowrank = np.linalg.matrix_rank(A) != self.nd - 1
         print(lowrank[0])
-        A[lowrank,:,:] = np.eye(self.nd-1)
-        B[lowrank,:] = np.full(self.nd-1, np.nan)
+        A[lowrank] = np.eye(self.nd-1)
+        B[lowrank] = np.full(self.nd-1, np.nan)
         print(A[0], B[0])
 
         # Solve
