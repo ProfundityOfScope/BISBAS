@@ -127,7 +127,9 @@ def main(args):
     read_stack = readers.DataStack.read(files)
     best_chunk_size = read_stack.find_best_chunk_size(reflon, reflat, refnum)
     ref_stack = read_stack.data_near(reflon, reflat, best_chunk_size)
-    median_stack = np.nanmedian(ref_stack[:,:,2], axis=1)
+    print(ref_stack.shape)
+    median_stack = np.nanmedian(ref_stack[:,:,2], axis=0)
+    print(median_stack.shape)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
     # Create a writer stack
@@ -135,12 +137,13 @@ def main(args):
     #os.makedirs(outdir, exist_ok=True)
     #write_stack = readers.DataStack.empty_like(read_stack, outdir, dates)
 
+    '''
     with bf.get_default_pipeline() as PIPELINE1:
         b_read = bisblocks.IntfReadBlock([path], 13_000, 'f32', files)
         b_reffed = bisblocks.ReferenceBlock(b_read, median_stack)
         b_print = bisblocks.PrintStuffBlock(b_reffed)
 
-        PIPELINE1.run()
+        PIPELINE1.run()'''
     #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
     #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
     #p = mp.Pool(mp.cpu_count()-1)
