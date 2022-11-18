@@ -139,12 +139,13 @@ class GenTimeseriesBlock(bfp.TransformBlock):
     def __init__(self, iring, dates, G, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.dates = dates
+        self.nd = len(dates)
         self.G = G
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
         ohdr['name'] += '_as_ts'
-        ohdr['_tensor']['shape'][2] = len(self.dates)
+        ohdr['_tensor']['shape'][2] = self.nd
         return ohdr
 
     def on_data(self, ispan, ospan):
@@ -161,9 +162,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
 
         # Mask out low-rank values
-        lowrank = np.linalg.matrix_rank(A) != len(self.dates) - 1
-        A[lowrank] = np.eye(len(dates)-1)
-        B[lowrank] = np.full(len(dates)-1, np.nan)
+        lowrank = np.linalg.matrix_rank(A) != self.nd - 1
+        A[lowrank] = np.eye(self.nd-1)
+        B[lowrank] = np.full(self.nd-1, np.nan)
 
         # Solve
         model = np.linalg.solve(A, B)
@@ -171,7 +172,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         # Turn it into a cumulative timeseries
         datediffs = (self.dates - np.roll(self.dates, 1))[1:]
         changes = datediffs[None,:] * model
-        ts = np.zeros((1,np.size(zdata,0), len(self.dates),3))
+        ts = np.zeros((1,np.size(zdata,0), self.nd,3))
         ts[:, :, 1:, 2] = np.cumsum(changes, axis=1)
 
         odata[...] = ts
