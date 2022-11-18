@@ -112,7 +112,7 @@ class IntfReadBlock(bfp.SourceBlock):
         else:
             return [0]
 
-class ReferenceBlock(bfp.MultiTransformBlock):
+class ReferenceBlock(bfp.TransformBlock):
     def __init__(self, iring, ref_stack, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.ref_stack = ref_stack
@@ -133,7 +133,7 @@ class ReferenceBlock(bfp.MultiTransformBlock):
         odata[:,:,:,2] -= self.ref_stack
         return out_nframe
 
-class GenTimeseriesBlock(bfp.MultiTransformBlock):
+class GenTimeseriesBlock(bfp.TransformBlock):
     ''' (1,npix,nintf,3) -> (1,npix,ndates,3) '''
 
     def __init__(self, iring, dates, G, *args, **kwargs):
