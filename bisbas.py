@@ -137,7 +137,8 @@ def main(args):
 
     with bf.get_default_pipeline() as PIPELINE1:
         b_read = bisblocks.IntfReadBlock([path], 13_000, 'f32', files)
-        b_print = bisblocks.PrintStuffBlock(b_read)
+        b_reffed = bisblocks.ReferenceBlock(b_read, ref_stack)
+        b_print = bisblocks.PrintStuffBlock(b_reffed)
 
         PIPELINE1.run()
     #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)

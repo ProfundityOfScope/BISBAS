@@ -9,6 +9,7 @@ Created on Sun Aug 14 23:38:03 2022
 
 import numpy as np
 import logging
+from copy import deepcopy
 from datetime import datetime
 
 import bifrost.pipeline as bfp
@@ -46,8 +47,6 @@ class IntfRead(object):
         self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
         blockslogger.debug(f'Regions have shape {self.regions.shape}')
 
-        blockslogger.debug(f'The first region: {self.regions[0]}')
-
 
     def read(self):
 
@@ -56,9 +55,6 @@ class IntfRead(object):
             picks = self.regions[self.step]
             d = self.reader[picks]
             self.step += 1
-
-            if self.step%100==0:
-                blockslogger.debug(f'On step {self.step}')
 
             return d.astype(self.dtype)
         except IndexError:
@@ -111,11 +107,31 @@ class IntfReadBlock(bfp.SourceBlock):
         indata = reader.read()
 
         if indata.shape[0] == self.gulp_pixels:
-            blockslogger.debug(f'In IntfReadBlock.on_data | shape: {ospans[0].data.shape} | mean: {np.mean(ospans[0].data[:,:,2])}')
             ospans[0].data[...] = indata
             return [1]
         else:
             return [0]
+
+class ReferenceBlock(bfp.TransformBlock):
+    def __init__(self, iring, ref_stack, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+        self.ref_stack = ref_stack
+
+    def on_sequence(self, iseq):
+        ohdr = deepcopy(iseq.header)
+        ohdr["name"] += "_referenced"
+        return ohdr
+
+    def on_data(self, ispan, ospan):
+        in_nframe  = ispan.nframe
+        out_nframe = in_nframe
+
+        idata = ispan.data
+        odata = ospan.data
+
+        odata[...] = idata
+        odata[:,:,:,2] -= self.ref_stack
+        return out_nframe
     
 class PrintStuffBlock(bfp.SinkBlock):
     def __init__(self, iring, *args, **kwargs):
