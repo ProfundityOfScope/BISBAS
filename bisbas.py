@@ -140,8 +140,8 @@ def main(args):
     with bf.get_default_pipeline() as PIPELINE1:
         b_read = bisblocks.IntfReadBlock([path], 13_000, 'f32', files)
         b_reffed = bisblocks.ReferenceBlock(b_read, median_stack)
-        b_print = bisblocks.PrintStuffBlock(b_reffed)
-
+        b_tseries = bisblocks.GenTimeseriesBlock(b_reffed, dates, G)
+        b_print = bisblocks.PrintStuffBlock(b_tseries)
         PIPELINE1.run()
     #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
     #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
