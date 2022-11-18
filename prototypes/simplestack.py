@@ -72,6 +72,8 @@ class StackReadBlock(bfp.SourceBlock):
 		indata = reader.read()
 
 		if indata.shape[0] == self.gulp_pixels:
+			print(type(ospans))
+			print(len(ospans))
 			ospans[0].data[...] = indata
 			return [1]
 		else:
