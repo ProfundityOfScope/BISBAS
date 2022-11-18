@@ -161,7 +161,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
 
         # Mask out low-rank values
-        lowrank = np.linalg.matrix_rank(A) != len(dates) - 1
+        lowrank = np.linalg.matrix_rank(A) != len(self.dates) - 1
         A[lowrank] = np.eye(len(dates)-1)
         B[lowrank] = np.full(len(dates)-1, np.nan)
 
