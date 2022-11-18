@@ -120,7 +120,7 @@ class ReferenceBlock(bfp.TransformBlock):
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
         ohdr["name"] += "_referenced"
-        return [ohdr]
+        return ohdr
 
     def on_data(self, ispan, ospan):
         in_nframe  = ispan.nframe
