@@ -112,7 +112,7 @@ class IntfReadBlock(bfp.SourceBlock):
         else:
             return [0]
 
-class ReferenceBlock(bfp.TransformBlock):
+class ReferenceBlock(bfp.MultiTransformBlock):
     def __init__(self, iring, ref_stack, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.ref_stack = ref_stack
@@ -131,6 +131,53 @@ class ReferenceBlock(bfp.TransformBlock):
 
         odata[...] = idata
         odata[:,:,:,2] -= self.ref_stack
+        return out_nframe
+
+class GenTimeseriesBlock(bfp.MultiTransformBlock):
+    ''' (1,npix,nintf,3) -> (1,npix,ndates,3) '''
+
+    def __init__(self, iring, dates, G, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+        self.dates = dates
+        self.G = G
+
+    def on_sequence(self, iseq):
+        ohdr = {'name': iseq.header['name']+'_as_ts',
+                '_tensor': {
+                        'dtype':  self.dtype,
+                        'shape':  [-1, self.gulp_pixels, len(self.dates), 3], #This line needs changing
+                        },
+                }
+        return [ohdr]
+
+    def on_data(self, ispan, ospan):
+        in_nframe  = ispan.nframe
+        out_nframe = in_nframe
+
+        idata = ispan.data
+        odata = ospan.data
+
+        # Set up matrices to solve
+        zdata = idata[0,:,:,2]
+        M = ~np.isnan(zdata)
+        A = np.matmul(G.T[None, :, :], M[:, :, None] * G[None, :, :])
+        B = np.nansum(G.T[:, :, None] * (M*dataz).T[None, :, :], axis=1).T
+
+        # Mask out low-rank values
+        lowrank = np.linalg.matrix_rank(A) != len(dates) - 1
+        A[lowrank] = np.eye(len(dates)-1)
+        B[lowrank] = np.full(len(dates)-1, np.nan)
+
+        # Solve
+        model = np.linalg.solve(A, B)
+
+        # Turn it into a cumulative timeseries
+        datediffs = (dates - np.roll(dates, 1))[1:]
+        changes = datediffs[None,:] * model
+        ts = np.zeros((1,np.size(dataz,0), len(dates),3))
+        ts[:, :, 1:, 2] = np.cumsum(changes, axis=1)
+
+        odata[...] = ts
         return out_nframe
     
 class PrintStuffBlock(bfp.SinkBlock):
