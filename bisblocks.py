@@ -13,6 +13,7 @@ from copy import deepcopy
 from datetime import datetime
 
 import bifrost.pipeline as bfp
+import bifrost
 from bifrost.dtype import name_nbit2numpy
 
 from readers import DataStack
@@ -156,19 +157,15 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         odata = ospan.data
 
         # Set up matrices to solve
-        zdata = idata[0,:,:,2]
-        print(type(idata), type(zdata))
+        zdata = np.array(idata[0,:,:,2])
         M = ~np.isnan(zdata)
         A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
         B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
-        print(A[0], B[0])
 
         # Mask out low-rank values
         lowrank = np.linalg.matrix_rank(A) != self.nd - 1
-        print(lowrank[0])
         A[lowrank] = np.eye(self.nd-1)
         B[lowrank] = np.full(self.nd-1, np.nan)
-        print(A[0], B[0])
 
         # Solve
         model = np.linalg.solve(A, B)
@@ -179,7 +176,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         ts = np.zeros((1,np.size(zdata,0), self.nd,3))
         ts[:, :, 1:, 2] = np.cumsum(changes, axis=1)
 
-        odata[...] = ts
+        odata[...] = bifrost.ndarray(ts)
         return out_nframe
     
 class PrintStuffBlock(bfp.SinkBlock):
