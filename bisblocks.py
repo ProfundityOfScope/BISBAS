@@ -167,6 +167,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         print(lowrank[0])
         A[lowrank] = np.eye(self.nd-1)
         B[lowrank] = np.full(self.nd-1, np.nan)
+        print(A[0], B[0])
 
         # Solve
         model = np.linalg.solve(A, B)
