@@ -127,7 +127,7 @@ def main(args):
     read_stack = readers.DataStack.read(files)
     best_chunk_size = read_stack.find_best_chunk_size(reflon, reflat, refnum)
     ref_stack = read_stack.data_near(reflon, reflat, best_chunk_size)
-    median_stack = np.nanmedian(ref_stack[:,:,2], axis=0)
+    median_stack = np.nanmedian(ref_stack, axis=0)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
     # Generates the timeseries
