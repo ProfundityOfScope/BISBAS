@@ -109,7 +109,7 @@ class IntfReadBlock(bfp.SourceBlock):
                 'ycoords':  ireader.ycoords.astype(np.float64).tobytes(),
                 'xname':    ireader.xname,
                 'yname':    ireader.yname,
-                'imshape':  ireader.imshape.tolist().
+                'imshape':  ireader.imshape.tolist(),
                 '_tensor':  {'dtype':  self.dtype,
                              'shape':  [-1, self.gulp_pixels, len(self.file_order)],
                             },
