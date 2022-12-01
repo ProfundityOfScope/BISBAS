@@ -110,7 +110,7 @@ class IntfReadBlock(bfp.SourceBlock):
                 'ycoords':  ireader.ycoords.astype(np.float64).tobytes(),
                 'xname':    ireader.xname,
                 'yname':    ireader.yname,
-                'imshape':  ireader.imshape,
+                'imshape':  np.array(ireader.imshape, dtype=int).tobytes(),
                 '_tensor':  {'dtype':  self.dtype,
                              'shape':  [-1, self.gulp_pixels, len(self.file_order)],
                             },
@@ -215,7 +215,7 @@ class WriteHDF5Block(bfp.SinkBlock):
 
         hdr = iseq.header
         numfiles = hdr['_tensor']['shape'][-1]
-        self.imshape = hdr['imshape']
+        self.imshape = np.frombuffer(hdr['imshape'], dtype=int)
         self.outshape = (numfiles,) + self.imshape
 
         data = self.fo.create_dataset('data', np.empty(self.outshape))
