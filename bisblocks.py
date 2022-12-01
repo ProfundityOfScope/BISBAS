@@ -12,6 +12,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime
 import h5py
+import os
 
 import bifrost.pipeline as bfp
 import bifrost
