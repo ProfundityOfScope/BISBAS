@@ -60,11 +60,11 @@ class DataStack():
             self.xgrd = 'x'
             self.ygrd = 'y'
         else:
-            readerslogger.debug('File gridding does not match any known standard')
+            readerslogger.error('File gridding does not match any known standard')
             raise KeyError('File gridding does not follow any known standard')
 
         # Figure out object properties
-        self.shape = (self.imsize, len(self.file_objs), 3)
+        self.shape = (self.imsize, len(self.file_objs))
         self.size = np.product(self.shape)
         readerslogger.debug(f'Images will be treated as a {self.shape} object')
 
@@ -207,7 +207,7 @@ class DataStack():
 
         newkey = self._validate_key(key)
 
-        data = np.empty((len(newkey), np.size(self,1), np.size(self,2)))
+        data = np.empty((len(newkey), np.size(self,1)))
         for i, file in enumerate(self.file_objs):
             x = file.variables[self.xgrd]
             y = file.variables[self.ygrd]
@@ -219,9 +219,7 @@ class DataStack():
             zind = np.unravel_index(newkey, z.shape)
             zt = z[zind].copy()
 
-            data[:,i,0] = xt
-            data[:,i,1] = yt
-            data[:,i,2] = zt
+            data[:,i] = zt
 
         return data
 
@@ -354,7 +352,7 @@ class DataStack():
             subdata = self.data_near(x0, y0, chunk_size)
 
             # Check to see if we have enough good pixels
-            num_good_per_date = np.sum(~np.isnan(subdata[:,:,2]), axis=0)
+            num_good_per_date = np.sum(~np.isnan(subdata), axis=0)
             mngpd = np.min(num_good_per_date)
             readerslogger.debug(f'chunk_size={chunk_size} worst intf has {mngpd} valid pixels')
             if np.all(num_good_per_date >= num):
@@ -376,7 +374,7 @@ def read_baselines(fname):
     read the baseline table and store in date-sorted order
     '''
 
-    readerslogger.info('Reading some shit')
+    readerslogger.info('Reading the baselines')
     strdat=np.genfromtxt(fname,str,usecols=0)
     numdat=np.genfromtxt(fname,usecols=(1,2,4))
     sortorder=np.argsort(numdat[:,1])
@@ -421,28 +419,48 @@ def read_wavelength_conversion(prmfile: str) -> float:
     readerslogger.debug(f'Wavelength is {wavelen}')
     return conv
 
+def get_data_near(file, x0, y0, chunk_size):
+
+    # This is how we would deal with a non-uniform spacing
+    xp = np.interp(x0, x, np.arange(len(x)))
+    yp = np.interp(y0, y, np.arange(len(y)))
+    coord_str = f'x:{xp:.0f}, y:{yp:.0f}'
+    readerslogger.debug(f'Requested reference around pixel {coord_str}')
+
+    # Check if the position is outside of image
+    if any([xp <= chunk_size, xp >= len(x)-chunk_size,
+            yp <= chunk_size, yp >= len(y-chunk_size)]):
+        readerslogger.error('This position too close to edge of image')
+        raise ValueError('This position too close to edge of image')
+
+    # Find corners
+    xmin = np.ceil( xp - chunk_size/2 ).astype(int)
+    ymin = np.ceil( yp - chunk_size/2 ).astype(int)
+    xmax = xmin + chunk_size
+    ymax = ymin + chunk_size
+
+    return arr[:,ymin:ymax,xmin:xmax]
+
 def stack_read_test():
-    ''' Dummy doc string '''
-    tgt = '/Users/bruzewskis/Documents/Projects/BISBAS/testing/intf/'
-    files = []
-    for r,_,f in os.walk(tgt):
-        for file in f:
-            if file.endswith('.grd'):
-                path = os.path.join(r, file)
-                files.append(path)
-
-    b = DataStack.read(files)
-    print(f'Read in a stack with shape {b.shape}')
-
-    N = 10
-    xr = np.random.normal(255.3, 0.1, N)
-    yr = np.random.normal(36.6, 0.1, N)
-
-    rads = np.zeros(N, dtype=int)
-    for i in range(N):
-        rads[i] = b.find_best_chunk_size(xr[i], yr[i], 10)
-    print(f'Minimum radius we\'d need is {max(rads)}')
     
+    import h5py
+
+    xa = np.linspace(110.4, 110.5, 2000)
+    ya = np.linspace(36.2, 36.3, 2100)
+    os.remove('test.hdf5')
+    with h5py.File('test.hdf5', 'a') as f:
+        hx = f.create_dataset('x', data=xa)
+        hx.attrs += {'name': 'lon'}
+        hy = f.create_dataset('y', data=ya)
+        hy.attrs += {'name': 'lat'}
+        hz = f.create_dataset('z', data=np.random.random((10,ya.size,xa.size)))
+        hz.attrs += {'name': 'LOS-displace'}
+
+    n = 10
+    gps_x = np.random.choice(xa, n)
+    gps_y = np.random.choice(ya, n)
+
+    test = get_data_near('test.hdf5', gps_x, gps_y)
 
 if __name__=='__main__':
     stack_read_test()

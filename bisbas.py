@@ -130,17 +130,22 @@ def main(args):
     median_stack = np.nanmedian(ref_stack[:,:,2], axis=0)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
-    # Create a writer stack
-    #outdir = os.path.join(os.getcwd(), 'timeseries')
-    #os.makedirs(outdir, exist_ok=True)
-    #write_stack = readers.DataStack.empty_like(read_stack, outdir, dates)
-
+    # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
+        # Do stuff blocks
         b_read = bisblocks.IntfReadBlock([path], 13_000, 'f32', files)
         b_reffed = bisblocks.ReferenceBlock(b_read, median_stack)
         b_tseries = bisblocks.GenTimeseriesBlock(b_reffed, dates, G)
+
+        # Sink blocks
         b_print = bisblocks.PrintStuffBlock(b_tseries)
+        b_accum = bisblocks.AccumulateDotBlock(b_tseries)
+        b_write = bisblocks.WriteHDF5Block(b_tseries, 'timeseries.h5')
         PIPELINE1.run()
+
+        thing = b_accum.n_iter
+
+    print('I accumulated this:', thing)
     #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
     #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
     #p = mp.Pool(mp.cpu_count()-1)

@@ -11,6 +11,7 @@ import numpy as np
 import logging
 from copy import deepcopy
 from datetime import datetime
+import h5py
 
 import bifrost.pipeline as bfp
 import bifrost
@@ -36,6 +37,13 @@ class IntfRead(object):
         self.step = 0
         self.reader = DataStack.read(files)
         self.dtype = dtype
+
+        # Keep track of things we'll need to preserve
+        self.xcoords = self.reader._xarr
+        self.xname = self.reader.xgrd
+        self.ycoords = self.reader._yarr
+        self.yname = self.reader.ygrd
+        self.imshape = self.reader.imshape
 
         # Double check this gulp-size is acceptable
         imsize = self.reader.imsize
@@ -96,11 +104,15 @@ class IntfReadBlock(bfp.SourceBlock):
         return IntfRead(filename, self.gulp_pixels, np_dtype, file_order=self.file_order)
 
     def on_sequence(self, ireader, filename):
-        ohdr = {'name': filename,
-                '_tensor': {
-                        'dtype':  self.dtype,
-                        'shape':  [-1, self.gulp_pixels, len(self.file_order), 3], #This line needs changing
-                        },
+        ohdr = {'name':     filename,
+                'xcoords':  ireader.xcoords.astype(np.float64).tobytes(),
+                'ycoords':  ireader.ycoords.astype(np.float64).tobytes(),
+                'xname':    ireader.xname,
+                'yname':    ireader.yname,
+                'imshape':  ireader.imshape.tolist().
+                '_tensor':  {'dtype':  self.dtype,
+                             'shape':  [-1, self.gulp_pixels, len(self.file_order)],
+                            },
                 }
         return [ohdr]
 
@@ -135,7 +147,7 @@ class ReferenceBlock(bfp.TransformBlock):
         return out_nframe
 
 class GenTimeseriesBlock(bfp.TransformBlock):
-    ''' (1,npix,nintf,3) -> (1,npix,ndates,3) '''
+    ''' (1,npix,nintf) -> (1,npix,ndates) '''
 
     def __init__(self, iring, dates, G, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -146,6 +158,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
         ohdr['name'] += '_as_ts'
+        ohdr['tcoords'] = self.dates.astype(np.float64).tobytes()
+        ohdr['tname'] = 'time'
         ohdr['_tensor']['shape'][2] = self.nd
         return ohdr
 
@@ -157,7 +171,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         odata = ospan.data
 
         # Set up matrices to solve
-        zdata = np.array(idata[0,:,:,2])
+        zdata = np.array(idata[0])
         M = ~np.isnan(zdata)
         A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
         B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
@@ -173,11 +187,76 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         # Turn it into a cumulative timeseries
         datediffs = (self.dates - np.roll(self.dates, 1))[1:]
         changes = datediffs[None,:] * model
-        ts = np.zeros((1,np.size(zdata,0), self.nd,3))
-        ts[:, :, 1:, 2] = np.cumsum(changes, axis=1)
+        ts = np.zeros((1,np.size(zdata,0), self.nd))
+        ts[:,:,1:] = np.cumsum(changes, axis=1)
 
         odata[...] = bifrost.ndarray(ts)
         return out_nframe
+
+class WriteHDF5Block(bfp.SinkBlock):
+    def __init__(self, iring, name, overwrite=True, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+        self.head = 0
+
+        if os.path.exists(name):
+            if overwrite:
+                blockslogger.debug('Overwriting existing file')
+                os.remove(name)
+            else:
+                blockslogger.error('File already exists, try overwrite=True')
+                raise OSError('File already exists, try overwrite=True')
+
+        self.fo = h5py.File(name, mode='a')
+
+    def on_sequence(self, iseq):
+        # Start counting
+        self.head = 0
+
+        hdr = iseq.header
+        numfiles = hdr['_tensor']['shape'][-1]
+        self.imshape = hdr['imshape']
+        self.outshape = (numfiles,) + self.imshape
+
+        data = self.fo.create_dataset('data', np.empty(self.outshape))
+
+        # Create some data
+        ft = self.fo.create_dataset('t', data=np.frombuffer(hdr['tcoords'], dtype=np.float64))
+        ft.make_scale('t coordinate')
+        data.dims[0].attach_scale(ft)
+        data.dims[0].label = hdr['tname']
+
+        fx = self.fo.create_dataset('x', data=np.frombuffer(hdr['xcoords'], dtype=np.float64))
+        fx.make_scale('x coordinate')
+        data.dims[1].attach_scale(fx)
+        data.dims[1].label = hdr['xname']
+
+        fy = self.fo.create_dataset('y', data=np.frombuffer(hdr['ycoords'], dtype=np.float64))
+        fy.make_scale('y coordinate')
+        data.dims[2].attach_scale(fy)
+        data.dims[2].label = hdr['yname']
+
+    def on_data(self, ispan):
+
+        # Find where to place data
+        i,j = np.unravel_index(self.head, self.imshape)
+
+        # Place data there
+        self.fo['data'][:,i,j] = ispan.data
+
+        # Move write head
+        self.head += ispan.data.shape[1]
+
+class AccumulateDotBlock(bfp.SinkBlock):
+
+    def __init__(self, iring, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+        self.n_iter = 0
+
+    def on_sequence(self, iseq):
+        self.n_iter += 1
+
+    def on_data(self, ispan):
+        self.n_iter += 1
     
 class PrintStuffBlock(bfp.SinkBlock):
     def __init__(self, iring, *args, **kwargs):

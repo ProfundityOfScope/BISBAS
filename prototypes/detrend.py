@@ -323,10 +323,6 @@ def main():
             y = dat.variables['lat'][:]
             im = dat.variables['z'][:]
             
-        for xc in [x.min(), x.max()]:
-            for yc in [y.min(), y.max()]:
-                print(f'{yc} N {abs(xc-360)} W', end=', ')
-            
         
         # Get ground truth data
         with netcdf.netcdf_file(os.path.join(path2, file), mode='r') as dat:
