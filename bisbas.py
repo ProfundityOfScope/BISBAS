@@ -146,46 +146,6 @@ def main(args):
         thing = b_accum.n_iter
 
     print('I accumulated this:', thing)
-    #picks = np.arange(0, read_stack.imsize).reshape(-1, gulp)
-    #picks = picks[picks.shape[0]//2-50 : picks.shape[0]//2+50]
-    #p = mp.Pool(mp.cpu_count()-1)
-
-
-    # Iterate over gulps
-    # with blah as PIPELINE1:
-    #for i, pick in (pbar := tqdm(enumerate(picks), total=len(picks))):
-
-        # One day this will be a real pipeline
-        #b_read = fakeblocks.ReadBlock(['dir'], gulp)
-        #b_read = read_stack[pick] # Kind of like a read block
-
-        #b_reffed = fakeblocks.ReferenceBlock(b_read, median_stack)
-        #b_checked = fakeblocks.CheckBlock(b_reffed) # Does nothing
-        #b_ts = fakeblocks.GenTimeseriesBlock(b_checked, dates, G, p)
-        #b_conv = fakeblocks.ConvertUnitsBlock(b_ts, rad2mm_conv)
-
-        # Writeblock
-        #bisblocks.GridWriteByPixel(b_conv, *args, **kwargs)
-        #bisblocks.MemMapWrite(b_conv, dothis=makeplots or detrend or calcrate) #<-optional
-        #write_stack[pick] = b_conv # Writes out to disk, temporary for now
-
-    # Second pipeline over images for detrending and plotting
-    #with blah as PIPELINE2:
-        #im = bisblocks.MemMapRead(, style='image')
-        #im_gpu = blocks.copy(im, space='cuda')
-        
-        #im_detrend_gpu = bisblocks.DetrendImage(im_gpu, dothis=detrend) #<-optional
-        #im_detrend = blocks.copy(im_detrend_gpu, space='cuda_host')
-        #bisblocks.GridWriteByImage(im_detrend)
-        #bisblocks.MakeImagePlot(im_detrend or im?, dothis=makeplots) #<-optional but also multiple
-
-    # Third pipeline for calcrate if we need to do that
-    #with blah as PIPELINE3:
-        #pixels = bisblocks.MemMapRead(, style='pixel')
-        #pixels_gpu = blocks.copy(pixels, space='cuda')
-        #vels_gpu = bisblocks.CalculateVels(pixels_gpu)
-        #vels = blocks.copy(vels_gpu, space='cuda')
-        #bisblocks.WriteVels(vels, doplot=makeplots)
 
 if __name__=='__main__':
     globalstart=time.time()

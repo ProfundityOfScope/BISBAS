@@ -63,4 +63,6 @@ with h5py.File(tgt, 'a') as f:
     for i,dim in enumerate(fd.dims):
         print(f'Data dim[{i}] scales:', dim.keys())
     timerecov = fd.dims[0].values()[0]
-    # print(timerecov[])
+    
+    print(flon.shape)
+    print(flat.shape)

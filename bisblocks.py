@@ -105,17 +105,21 @@ class IntfReadBlock(bfp.SourceBlock):
         return IntfRead(filename, self.gulp_pixels, np_dtype, file_order=self.file_order)
 
     def on_sequence(self, ireader, filename):
+
+        ireader.xcoords.tofile('tmp_x.dat')
+        ireader.ycoords.tofile('tmp_y.dat')
+
         ohdr = {'name':     filename,
-                'xcoords':  ireader.xcoords.astype(np.float64).tobytes(),
-                'ycoords':  ireader.ycoords.astype(np.float64).tobytes(),
+                'xfile':    'tmp_x.dat',
+                'xdtype':   ireader.xcoords.dtype,
                 'xname':    ireader.xname,
+                'yfile':    'tmp_y.dat',
+                'ydtype':   ireader.ycoords.dtype,
                 'yname':    ireader.yname,
-                'imshape':  np.array(ireader.imshape, dtype=int).tobytes(),
                 '_tensor':  {'dtype':  self.dtype,
                              'shape':  [-1, self.gulp_pixels, len(self.file_order)],
                             },
                 }
-        print(ohdr)
         return [ohdr]
 
     def on_data(self, reader, ospans):
@@ -158,9 +162,14 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         self.G = G
 
     def on_sequence(self, iseq):
+
+        self.dates.tofile('tmp_t.dat')
+
         ohdr = deepcopy(iseq.header)
         ohdr['name'] += '_as_ts'
-        ohdr['tcoords'] = self.dates.astype(np.float64).tobytes()
+
+        ohdr['tfile'] = 'tmp_t.dat'
+        ohdr['tdtype'] = self.dates.dtype
         ohdr['tname'] = 'time'
         ohdr['_tensor']['shape'][2] = self.nd
         return ohdr
@@ -208,39 +217,39 @@ class WriteHDF5Block(bfp.SinkBlock):
                 blockslogger.error('File already exists, try overwrite=True')
                 raise OSError('File already exists, try overwrite=True')
 
+        # Open file
         self.fo = h5py.File(name, mode='a')
 
     def on_sequence(self, iseq):
-        # Start counting
+
+        # Start counting and find the header
         self.head = 0
-
         hdr = iseq.header
-        numfiles = hdr['_tensor']['shape'][-1]
-        self.imshape = np.frombuffer(hdr['imshape'], dtype=int)
-        self.outshape = (numfiles,) + self.imshape
 
-        data = self.fo.create_dataset('data', np.empty(self.outshape))
-
-        # Create some data
-        ft = self.fo.create_dataset('t', data=np.frombuffer(hdr['tcoords'], dtype=np.float64))
+        # Create the axes
+        ft = self.fo.create_dataset('t', data=np.fromfile(hdr['tfile'], dtype=hdr['tdtype']))
         ft.make_scale('t coordinate')
+
+        fx = self.fo.create_dataset('x', data=np.fromfile(hdr['xfile'], dtype=hdr['xdtype']))
+        fx.make_scale('x coordinate')
+
+        fy = self.fo.create_dataset('y', data=np.fromfile(hdr['yfile'], dtype=hdr['ydtype']))
+        fy.make_scale('y coordinate')
+
+        self.shape = ( ft.size, fy.size, fx.size)
+        data = self.fo.create_dataset('data', np.empty(self.shape))
         data.dims[0].attach_scale(ft)
         data.dims[0].label = hdr['tname']
-
-        fx = self.fo.create_dataset('x', data=np.frombuffer(hdr['xcoords'], dtype=np.float64))
-        fx.make_scale('x coordinate')
         data.dims[1].attach_scale(fx)
         data.dims[1].label = hdr['xname']
-
-        fy = self.fo.create_dataset('y', data=np.frombuffer(hdr['ycoords'], dtype=np.float64))
-        fy.make_scale('y coordinate')
         data.dims[2].attach_scale(fy)
         data.dims[2].label = hdr['yname']
 
     def on_data(self, ispan):
 
         # Find where to place data
-        i,j = np.unravel_index(self.head, self.imshape)
+        i,j = np.unravel_index(self.head, self.shape)
+        blockslogger.debug('Write head is at', self.head)
 
         # Place data there
         self.fo['data'][:,i,j] = ispan.data
@@ -258,6 +267,7 @@ class AccumulateDotBlock(bfp.SinkBlock):
         self.n_iter += 1
 
     def on_data(self, ispan):
+        blockslogger.debug('Accumulate has been called', self.n_iter, 'times')
         self.n_iter += 1
     
 class PrintStuffBlock(bfp.SinkBlock):
