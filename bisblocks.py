@@ -229,14 +229,17 @@ class WriteHDF5Block(bfp.SinkBlock):
         # Create the axes
         ft = self.fo.create_dataset('t', data=np.fromfile(hdr['tfile'], dtype=hdr['tdtype']))
         ft.make_scale('t coordinate')
+        os.remove(hdr['tfile'])
 
         fx = self.fo.create_dataset('x', data=np.fromfile(hdr['xfile'], dtype=hdr['xdtype']))
         fx.make_scale('x coordinate')
+        os.remove(hdr['xfile'])
 
         fy = self.fo.create_dataset('y', data=np.fromfile(hdr['yfile'], dtype=hdr['ydtype']))
         fy.make_scale('y coordinate')
+        os.remove(hdr['yfile'])
 
-        self.shape = ( ft.size, fy.size, fx.size)
+        self.shape = ( ft.size, fx.size, fy.size)
         data = self.fo.create_dataset('data', np.empty(self.shape))
         data.dims[0].attach_scale(ft)
         data.dims[0].label = hdr['tname']
