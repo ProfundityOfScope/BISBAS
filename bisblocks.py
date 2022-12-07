@@ -175,6 +175,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         return ohdr
 
     def on_data(self, ispan, ospan):
+        blockslogger.debug('Doing something to the data')
         in_nframe  = ispan.nframe
         out_nframe = in_nframe
 
@@ -252,7 +253,7 @@ class WriteHDF5Block(bfp.SinkBlock):
     def on_data(self, ispan):
 
         # Find where to place data
-        i,j = np.unravel_index(self.head, self.shape)
+        i,j = np.unravel_index(self.head, self.shape[1:])
         blockslogger.debug('Write head is at', self.head)
 
         # Place data there
@@ -272,19 +273,5 @@ class AccumulateDotBlock(bfp.SinkBlock):
 
     def on_data(self, ispan):
         blockslogger.debug(f'Accumulate has been called {self.n_iter} times')
-        self.n_iter += 1
-    
-class PrintStuffBlock(bfp.SinkBlock):
-    def __init__(self, iring, *args, **kwargs):
-        super().__init__(iring, *args, **kwargs)
-        self.n_iter = 0
-
-    def on_sequence(self, iseq):
-        self.n_iter = 0
-        blockslogger.info(f'Call to on_sequence at {self.n_iter}')
-
-    def on_data(self, ispan):
-        now = datetime.now()
-        blockslogger.info(f'On {self.n_iter} | {ispan.data.shape}')
         self.n_iter += 1
     
