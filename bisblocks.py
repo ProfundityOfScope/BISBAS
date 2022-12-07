@@ -271,7 +271,7 @@ class AccumulateDotBlock(bfp.SinkBlock):
         self.n_iter += 1
 
     def on_data(self, ispan):
-        blockslogger.debug('Accumulate has been called', self.n_iter, 'times')
+        blockslogger.debug(f'Accumulate has been called {self.n_iter} times')
         self.n_iter += 1
     
 class PrintStuffBlock(bfp.SinkBlock):
