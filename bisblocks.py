@@ -120,8 +120,6 @@ class IntfReadBlock(bfp.SourceBlock):
                              'shape':  [-1, self.gulp_pixels, len(self.file_order)],
                             },
                 }
-
-        print(ohdr)
         return [ohdr]
 
     def on_data(self, reader, ospans):
@@ -242,13 +240,14 @@ class WriteHDF5Block(bfp.SinkBlock):
         os.remove(hdr['yfile'])
 
         self.shape = ( ft.size, fx.size, fy.size)
-        data = self.fo.create_dataset('data', np.empty(self.shape))
-        data.dims[0].attach_scale(ft)
-        data.dims[0].label = hdr['tname']
-        data.dims[1].attach_scale(fx)
-        data.dims[1].label = hdr['xname']
-        data.dims[2].attach_scale(fy)
-        data.dims[2].label = hdr['yname']
+        blockslogger.debug(f'Here is the shape {self.shape}')
+        #data = self.fo.create_dataset('data', np.empty(self.shape))
+        #data.dims[0].attach_scale(ft)
+        #data.dims[0].label = hdr['tname']
+        #data.dims[1].attach_scale(fx)
+        #data.dims[1].label = hdr['xname']
+        #data.dims[2].attach_scale(fy)
+        #data.dims[2].label = hdr['yname']
 
     def on_data(self, ispan):
 
@@ -283,7 +282,6 @@ class PrintStuffBlock(bfp.SinkBlock):
     def on_sequence(self, iseq):
         self.n_iter = 0
         blockslogger.info(f'Call to on_sequence at {self.n_iter}')
-        blockslogger.info(f'On sequence looking header: {iseq.header}')
 
     def on_data(self, ispan):
         now = datetime.now()
