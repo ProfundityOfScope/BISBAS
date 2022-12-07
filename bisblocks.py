@@ -120,6 +120,8 @@ class IntfReadBlock(bfp.SourceBlock):
                              'shape':  [-1, self.gulp_pixels, len(self.file_order)],
                             },
                 }
+
+        print(ohdr)
         return [ohdr]
 
     def on_data(self, reader, ospans):
