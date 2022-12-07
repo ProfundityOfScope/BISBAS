@@ -148,8 +148,8 @@ class ReferenceBlock(bfp.TransformBlock):
         idata = ispan.data
         odata = ospan.data
 
-        odata[...] = idata
-        odata[:,:,:,2] -= self.ref_stack
+        odata = idata.copy()
+        odata -= self.ref_stack
         return out_nframe
 
 class GenTimeseriesBlock(bfp.TransformBlock):
