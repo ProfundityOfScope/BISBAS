@@ -111,10 +111,10 @@ class IntfReadBlock(bfp.SourceBlock):
 
         ohdr = {'name':     filename,
                 'xfile':    'tmp_x.dat',
-                'xdtype':   ireader.xcoords.dtype,
+                'xdtype':   ireader.xcoords.dtype.name,
                 'xname':    ireader.xname,
                 'yfile':    'tmp_y.dat',
-                'ydtype':   ireader.ycoords.dtype,
+                'ydtype':   ireader.ycoords.dtype.name,
                 'yname':    ireader.yname,
                 '_tensor':  {'dtype':  self.dtype,
                              'shape':  [-1, self.gulp_pixels, len(self.file_order)],
@@ -171,7 +171,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         ohdr['name'] += '_as_ts'
 
         ohdr['tfile'] = 'tmp_t.dat'
-        ohdr['tdtype'] = self.dates.dtype
+        ohdr['tdtype'] = self.dates.dtype.name
         ohdr['tname'] = 'time'
         ohdr['_tensor']['shape'][2] = self.nd
         return ohdr
