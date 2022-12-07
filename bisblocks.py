@@ -242,7 +242,7 @@ class WriteHDF5Block(bfp.SinkBlock):
 
         self.shape = ( ft.size, fx.size, fy.size)
         blockslogger.debug(f'Here is the shape {self.shape}')
-        data = self.fo.create_dataset('data', np.empty(self.shape))
+        data = self.fo.create_dataset('displacements', np.empty(self.shape))
         #data.dims[0].attach_scale(ft)
         #data.dims[0].label = hdr['tname']
         #data.dims[1].attach_scale(fx)
@@ -257,7 +257,7 @@ class WriteHDF5Block(bfp.SinkBlock):
         blockslogger.debug('Write head is at', self.head)
 
         # Place data there
-        self.fo['data'][:,i,j] = ispan.data
+        self.fo['displacements'][:,i,j] = ispan.data
 
         # Move write head
         self.head += ispan.data.shape[1]
