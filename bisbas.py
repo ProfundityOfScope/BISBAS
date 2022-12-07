@@ -138,7 +138,6 @@ def main(args):
         b_tseries = bisblocks.GenTimeseriesBlock(b_reffed, dates, G)
 
         # Sink blocks
-        b_print = bisblocks.PrintStuffBlock(b_tseries)
         b_accum = bisblocks.AccumulateDotBlock(b_tseries)
         b_write = bisblocks.WriteHDF5Block(b_tseries, 'timeseries.h5')
         PIPELINE1.run()
