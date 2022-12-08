@@ -175,7 +175,6 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         return ohdr
 
     def on_data(self, ispan, ospan):
-        blockslogger.debug('Doing something to the data')
         in_nframe  = ispan.nframe
         out_nframe = in_nframe
 
@@ -252,16 +251,19 @@ class WriteHDF5Block(bfp.SinkBlock):
 
     def on_data(self, ispan):
 
+        jump = ispan.data.shape[1]
+
         # Find where to place data
-        i,j = np.unravel_index(self.head, self.shape[1:])
+        ind = np.arange(self.head, self.head+jump)
+        i,j = np.unravel_index(ind, self.shape[1:])
         blockslogger.debug(f'Write head is at {self.head}')
-        blockslogger.debug(f'Got coordinates like {i} and {j}')
+        blockslogger.debug(f'Got coordinates like {i.shape} and {j.shape}')
 
         # Place data there
         #self.fo['displacements'][:,i,j] = ispan.data
 
         # Move write head
-        self.head += ispan.data.shape[1]
+        self.head += jump
 
 class AccumulateDotBlock(bfp.SinkBlock):
 
