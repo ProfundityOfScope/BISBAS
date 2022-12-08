@@ -260,6 +260,8 @@ class WriteHDF5Block(bfp.SinkBlock):
         i,j = np.unravel_index(ind, self.shape[1:])
 
         # Place data there
+        print(i)
+        print(j)
         blockslogger.debug(f'Writing {self.shape[0]}x{ind.size} values to disk')
         self.fo['displacements'][:,i,j] = ispan.data
 
