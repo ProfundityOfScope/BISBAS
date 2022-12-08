@@ -242,6 +242,7 @@ class WriteHDF5Block(bfp.SinkBlock):
         self.shape = ( ft.size, fx.size, fy.size)
         blockslogger.debug(f'Here is the shape {self.shape}')
         data = self.fo.create_dataset('displacements', data=np.empty(self.shape))
+        
         data.dims[0].attach_scale(ft)
         data.dims[0].label = hdr['tname']
         data.dims[1].attach_scale(fx)
