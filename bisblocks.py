@@ -239,9 +239,10 @@ class WriteHDF5Block(bfp.SinkBlock):
         fy.make_scale('y coordinate')
         os.remove(hdr['yfile'])
 
-        self.shape = ( ft.size, fx.size, fy.size)
+        self.shape = ( ft.size, fx.size*fy.size)
         blockslogger.debug(f'Here is the shape {self.shape}')
         data = self.fo.create_dataset('displacements', data=np.empty(self.shape))
+        data.attrs['trueshape'] = (ft.size, fx.size, fy.size)
 
         '''
         data.dims[0].attach_scale(ft)
@@ -255,15 +256,9 @@ class WriteHDF5Block(bfp.SinkBlock):
 
         jump = ispan.data.shape[1]
 
-        # Find where to place data
-        ind = np.arange(self.head, self.head+jump)
-        i,j = np.unravel_index(ind, self.shape[1:])
-
         # Place data there
-        print(i)
-        print(j)
         blockslogger.debug(f'Writing {self.shape[0]}x{ind.size} values to disk')
-        self.fo['displacements'][:,i,j] = ispan.data
+        self.fo['displacements'][:,self.head:self.head+jump] = ispan.data
 
         # Move write head
         self.head += jump
