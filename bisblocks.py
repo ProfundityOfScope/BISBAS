@@ -257,7 +257,7 @@ class WriteHDF5Block(bfp.SinkBlock):
         jump = ispan.data.shape[1]
 
         # Place data there
-        blockslogger.debug(f'Writing {self.shape[0]}x{ind.size} values to disk')
+        blockslogger.debug(f'Writing {self.shape[0]}x{jump} values to disk')
         self.fo['displacements'][:,self.head:self.head+jump] = ispan.data
 
         # Move write head
