@@ -255,9 +255,10 @@ class WriteHDF5Block(bfp.SinkBlock):
         # Find where to place data
         i,j = np.unravel_index(self.head, self.shape[1:])
         blockslogger.debug(f'Write head is at {self.head}')
+        blockslogger.debug(f'Got coordinates like {i} and {j}')
 
         # Place data there
-        self.fo['displacements'][:,i,j] = ispan.data
+        #self.fo['displacements'][:,i,j] = ispan.data
 
         # Move write head
         self.head += ispan.data.shape[1]
