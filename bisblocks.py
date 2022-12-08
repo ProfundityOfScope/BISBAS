@@ -242,12 +242,12 @@ class WriteHDF5Block(bfp.SinkBlock):
         self.shape = ( ft.size, fx.size, fy.size)
         blockslogger.debug(f'Here is the shape {self.shape}')
         data = self.fo.create_dataset('displacements', data=np.empty(self.shape))
-        #data.dims[0].attach_scale(ft)
-        #data.dims[0].label = hdr['tname']
-        #data.dims[1].attach_scale(fx)
-        #data.dims[1].label = hdr['xname']
-        #data.dims[2].attach_scale(fy)
-        #data.dims[2].label = hdr['yname']
+        data.dims[0].attach_scale(ft)
+        data.dims[0].label = hdr['tname']
+        data.dims[1].attach_scale(fx)
+        data.dims[1].label = hdr['xname']
+        data.dims[2].attach_scale(fy)
+        data.dims[2].label = hdr['yname']
 
     def on_data(self, ispan):
 
@@ -256,11 +256,10 @@ class WriteHDF5Block(bfp.SinkBlock):
         # Find where to place data
         ind = np.arange(self.head, self.head+jump)
         i,j = np.unravel_index(ind, self.shape[1:])
-        blockslogger.debug(f'Write head is at {self.head}')
-        blockslogger.debug(f'Got coordinates like {i.shape} and {j.shape}')
 
         # Place data there
-        #self.fo['displacements'][:,i,j] = ispan.data
+        blockslogger.debug(f'Writing {self.shape[0]}x{ind.size} values to disk')
+        self.fo['displacements'][:,i,j] = ispan.data
 
         # Move write head
         self.head += jump
@@ -274,7 +273,11 @@ class AccumulateDotBlock(bfp.SinkBlock):
     def on_sequence(self, iseq):
         self.n_iter += 1
 
+        # Generate the initial array
+
     def on_data(self, ispan):
         blockslogger.debug(f'Accumulate has been called {self.n_iter} times')
         self.n_iter += 1
+
+        # Do the product and add to the array
     
