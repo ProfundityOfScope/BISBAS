@@ -218,7 +218,7 @@ class WriteHDF5Block(bfp.SinkBlock):
                 raise OSError('File already exists, try overwrite=True')
 
         # Open file
-        self.fo = h5py.File(name, mode='a')
+        self.fo = h5py.File(name, mode='w')
 
     def on_sequence(self, iseq):
 
@@ -242,7 +242,7 @@ class WriteHDF5Block(bfp.SinkBlock):
         self.shape = ( ft.size, fx.size, fy.size)
         blockslogger.debug(f'Here is the shape {self.shape}')
         data = self.fo.create_dataset('displacements', data=np.empty(self.shape))
-        
+
         data.dims[0].attach_scale(ft)
         data.dims[0].label = hdr['tname']
         data.dims[1].attach_scale(fx)
