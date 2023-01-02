@@ -95,14 +95,16 @@ class IntfReadBlock(bfp.SourceBlock):
         self.file_order = file_order
         self.gulp_pixels = gulp_pixels
 
-    def create_reader(self, filename):
-        # Log line about reading
         # Do a lookup on bifrost datatype to numpy datatype
         dcode = self.dtype.rstrip('0123456789')
         nbits = int(self.dtype[len(dcode):])
-        np_dtype = name_nbit2numpy(dcode, nbits)
+        self.np_dtype = name_nbit2numpy(dcode, nbits)
 
-        return IntfRead(filename, self.gulp_pixels, np_dtype, file_order=self.file_order)
+
+    def create_reader(self, filename):
+        # Log line about reading
+
+        return IntfRead(filename, self.gulp_pixels, self.np_dtype, file_order=self.file_order)
 
     def on_sequence(self, ireader, filename):
 
@@ -111,6 +113,7 @@ class IntfReadBlock(bfp.SourceBlock):
 
         ohdr = {'name':     filename,
                 'gulp':     self.gulp_pixels,
+                'zdtype':   self.np_dtype.name,
                 'xfile':    'tmp_x.dat',
                 'xdtype':   ireader.xcoords.dtype.name,
                 'xname':    ireader.xname,
@@ -241,7 +244,7 @@ class WriteHDF5Block(bfp.SinkBlock):
         # Generate new data object
         self.shape = ( ft.size, fy.size, fx.size )
         blockslogger.debug(f'Here is the shape {self.shape}')
-        data = self.fo.create_dataset('displacements', data=np.empty(self.shape))
+        data = self.fo.create_dataset('displacements', data=np.empty(self.shape, dtype=hdr['zdtype']))
 
         # Set up scales
         data.dims[0].attach_scale(ft)
@@ -253,7 +256,7 @@ class WriteHDF5Block(bfp.SinkBlock):
 
         # Record gulp, set up buffer
         self.gulp = hdr['gulp']
-        self.buffer = np.empty(ft.size, 2*max([self.gulp, fx.size])+1)
+        self.buffer = np.empty((ft.size, 2*max([self.gulp, fx.size])+1), dtype=hdr['zdtype'])
         self.head = 0
         self.linelen = fx.size
         self.linecount = 0
