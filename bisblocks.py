@@ -113,7 +113,7 @@ class IntfReadBlock(bfp.SourceBlock):
 
         ohdr = {'name':     filename,
                 'gulp':     self.gulp_pixels,
-                'zdtype':   self.np_dtype,
+                'zdtype':   'float32',
                 'xfile':    'tmp_x.dat',
                 'xdtype':   ireader.xcoords.dtype.name,
                 'xname':    ireader.xname,
