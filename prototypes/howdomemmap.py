@@ -41,6 +41,8 @@ if os.path.exists(tgt):
 with h5py.File(tgt, 'a') as f:
     
     fd = f.create_dataset('data', data=np.random.random((nt, nx, ny)))
+    fd.attrs['imshape'] = (100,100)
+    print(fd.attrs)
     
     ft = f.create_dataset('time', data=np.sort(np.random.randint(0,500,nt)))
     ft.make_scale('days from first measurement')

@@ -110,6 +110,7 @@ class IntfReadBlock(bfp.SourceBlock):
         ireader.ycoords.tofile('tmp_y.dat')
 
         ohdr = {'name':     filename,
+                'gulp':     self.gulp_pixels,
                 'xfile':    'tmp_x.dat',
                 'xdtype':   ireader.xcoords.dtype.name,
                 'xname':    ireader.xname,
@@ -207,7 +208,6 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 class WriteHDF5Block(bfp.SinkBlock):
     def __init__(self, iring, name, overwrite=True, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
-        self.head = 0
 
         if os.path.exists(name):
             if overwrite:
@@ -222,8 +222,7 @@ class WriteHDF5Block(bfp.SinkBlock):
 
     def on_sequence(self, iseq):
 
-        # Start counting and find the header
-        self.head = 0
+        # Grab header
         hdr = iseq.header
 
         # Create the axes
@@ -239,26 +238,31 @@ class WriteHDF5Block(bfp.SinkBlock):
         fy.make_scale('y coordinate')
         os.remove(hdr['yfile'])
 
-        self.shape = ( ft.size, fx.size*fy.size)
+        # Generate new data object
+        self.shape = ( ft.size, fy.size, fx.size)
         blockslogger.debug(f'Here is the shape {self.shape}')
         data = self.fo.create_dataset('displacements', data=np.empty(self.shape))
-        data.attrs['trueshape'] = (ft.size, fx.size, fy.size)
 
-        '''
+        # Set up scales
         data.dims[0].attach_scale(ft)
         data.dims[0].label = hdr['tname']
-        data.dims[1].attach_scale(fx)
-        data.dims[1].label = hdr['xname']
-        data.dims[2].attach_scale(fy)
-        data.dims[2].label = hdr['yname']'''
+        data.dims[1].attach_scale(fy)
+        data.dims[1].label = hdr['yname']
+        data.dims[2].attach_scale(fx)
+        data.dims[2].label = hdr['xname']
+
+        # Record gulp, set up buffer
+        self.gulp = hdr['gulp']
+        self.buffer = np.empty(2*max([self.gulp, fx.size])+1)
+        self.head = 0
 
     def on_data(self, ispan):
 
-        jump = ispan.data.shape[1]
 
-        # Place data there
+        # Put data into the file
         blockslogger.debug(f'Writing {self.shape[0]}x{jump} values to disk')
-        self.fo['displacements'][:,self.head:self.head+jump] = ispan.data[0].T
+        #self.fo['displacements'][:,self.head:self.head+jump] = ispan.data[0].T
+
 
         # Move write head
         self.head += jump
