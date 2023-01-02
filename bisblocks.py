@@ -239,7 +239,7 @@ class WriteHDF5Block(bfp.SinkBlock):
         os.remove(hdr['yfile'])
 
         # Generate new data object
-        self.shape = ( ft.size, fy.size, fx.size)
+        self.shape = ( ft.size, fy.size, fx.size )
         blockslogger.debug(f'Here is the shape {self.shape}')
         data = self.fo.create_dataset('displacements', data=np.empty(self.shape))
 
@@ -253,20 +253,29 @@ class WriteHDF5Block(bfp.SinkBlock):
 
         # Record gulp, set up buffer
         self.gulp = hdr['gulp']
-        self.buffer = np.empty(2*max([self.gulp, fx.size])+1)
+        self.buffer = np.empty(ft.size, 2*max([self.gulp, fx.size])+1)
         self.head = 0
+        self.linelen = fx.size
+        self.linecount = 0
+        blockslogger.debug(f'Generated a buffer of shape {self.buffer.shape}')
 
     def on_data(self, ispan):
-
 
         # Put data into the file
         blockslogger.debug(f'Writing {self.gulp} values to disk, head at {self.head}')
         blockslogger.debug(f'Shape of idata: {ispan.data.shape}')
         #self.fo['displacements'][:,self.head:self.head+jump] = ispan.data[0].T
-        #self.buffer[self.head:self.head+self.gulp]
+        self.buffer[:,self.head:self.head+self.gulp] = ispan.data[0]
+        self.head += self.gulp
 
-        # Move write head
-        self.head += 0
+        # Write out as many times as needed
+        while self.head > self.linelen:
+            self.fo['displacements'][:,self.linecount] = self.buffer[:,:self.linelen]
+            self.linecount += 1
+
+            self.head -= self.linelen
+            self.buffer = np.roll(self.buffer, -self.linelen, axis=1)
+
 
 class AccumulateDotBlock(bfp.SinkBlock):
 
