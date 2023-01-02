@@ -46,9 +46,8 @@ class DataStack():
 
         # Figure out image properties
         self.imshape = self.file_objs[0].variables['z'].shape #unsafe if empty
-        self.datatype = self.file_objs[0].variables['z'].typecode
         self.imsize = np.product(self.imshape)
-        readerslogger.debug(f'Found {len(self.file_objs)} files with shape {self.imshape} and dtype {self.datatype}')
+        readerslogger.debug(f'Found {len(self.file_objs)} files with shape {self.imshape}')
 
         # Establish grid convention
         dims = self.file_objs[0].dimensions
