@@ -298,12 +298,12 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         ones = np.ones_like(xchunk)
         Gfull = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
         G = Gfull[:,:self.trendparams]
+        blockslogger.debug(f'===============G has shape {G.shape} d has shape {ispan[0].shape}')
 
         gooddata = ~np.isnan(ispan.data[0])
         od_GTG = np.einsum('ij,jk,jl->jkl', G.T, G, gooddata)
         od_GTd = np.nansum(np.einsum('ij,jk->ik', G.T, ispan.data[0]), axis=1)
         print(od_GTG.shape, od_GTd.shape)
-        raise ValueError('BLOCK TEST KILL')
 
         self.niter += 1
 
