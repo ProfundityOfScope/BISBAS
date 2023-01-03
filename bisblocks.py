@@ -301,8 +301,8 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         blockslogger.debug(f'===============G has shape {G.shape} d has shape {ispan.data[0].shape}')
 
         gooddata = ~np.isnan(ispan.data[0])
-        od_GTG = np.einsum('ij,jk,jl->jkl', G.T, G, gooddata)
-        od_GTd = np.nansum(np.einsum('ij,jk->ik', G.T, ispan.data[0]), axis=1)
+        od_GTG = np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
+        od_GTd = np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
         print(od_GTG.shape, od_GTd.shape)
 
         self.niter += 1
