@@ -208,8 +208,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         odata[...] = bifrost.ndarray(ts)
         return out_nframe
 
-class WriteHDF5Block(bfp.SinkBlock):
-    def __init__(self, iring, name, overwrite=True, *args, **kwargs):
+class WriteAndAccumBlock(bfp.SinkBlock):
+    def __init__(self, iring, name, overwrite=True, trendparams=3, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
 
         if os.path.exists(name):
@@ -223,26 +223,37 @@ class WriteHDF5Block(bfp.SinkBlock):
         # Open file
         self.fo = h5py.File(name, mode='a')
 
+        # Set up accumulation
+        self.niter = 0
+        self.trendparams = trendparams
+        self.GTG = np.zeros((trendparams,trendparams))
+        self.GTd = np.zeros((trendparams, 1))
+
     def on_sequence(self, iseq):
+        # I'm doing a lot of setup here, but this should only be called once
 
         # Grab header
         hdr = iseq.header
 
         # Create the axes
-        ft = self.fo.create_dataset('t', data=np.fromfile(hdr['tfile'], dtype=hdr['tdtype']))
+        self.tarr = np.fromfile(hdr['tfile'], dtype=hdr['tdtype'])
+        ft = self.fo.create_dataset('t', data=self.tarr)
         ft.make_scale('t coordinate')
         os.remove(hdr['tfile'])
 
-        fx = self.fo.create_dataset('x', data=np.fromfile(hdr['xfile'], dtype=hdr['xdtype']))
+        self.xarr = np.fromfile(hdr['xfile'], dtype=hdr['xdtype'])
+        fx = self.fo.create_dataset('x', data=self.xarr)
         fx.make_scale('x coordinate')
         os.remove(hdr['xfile'])
 
-        fy = self.fo.create_dataset('y', data=np.fromfile(hdr['yfile'], dtype=hdr['ydtype']))
+        self.yarr = np.fromfile(hdr['yfile'], dtype=hdr['ydtype'])
+        fy = self.fo.create_dataset('y', data=self.yarr)
         fy.make_scale('y coordinate')
         os.remove(hdr['yfile'])
 
         # Generate new data object
         self.shape = ( ft.size, fy.size, fx.size )
+        self.imshape = ( fy.size, fx.size )
         blockslogger.debug(f'Here is the shape {self.shape}')
         data = self.fo.create_dataset('displacements', data=np.empty(self.shape, dtype=hdr['zdtype']))
 
@@ -264,6 +275,7 @@ class WriteHDF5Block(bfp.SinkBlock):
 
     def on_data(self, ispan):
 
+        ### WRITE STUFF ###
         # Put data into the file
         blockslogger.debug(f'Writing {self.gulp} values to disk, head at {self.head}')
         blockslogger.debug(f'Shape of idata: {ispan.data.shape}')
@@ -278,21 +290,23 @@ class WriteHDF5Block(bfp.SinkBlock):
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=1)
 
+        ### ACCUMULATE FOR DOTS ###
+        inds = self.niter * self.gulp + np.arange(0, self.gulp)
+        yinds, xinds = np.unravel_index(inds, self.imshape)
+        xchunk = self.xarr[xinds]
+        ychunk = self.yarr[yinds]
+        ones = np.ones_like(xchunk)
+        Gfull = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
+        G = Gfull[:,:self.trendparams]
 
-class AccumulateDotBlock(bfp.SinkBlock):
+        gooddata = ~np.isnan(ispan.data[0])
+        od_GTG = np.einsum('ij,jk,jl->jkl', G.T, G, gooddata)
+        od_GTd = np.nansum(np.einsum('ij,jk->ik', G.T, ispan.data[0]), axis=1)
+        print(od_GTG.shape, od_GTd.shape)
+        raise ValueError('BLOCK TEST KILL')
 
-    def __init__(self, iring, *args, **kwargs):
-        super().__init__(iring, *args, **kwargs)
-        self.n_iter = 0
+        self.niter += 1
 
-    def on_sequence(self, iseq):
-        self.n_iter += 1
 
-        # Generate the initial array
 
-    def on_data(self, ispan):
-        blockslogger.debug(f'Accumulate has been called {self.n_iter} times')
-        self.n_iter += 1
-
-        # Do the product and add to the array
     
