@@ -142,11 +142,11 @@ def main(args):
 
         PIPELINE1.run()
 
-        
+
         GTG = b_write.GTG
         GTd = b_write.GTd
 
-    print('I accumulated this:', thing)
+    logger.info('I accumulated these: {GTG.shape} and {GTd.shape}')
 
 if __name__=='__main__':
     globalstart=time.time()
