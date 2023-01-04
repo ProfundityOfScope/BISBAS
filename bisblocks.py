@@ -291,7 +291,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=1)
 
-        perc = self.gulp*self.niter/np.product(self.imshape)
+        perc = 100*self.gulp*self.niter/np.product(self.imshape)
         blockslogger.debug(f'Written {perc:04.1f}% of data')
 
         ### ACCUMULATE FOR DOTS ###
