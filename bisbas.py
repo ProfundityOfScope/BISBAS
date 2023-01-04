@@ -139,6 +139,9 @@ def main(args):
 
         # Sink blocks
         b_write = bisblocks.WriteAndAccumBlock(b_tseries, 'timeseries.h5')
+
+        GTG = b_write.GTG
+        GTd = b_write.GTd
         PIPELINE1.run()
 
     print('I accumulated this:', thing)

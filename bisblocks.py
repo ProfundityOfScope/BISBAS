@@ -226,8 +226,6 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         # Set up accumulation
         self.niter = 0
         self.trendparams = trendparams
-        self.GTG = np.zeros((trendparams,trendparams))
-        self.GTd = np.zeros((trendparams, 1))
 
     def on_sequence(self, iseq):
         # I'm doing a lot of setup here, but this should only be called once
@@ -273,6 +271,10 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         self.linecount = 0
         blockslogger.debug(f'Generated a buffer of shape {self.buffer.shape}')
 
+        # Set up some stuff for the accumulation
+        self.GTG = np.zeros((self.trendparams, self.trendparams, ft.size))
+        self.GTd = np.zeros((self.trendparams, ft.size))
+
     def on_data(self, ispan):
 
         ### WRITE STUFF ###
@@ -291,6 +293,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
             self.buffer = np.roll(self.buffer, -self.linelen, axis=1)
 
         ### ACCUMULATE FOR DOTS ###
+        # Figure out what the G matrix should look like
         inds = self.niter * self.gulp + np.arange(0, self.gulp)
         yinds, xinds = np.unravel_index(inds, self.imshape)
         xchunk = self.xarr[xinds]
@@ -300,11 +303,10 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         G = Gfull[:,:self.trendparams]
         blockslogger.debug(f'===============G has shape {G.shape} d has shape {ispan.data[0].shape}')
 
+        # Do the dot products and whatnot
         gooddata = ~np.isnan(ispan.data[0])
-        od_GTG = np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
-        od_GTd = np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
-        print(od_GTG.shape, od_GTd.shape)
-
+        self.GTG += np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
+        self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
         self.niter += 1
 
 
