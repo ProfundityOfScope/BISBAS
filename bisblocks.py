@@ -280,7 +280,6 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         ### WRITE STUFF ###
         # Put data into the file
         blockslogger.debug(f'Writing {self.gulp} values to disk, head at {self.head}')
-        blockslogger.debug(f'Shape of idata: {ispan.data.shape}')
         self.buffer[:,self.head:self.head+self.gulp] = ispan.data[0].T
         self.head += self.gulp
 
@@ -292,6 +291,8 @@ class WriteAndAccumBlock(bfp.SinkBlock):
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=1)
 
+        blockslogger.debug(f'Written {self.gulp*self.niter} values so far, out of {np.product(self.imshape)}')
+
         ### ACCUMULATE FOR DOTS ###
         # Figure out what the G matrix should look like
         inds = self.niter * self.gulp + np.arange(0, self.gulp)
@@ -301,7 +302,6 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         ones = np.ones_like(xchunk)
         Gfull = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
         G = Gfull[:,:self.trendparams]
-        blockslogger.debug(f'===============G has shape {G.shape} d has shape {ispan.data[0].shape}')
 
         # Do the dot products and whatnot
         gooddata = ~np.isnan(ispan.data[0])
