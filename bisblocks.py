@@ -191,6 +191,11 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
         B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
 
+        print('A', A.shape, np.sum(np.isnan(A))/A.size)
+        print(A)
+        print('B', B.shape, np.sum(np.isnan(B))/B.size)
+        print(B)
+
         # Mask out low-rank values
         lowrank = np.linalg.matrix_rank(A) != self.nd - 1
         A[lowrank] = np.eye(self.nd-1)
