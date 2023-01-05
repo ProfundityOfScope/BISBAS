@@ -135,7 +135,7 @@ def main(args):
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
-        b_read = bisblocks.IntfReadBlock([path], 4056, 'f32', files)
+        b_read = bisblocks.IntfReadBlock([path], 7800, 'f32', files)
         b_reffed = bisblocks.ReferenceBlock(b_read, median_stack)
         b_tseries = bisblocks.GenTimeseriesBlock(b_reffed, dates, G)
 

@@ -198,6 +198,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
         # Solve
         model = np.linalg.solve(A, B)
+        print('model', model.shape, np.sum(np.isnan(model))/model.size)
         print(model)
 
         # Turn it into a cumulative timeseries
@@ -207,6 +208,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         ts[:,:,1:] = np.cumsum(changes, axis=1)
 
         odata[...] = bifrost.ndarray(ts)
+        print('timeseries', ts.shape, np.sum(np.isnan(ts))/ts.size)
         print(ts)
         return out_nframe
 
