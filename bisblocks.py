@@ -186,6 +186,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         odata = ospan.data
 
         print('ispan', idata.shape, np.sum(np.isnan(idata))/idata.size)
+        print(idata[0])
 
         # Set up matrices to solve
         zdata = np.array(idata[0])
@@ -204,7 +205,6 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         # Solve
         model = np.linalg.solve(A, B)
         print('model', model.shape, np.sum(np.isnan(model))/model.size)
-        print(model)
 
         # Turn it into a cumulative timeseries
         datediffs = (self.dates - np.roll(self.dates, 1))[1:]
