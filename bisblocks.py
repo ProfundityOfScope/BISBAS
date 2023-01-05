@@ -185,9 +185,10 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         idata = ispan.data
         odata = ospan.data
 
+        print('ispan', idata.shape, np.sum(np.isnan(idata))/idata.size)
+
         # Set up matrices to solve
         zdata = np.array(idata[0])
-        print(zdata)
         M = ~np.isnan(zdata)
         A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
         B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
