@@ -135,7 +135,7 @@ def main(args):
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
-        b_read = bisblocks.IntfReadBlock([path], 13_000, 'f32', files)
+        b_read = bisblocks.IntfReadBlock([path], 4056, 'f32', files)
         b_reffed = bisblocks.ReferenceBlock(b_read, median_stack)
         b_tseries = bisblocks.GenTimeseriesBlock(b_reffed, dates, G)
 
@@ -152,7 +152,7 @@ def main(args):
         total = np.sum( fo['displacements'])
         logger.debug(f'==== output array sums to {total:.2e} ====')
 
-    logger.info(f'I accumulated these: {GTG.shape} and {GTd.shape}')
+    logger.info(f'I accumulated these: {GTG.shape} (sum={np.sum(GTG)}) and {GTd.shape} (sum={np.sum(GTd)})')
 
 if __name__=='__main__':
     globalstart=time.time()

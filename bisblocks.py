@@ -281,6 +281,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         # Put data into the file
         blockslogger.debug(f'Writing {self.gulp} values to disk, head at {self.head}')
         self.buffer[:,self.head:self.head+self.gulp] = ispan.data[0].T
+        print(ispan.data[0].T)
         self.head += self.gulp
 
         # Write out as many times as needed
