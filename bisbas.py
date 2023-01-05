@@ -25,6 +25,8 @@ import fakeblocks
 import readers
 import helpers
 
+import h5py
+
 __version__ = 0.1
 
 
@@ -146,7 +148,10 @@ def main(args):
         GTG = b_write.GTG
         GTd = b_write.GTd
 
-    logger.info('I accumulated these: {GTG.shape} and {GTd.shape}')
+    with h5py.File('timeseries.h5', 'r') as fo:
+        logger.debug(f'==== output array sums to {np.sum(fo['displacements']):.2e} ====')
+
+    logger.info(f'I accumulated these: {GTG.shape} and {GTd.shape}')
 
 if __name__=='__main__':
     globalstart=time.time()
