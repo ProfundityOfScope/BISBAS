@@ -149,7 +149,8 @@ def main(args):
         GTd = b_write.GTd
 
     with h5py.File('timeseries.h5', 'r') as fo:
-        logger.debug(f'==== output array sums to {np.sum(fo['displacements']):.2e} ====')
+        total = np.sum( fo['displacements'])
+        logger.debug(f'==== output array sums to {total:.2e} ====')
 
     logger.info(f'I accumulated these: {GTG.shape} and {GTd.shape}')
 
