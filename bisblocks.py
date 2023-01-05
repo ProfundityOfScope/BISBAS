@@ -206,6 +206,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         ts[:,:,1:] = np.cumsum(changes, axis=1)
 
         odata[...] = bifrost.ndarray(ts)
+        print(ts)
         return out_nframe
 
 class WriteAndAccumBlock(bfp.SinkBlock):
@@ -281,7 +282,6 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         # Put data into the file
         blockslogger.debug(f'Writing {self.gulp} values to disk, head at {self.head}')
         self.buffer[:,self.head:self.head+self.gulp] = ispan.data[0].T
-        print(ispan.data[0].T)
         self.head += self.gulp
 
         # Write out as many times as needed
