@@ -198,6 +198,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
         # Solve
         model = np.linalg.solve(A, B)
+        print(model)
 
         # Turn it into a cumulative timeseries
         datediffs = (self.dates - np.roll(self.dates, 1))[1:]
