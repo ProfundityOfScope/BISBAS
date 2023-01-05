@@ -17,7 +17,7 @@ import h5py
 
 A = np.random.random((1000,4))
 B = np.random.random((1000,))
-B[np.random.choice(1000, 10)] = np.nan
+# B[np.random.choice(1000, 10)] = np.nan
 
 AB_dot = A.T.dot(B)
 AB_dot = np.nansum(np.einsum('ij,j->ij', A.T, B), axis=1)
@@ -37,9 +37,24 @@ for region in regions:
 print('A.T dot B matches:', np.allclose(AB_accum, AB_dot))
 print('A.T dot A matches:', np.allclose(AA_accum, AA_dot))
 
-isgood = np.random.choice([True, False], (1000,10), p=[0.7, 0.3])
-ATAm = np.einsum('ij,jk->ijk', A.T, A)
+################
+A = np.random.random((1000,4))
+B = np.random.random((1000,20))
 
-test = np.einsum('ijk,jl->ikl', ATAm, isgood)
+isgood = np.random.choice([True, False], (1000,20), p=[0.8, 0.2])
+B[~isgood] = np.nan
 
-test2 = np.einsum('ij,jk,jl->ikl', A.T, A, isgood)
+ATA1 = np.zeros((4,4,20))
+ATB1 = np.zeros((4,20))
+for i in range(20):
+    igl = isgood[:,i]
+    Al = A[igl]
+    Bl = B[igl,i]
+    
+    ATA1[:,:,i] = np.dot(Al.T, Al)
+    ATB1[:,i] = np.dot(Al.T, Bl)
+
+ATA2 = np.einsum('ij,jk,jl->ikl', A.T, A, isgood)
+ATB2 = np.nansum(np.einsum('ij,jk->ijk', A.T, B), axis=1)
+print(np.allclose(ATA1, ATA2))
+print(np.allclose(ATB1, ATB2))

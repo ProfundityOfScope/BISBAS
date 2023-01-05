@@ -221,7 +221,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
                 raise OSError('File already exists, try overwrite=True')
 
         # Open file
-        self.fo = h5py.File(name, mode='a')
+        self.fo = h5py.File(name, mode='x')
 
         # Set up accumulation
         self.niter = 0
