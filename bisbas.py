@@ -131,11 +131,12 @@ def main(args):
     ref_stack = read_stack.data_near(reflon, reflat, best_chunk_size)
     median_stack = np.nanmedian(ref_stack, axis=0)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
+    print(median_stack)
 
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
-        b_read = bisblocks.IntfReadBlock([path], 7800, 'f32', files)
+        b_read = bisblocks.IntfReadBlock([path], 1000, 'f32', files)
         b_reffed = bisblocks.ReferenceBlock(b_read, median_stack)
         b_tseries = bisblocks.GenTimeseriesBlock(b_reffed, dates, G)
 
