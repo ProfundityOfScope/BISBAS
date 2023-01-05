@@ -187,6 +187,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         idata = ispan.data
         odata = ospan.data
 
+        print(idata)
         # Set up matrices to solve
         zdata = np.array(idata[0])
         M = ~np.isnan(zdata)
