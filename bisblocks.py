@@ -154,6 +154,8 @@ class ReferenceBlock(bfp.TransformBlock):
 
         odata = idata.copy()
         odata -= self.ref_stack
+
+        print(odata)
         return out_nframe
 
 class GenTimeseriesBlock(bfp.TransformBlock):
@@ -185,17 +187,11 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         idata = ispan.data
         odata = ospan.data
 
-        print('ispan', idata.shape, np.sum(np.isnan(idata))/idata.size)
-        print(idata[0])
-
         # Set up matrices to solve
         zdata = np.array(idata[0])
         M = ~np.isnan(zdata)
         A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
         B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
-
-        print('A', A.shape, np.sum(np.isnan(A))/A.size)
-        print('B', B.shape, np.sum(np.isnan(B))/B.size)
 
         # Mask out low-rank values
         lowrank = np.linalg.matrix_rank(A) != self.nd - 1
@@ -204,7 +200,6 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
         # Solve
         model = np.linalg.solve(A, B)
-        print('model', model.shape, np.sum(np.isnan(model))/model.size)
 
         # Turn it into a cumulative timeseries
         datediffs = (self.dates - np.roll(self.dates, 1))[1:]
@@ -213,8 +208,6 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         ts[:,:,1:] = np.cumsum(changes, axis=1)
 
         odata[...] = bifrost.ndarray(ts)
-        print('timeseries', ts.shape, np.sum(np.isnan(ts))/ts.size)
-        print(ts)
         return out_nframe
 
 class WriteAndAccumBlock(bfp.SinkBlock):
