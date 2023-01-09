@@ -155,6 +155,7 @@ class ReferenceBlock(bfp.TransformBlock):
         odata = idata.copy()
         odata -= self.ref_stack
 
+        print('odata')
         print(odata)
         return out_nframe
 
@@ -187,6 +188,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         idata = ispan.data
         odata = ospan.data
 
+        print('idata')
         print(idata)
         # Set up matrices to solve
         zdata = np.array(idata[0])
