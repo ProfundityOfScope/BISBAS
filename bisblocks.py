@@ -152,7 +152,7 @@ class ReferenceBlock(bfp.TransformBlock):
         idata = ispan.data
         odata = ospan.data
 
-        odata = idata.copy()
+        odata[...] = idata.copy()
         odata -= self.ref_stack
 
         blockslogger.debug(f'Ref | NaN count: {np.sum(np.isnan(odata))}/{odata.size}')
