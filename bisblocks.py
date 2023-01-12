@@ -155,9 +155,9 @@ class ReferenceBlock(bfp.TransformBlock):
         odata = idata.copy()
         odata -= self.ref_stack
 
-        print('ref idata')
+        print('ref idata', np.sum(np.isnan(idata)))
         print(idata)
-        print('ref odata')
+        print('ref odata', np.sum(np.isnan(odata)))
         print(odata)
         return out_nframe
 
