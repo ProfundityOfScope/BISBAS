@@ -163,7 +163,7 @@ class ReferenceBlock(bfp.TransformBlock):
         if np.sum(np.isnan(odata))==odata.size:
             blockslogger.debug('Zeroes')
         else:
-            blockslogger.debug('='*20, 'NONZERO', '='*20)
+            blockslogger.debug('='*20+'NONZERO'+'='*20)
         return out_nframe
 
 class GenTimeseriesBlock(bfp.TransformBlock):
