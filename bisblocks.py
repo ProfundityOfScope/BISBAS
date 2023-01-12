@@ -155,11 +155,6 @@ class ReferenceBlock(bfp.TransformBlock):
         odata = idata.copy()
         odata -= self.ref_stack
 
-        #print('ref idata', np.sum(np.isnan(idata)), idata.shape)
-        #print(idata)
-        #print('ref odata', np.sum(np.isnan(odata)), odata.shape)
-        #print(odata)
-
         blockslogger.debug(f'Ref | NaN count: {np.sum(np.isnan(odata))}/{odata.size}')
         if np.sum(np.isnan(odata))==odata.size:
             blockslogger.debug('Ref | All NaNs')
@@ -199,6 +194,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
         blockslogger.debug(f'GTS | NaN count: {np.sum(np.isnan(idata))}/{idata.size}')
         blockslogger.debug(f'GTS | Zero count: {np.count_nonzero(idata==0)}/{idata.size}')
+
         # Set up matrices to solve
         zdata = np.array(idata[0])
         M = ~np.isnan(zdata)
@@ -293,7 +289,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
 
         ### WRITE STUFF ###
         # Put data into the file
-        blockslogger.debug(f'Writing {self.gulp} values to disk, head at {self.head}')
+        #blockslogger.debug(f'Writing {self.gulp} values to disk, head at {self.head}')
         self.buffer[:,self.head:self.head+self.gulp] = ispan.data[0].T
         self.head += self.gulp
 
@@ -306,7 +302,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
             self.buffer = np.roll(self.buffer, -self.linelen, axis=1)
 
         perc = 100*self.gulp*self.niter/np.product(self.imshape)
-        blockslogger.debug(f'Written {perc:04.1f}% of data')
+        #blockslogger.debug(f'Written {perc:04.1f}% of data')
 
         ### ACCUMULATE FOR DOTS ###
         # Figure out what the G matrix should look like
