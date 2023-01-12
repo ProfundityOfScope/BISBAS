@@ -160,11 +160,11 @@ class ReferenceBlock(bfp.TransformBlock):
         #print('ref odata', np.sum(np.isnan(odata)), odata.shape)
         #print(odata)
 
-        blockslogger.debug(f'Nan count: {np.sum(np.isnan(odata))}/{odata.size}')
+        blockslogger.debug(f'NaN count: {np.sum(np.isnan(odata))}/{odata.size}')
         if np.sum(np.isnan(odata))==odata.size:
-            blockslogger.debug('Zeroes')
+            blockslogger.debug('All NaNs')
         else:
-            blockslogger.debug('='*20+'NONZERO'+'='*20)
+            blockslogger.debug('='*20+'Non-NaNs Found'+'='*20)
         return out_nframe
 
 class GenTimeseriesBlock(bfp.TransformBlock):
@@ -196,8 +196,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         idata = ispan.data
         odata = ospan.data
 
-        print('ts idata')
-        print(idata)
+
+        blockslogger.debug(f'NaN count: {np.sum(np.isnan(idata))}/{idata.size}')
+        blockslogger.debug(f'Zero count: {np.count_nonzero(idata==0)}/{idata.size}')
         # Set up matrices to solve
         zdata = np.array(idata[0])
         M = ~np.isnan(zdata)
