@@ -160,6 +160,7 @@ class ReferenceBlock(bfp.TransformBlock):
         #print('ref odata', np.sum(np.isnan(odata)), odata.shape)
         #print(odata)
 
+        blockslogger.debug(f'Nan count: {np.sum(np.isnan(odata))}/{odata.size}')
         if np.sum(np.isnan(odata))==odata.size:
             blockslogger.debug('Zeroes')
         else:
