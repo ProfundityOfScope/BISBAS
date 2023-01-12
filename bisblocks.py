@@ -164,7 +164,7 @@ class ReferenceBlock(bfp.TransformBlock):
         if np.sum(np.isnan(odata))==odata.size:
             blockslogger.debug('Ref | All NaNs')
         else:
-            blockslogger.debug('Ref | ='*20+'Non-NaNs Found'+'='*20)
+            blockslogger.debug('Ref | '+'='*20+'Non-NaNs Found'+'='*20)
         return out_nframe
 
 class GenTimeseriesBlock(bfp.TransformBlock):
