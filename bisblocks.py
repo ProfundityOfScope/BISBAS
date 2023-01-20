@@ -235,7 +235,9 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         hdr = iseq.header
 
         # Create the axes
-        blockslogger.debug(f'{hdr['tfile']} {hdr['tdtype']}')
+        file = hdr['tfile']
+        dtype = hdr['dtype']
+        blockslogger.debug(f'{file} {dtype}')
         self.tarr = np.fromfile(hdr['tfile'], dtype=hdr['tdtype'])
         ft = self.fo.create_dataset('t', data=self.tarr)
         ft.make_scale('t coordinate')
