@@ -108,18 +108,19 @@ class IntfReadBlock(bfp.SourceBlock):
 
     def on_sequence(self, ireader, filename):
 
-        ireader.xcoords.tofile('tmp_x.dat')
-        ireader.ycoords.tofile('tmp_y.dat')
+        coord_dtname = np.dtype(self.np_dtype).name
+        ireader.xcoords.astype(coord_dtname).tofile('tmp_x.dat')
+        ireader.ycoords.astype(coord_dtname).tofile('tmp_y.dat')
         blockslogger.debug(f'{ireader.xcoords.dtype}')
 
         ohdr = {'name':     filename,
                 'gulp':     self.gulp_pixels,
-                'zdtype':   np.dtype(self.np_dtype).name,
+                'zdtype':   coord_dt,
                 'xfile':    'tmp_x.dat',
-                'xdtype':   ireader.xcoords.dtype.name,
+                'xdtype':   coord_dtname,
                 'xname':    ireader.xname,
                 'yfile':    'tmp_y.dat',
-                'ydtype':   ireader.ycoords.dtype.name,
+                'ydtype':   coord_dtname,
                 'yname':    ireader.yname,
                 '_tensor':  {'dtype':  self.dtype,
                              'shape':  [-1, self.gulp_pixels, len(self.file_order)],
