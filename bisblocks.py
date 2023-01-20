@@ -301,11 +301,10 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         yinds, xinds = np.unravel_index(inds, self.imshape)
         xchunk = self.xarr[xinds]
         ychunk = self.yarr[yinds]
+        blockslogger.debug(f'\n{self.xarr}')
         ones = np.ones_like(xchunk)
         Gfull = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
         G = Gfull[:,:self.trendparams]
-
-        blockslogger.debug(f'\n{G}')
 
         # Do the dot products and whatnot
         gooddata = ~np.isnan(ispan.data[0])
