@@ -235,6 +235,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         hdr = iseq.header
 
         # Create the axes
+        blockslogger.debug(f'{hdr['tfile']} {hdr['tdtype']}')
         self.tarr = np.fromfile(hdr['tfile'], dtype=hdr['tdtype'])
         ft = self.fo.create_dataset('t', data=self.tarr)
         ft.make_scale('t coordinate')
@@ -301,7 +302,6 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         yinds, xinds = np.unravel_index(inds, self.imshape)
         xchunk = self.xarr[xinds]
         ychunk = self.yarr[yinds]
-        blockslogger.debug(f'\n{self.xarr}')
         ones = np.ones_like(xchunk)
         Gfull = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
         G = Gfull[:,:self.trendparams]
