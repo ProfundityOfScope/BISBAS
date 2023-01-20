@@ -242,14 +242,10 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         ft.make_scale('t coordinate')
         os.remove(hdr['tfile'])
 
-        file = hdr['xfile']
-        dtype = hdr['xdtype']
-        blockslogger.debug(f'{file} {dtype}')
         self.xarr = np.fromfile(hdr['xfile'], dtype=hdr['xdtype'])
         fx = self.fo.create_dataset('x', data=self.xarr)
         fx.make_scale('x coordinate')
         os.remove(hdr['xfile'])
-        blockslogger.debug(f'\n{self.xarr}')
 
         self.yarr = np.fromfile(hdr['yfile'], dtype=hdr['ydtype'])
         fy = self.fo.create_dataset('y', data=self.yarr)
@@ -313,12 +309,12 @@ class WriteAndAccumBlock(bfp.SinkBlock):
 
         # Do the dot products and whatnot
         gooddata = ~np.isnan(ispan.data[0])
-        blockslogger.debug(f'Shape: {gooddata.shape}')
         self.GTG += np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
         self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
         self.niter += 1
 
-        #blockslogger.debug(f'{self.niter}: {self.GTG}')
+        blockslogger.debug(f'Shape: {gooddata.shape}')
+        blockslogger.debug(f'{self.niter}: \n{self.GTG}')
 
 
 
