@@ -249,6 +249,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         fx = self.fo.create_dataset('x', data=self.xarr)
         fx.make_scale('x coordinate')
         os.remove(hdr['xfile'])
+        blockslogger.debug(f'\n{self.xarr}')
 
         self.yarr = np.fromfile(hdr['yfile'], dtype=hdr['ydtype'])
         fy = self.fo.create_dataset('y', data=self.yarr)
