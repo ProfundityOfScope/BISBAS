@@ -307,11 +307,12 @@ class WriteAndAccumBlock(bfp.SinkBlock):
 
         # Do the dot products and whatnot
         gooddata = ~np.isnan(ispan.data[0])
+        blockslogger.debug(f'Shape: {self.gooddata.shape}')
         self.GTG += np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
         self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
         self.niter += 1
 
-        blockslogger.debug(f'{self.niter}: {self.GTG}')
+        #blockslogger.debug(f'{self.niter}: {self.GTG}')
 
 
 

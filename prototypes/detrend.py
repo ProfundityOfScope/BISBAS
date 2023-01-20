@@ -7,7 +7,7 @@ Created on Mon Sep 12 12:56:00 2022
 """
 
 import os
-from scipy.io import netcdf
+from scipy.io import netcdf_file
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, LogNorm, SymLogNorm
@@ -54,18 +54,6 @@ def detrend_constraints(x,y,image,gpsdat,trendparams=3):
     model1 = reconstruct_model_nparams(trendparams, m1, X, Y)     
     model2 = reconstruct_model_nparams2(m2, x, y)
 
-    # # Draw it
-    # xd = np.linspace(x.min(), x.max(), 10)
-    # yd = np.linspace(y.min(), y.max(), 10)
-    # XD,YD = np.meshgrid(xd,yd)
-    # draw1 = reconstruct_model_nparams(trendparams, m1, XD, YD)
-    # draw2 = reconstruct_model_nparams2(m2, xd, yd) 
-    # ax = plt.subplot(projection='3d')
-    # ax.plot_surface(XD,YD,draw1, color='C2')
-    # ax.plot_surface(XD,YD,draw2, color='C3')
-    # ax.view_init(30,45+90)
-    # plt.show()
-
     return image-model2
 
 def construct_imconstraint(image, x, y):
@@ -93,6 +81,20 @@ def construct_imconstraint2(image, x, y):
     oG = np.ones_like(xG, dtype=np.float64)
     d = image[yind, xind]
     G = np.column_stack([oG, xG, yG, xG**2, yG**2, xG*yG])
+    print(G.shape)
+    
+    GTG1 = np.dot(G.T, G)
+    
+    
+    yind, xind = np.unravel_index(np.arange(image.size), image.shape)
+    xG = x[xind]
+    yG = y[yind]
+    oG = np.ones_like(xG)
+    
+    G2 = np.column_stack([oG, xG, yG, xG**2, yG**2, xG*yG])
+    print(G2.shape)
+    
+    
 
     return G, d
 
@@ -285,24 +287,31 @@ def imviz(x,y,z1,z2, sig=2, name='dummy.grd'):
     
     vl = np.nanmean(z1) - sig * np.nanstd(z1)
     vh = np.nanmean(z1) + sig * np.nanstd(z1)
-    fig = plt.figure(figsize=(12.5,10), dpi=192)
-    ax = plt.subplot2grid((2,2),(0,0))
+    fig = plt.figure(figsize=(16,8), dpi=192)
+    ax = plt.subplot2grid((1,2),(0,0))
     plt.pcolormesh(x, y, z1, shading='auto', norm=Normalize(vl, vh),
                    cmap='Spectral')
-    plt.colorbar()
+    plt.xlim(x.min(), x.max())
+    plt.ylim(y.min(), y.max())
+    plt.title('Blah')
+    
+    
+    ax = plt.subplot2grid((1,2),(0,1))
+    plt.pcolormesh(x, y, z2, shading='auto', norm=Normalize(vl, vh),
+                   cmap='Spectral')
     plt.xlim(x.min(), x.max())
     plt.ylim(y.min(), y.max())
     plt.title('Blah')
     
     imname = name.replace('grd', 'png')
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.savefig(f'/Users/bruzewskis/Dropbox/bisbasgenmap.png', bbox_inches='tight')
     plt.show()
     
 def main():
     # Get data
-    path = '/Users/bruzewskis/Documents/Projects/BISBAS/testing_fulldata/timeseries/'
-    # path = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_nodetrend/'
+    # path = '/Users/bruzewskis/Documents/Projects/BISBAS/testing_fulldata/timeseries/'
+    path = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_nodetrend/'
     path2 = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_detrended/'
     files = sorted(os.listdir(path))
     
@@ -312,20 +321,19 @@ def main():
     print(f'{xc-r}:{xc+r}, {yc-r}:{yc+r}')
     
     nanmap = np.zeros((3250,3900), dtype=int)
-    plt.figure(figsize=(8,5))
     nf = 6
     for file in files[nf:nf+1]:
         
         num = None
         # Get my data and detrend
-        with netcdf.netcdf_file(os.path.join(path, file), mode='r') as dat:
+        with netcdf_file(os.path.join(path, file), mode='r') as dat:
             x = dat.variables['lon'][:]
             y = dat.variables['lat'][:]
             im = dat.variables['z'][:]
             
         
         # Get ground truth data
-        with netcdf.netcdf_file(os.path.join(path2, file), mode='r') as dat:
+        with netcdf_file(os.path.join(path2, file), mode='r') as dat:
             im_real = dat.variables['z'][:]
             
         
@@ -334,7 +342,7 @@ def main():
         
         im_corr = detrend_constraints(x, y, im, gps)
         
-    imviz(x,y,im_corr, im_real)
+    #imviz(x,y,im_corr, im_real)
         
     return im_corr, im_real
 
