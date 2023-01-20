@@ -115,7 +115,7 @@ class IntfReadBlock(bfp.SourceBlock):
 
         ohdr = {'name':     filename,
                 'gulp':     self.gulp_pixels,
-                'zdtype':   coord_dt,
+                'zdtype':   coord_dtname,
                 'xfile':    'tmp_x.dat',
                 'xdtype':   coord_dtname,
                 'xname':    ireader.xname,
