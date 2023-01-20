@@ -304,7 +304,8 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         ones = np.ones_like(xchunk)
         Gfull = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
         G = Gfull[:,:self.trendparams]
-        blockslogger.debug(f'{np.sum(np.isnan(G))}')
+
+        blockslogger.debug(f'\n{G}')
 
         # Do the dot products and whatnot
         gooddata = ~np.isnan(ispan.data[0])
