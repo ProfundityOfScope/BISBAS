@@ -110,7 +110,7 @@ class IntfReadBlock(bfp.SourceBlock):
 
         ireader.xcoords.tofile('tmp_x.dat')
         ireader.ycoords.tofile('tmp_y.dat')
-        blockslogger.debug(f'{ireader.xcoords}')
+        blockslogger.debug(f'{ireader.xcoords.dtype}')
 
         ohdr = {'name':     filename,
                 'gulp':     self.gulp_pixels,
