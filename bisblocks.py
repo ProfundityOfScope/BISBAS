@@ -236,7 +236,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
 
         # Create the axes
         file = hdr['tfile']
-        dtype = hdr['dtype']
+        dtype = hdr['tdtype']
         blockslogger.debug(f'{file} {dtype}')
         self.tarr = np.fromfile(hdr['tfile'], dtype=hdr['tdtype'])
         ft = self.fo.create_dataset('t', data=self.tarr)
