@@ -235,14 +235,14 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         hdr = iseq.header
 
         # Create the axes
-        file = hdr['tfile']
-        dtype = hdr['tdtype']
-        blockslogger.debug(f'{file} {dtype}')
         self.tarr = np.fromfile(hdr['tfile'], dtype=hdr['tdtype'])
         ft = self.fo.create_dataset('t', data=self.tarr)
         ft.make_scale('t coordinate')
         os.remove(hdr['tfile'])
 
+        file = hdr['xfile']
+        dtype = hdr['xdtype']
+        blockslogger.debug(f'{file} {dtype}')
         self.xarr = np.fromfile(hdr['xfile'], dtype=hdr['xdtype'])
         fx = self.fo.create_dataset('x', data=self.xarr)
         fx.make_scale('x coordinate')
