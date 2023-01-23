@@ -219,7 +219,7 @@ class ConvertToMillimeters(bfp.TransformBlock):
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
-        ohdr['conversion'] = f'{conv}'
+        ohdr['conversion'] = f'{self.conv}'
         return ohdr
 
     def on_data(self, ispan, ospan):
