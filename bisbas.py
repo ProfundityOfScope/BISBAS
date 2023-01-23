@@ -138,9 +138,10 @@ def main(args):
         b_read = bisblocks.IntfReadBlock([path], 1000, 'f32', files)
         b_reffed = bisblocks.ReferenceBlock(b_read, median_stack)
         b_tseries = bisblocks.GenTimeseriesBlock(b_reffed, dates, G)
+        b_tsmm = bisblocks.ConvertToMillimeters(b_tseries, rad2mm_conv)
 
         # Sink block
-        b_write = bisblocks.WriteAndAccumBlock(b_tseries, 'timeseries.h5')
+        b_write = bisblocks.WriteAndAccumBlock(b_tsmm, 'timeseries.h5')
 
         PIPELINE1.run()
 

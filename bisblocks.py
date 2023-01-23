@@ -211,6 +211,29 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         odata[...] = bifrost.ndarray(ts)
         return out_nframe
 
+class ConvertToMillimeters(bfp.TransformBlock):
+
+    def __init__(self, iring, conv, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+        self.conv = conv
+
+    def on_sequence(self, iseq):
+        ohdr = deepcopy(iseq.header)
+        ohdr["conversion"] += f"{conv}"
+        return ohdr
+
+    def on_data(self, ispan, ospan):
+        in_nframe  = ispan.nframe
+        out_nframe = in_nframe
+
+        idata = ispan.data
+        odata = ospan.data
+
+        odata[...] = idata
+        odata *= self.conv
+
+        return out_nframe
+
 class WriteAndAccumBlock(bfp.SinkBlock):
     def __init__(self, iring, name, overwrite=True, trendparams=3, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -307,7 +330,16 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         Gfull = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
         G = Gfull[:,:self.trendparams]
 
-        # Do the dot products and whatnot
+        # Accumulate dot-product
+        """
+        I know this looks complicated but I promise it's not so bad. We're
+        basically just zero-weighting all the places in the dot product where
+        we have bad data in each image. To do this for all images at once
+        we take out universal G matrix, do the first half the of dot-product
+        (ij,jk->ijk), then we multiply in a boolean weighting and perform the
+        summation (ijk,jl->ikl). The G.T*d dot can be done similarly, just with
+        a nansum instead of weighting.
+        """
         gooddata = ~np.isnan(ispan.data[0])
         self.GTG += np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
         self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)

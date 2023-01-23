@@ -45,6 +45,10 @@ def detrend_constraints(x,y,image,gpsdat,trendparams=3):
     G2 = G2[:, :trendparams]
     C1 = C1[:, :trendparams]
     C2 = C2[:, :trendparams]
+    
+    print(np.dot(G2.T, G2))
+    print(np.dot(G2.T, d2))
+    print(d2)
 
     # invert for a trend subject to constraint that it matches the value around given GPS points
     m1 = constrained_lsq(G1, d1, C1, z1, method=invmethod)
@@ -81,20 +85,6 @@ def construct_imconstraint2(image, x, y):
     oG = np.ones_like(xG, dtype=np.float64)
     d = image[yind, xind]
     G = np.column_stack([oG, xG, yG, xG**2, yG**2, xG*yG])
-    print(G.shape)
-    
-    GTG1 = np.dot(G.T, G)
-    
-    
-    yind, xind = np.unravel_index(np.arange(image.size), image.shape)
-    xG = x[xind]
-    yG = y[yind]
-    oG = np.ones_like(xG)
-    
-    G2 = np.column_stack([oG, xG, yG, xG**2, yG**2, xG*yG])
-    print(G2.shape)
-    
-    
 
     return G, d
 
@@ -305,7 +295,7 @@ def imviz(x,y,z1,z2, sig=2, name='dummy.grd'):
     
     imname = name.replace('grd', 'png')
     plt.tight_layout()
-    plt.savefig(f'/Users/bruzewskis/Dropbox/bisbasgenmap.png', bbox_inches='tight')
+    # plt.savefig(f'/Users/bruzewskis/Dropbox/bisbasgenmap.png', bbox_inches='tight')
     plt.show()
     
 def main():
@@ -313,7 +303,8 @@ def main():
     # path = '/Users/bruzewskis/Documents/Projects/BISBAS/testing_fulldata/timeseries/'
     path = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_nodetrend/'
     path2 = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_detrended/'
-    files = sorted(os.listdir(path))
+    files = sorted([ f for f in os.listdir(path) if 'ts_mm' in f])
+    print(files)
     
     r = 500
     xc = np.random.randint(r, 3900-r)
@@ -321,7 +312,7 @@ def main():
     print(f'{xc-r}:{xc+r}, {yc-r}:{yc+r}')
     
     nanmap = np.zeros((3250,3900), dtype=int)
-    nf = 6
+    nf = 1
     for file in files[nf:nf+1]:
         
         num = None
@@ -346,15 +337,56 @@ def main():
         
     return im_corr, im_real
 
-def method4(G, d):
+
+def midhandle(filename='blah.h5', contrained=True, gps=None, 
+              GTG=None, GTd=None):
     
-    left = np.nansum(np.einsum('ij,jk->ijk', G.T, G), axis=1)
-    right = np.nansum(G.T * d, axis=1)
+    # Accumulated these
+    GTG = 10**np.random.uniform(8,12,(6,6,20))
+    GTd = 10**np.random.uniform(8,12,(6,20))
     
-    return left, right
+    # This is like the file
+    x = np.linspace(255.5, 255.6, 310)
+    y = np.linspace(32.6, 32.7, 330)
+    z = np.random.normal(0, 100, (y.size, x.size, 20))
+    z[np.random.choice([True, False], z.shape, p=[0.1, 0.9])] = np.nan
+    
+    # This would be the actual function
+    
+    # Grab the bits
+    xg = gps[:,0]
+    yg = gps[:,1]
+    ng = gps[:,2]
+    zg = gps[:,3:]
+    
+    # Promote to something (n_gps, n_dates)
+    zg = np.broadcast_to(zg, (len(gps), z.shape[-1]))
+    
+    
+    return z
 
 if __name__=='__main__':
-    i1, i2 = main()
+    # i1, i2 = main()
+    
+    
+    # test1
+    gps = np.array([[255.52, 32.64, 10, 0]])
+    test1 = midhandle('blah', False, gps)
+    
+    # test2
+    gps = np.column_stack([np.random.uniform(255.5, 255.6, 5),
+                           np.random.uniform(32.6, 32.7, 5),
+                           np.full(5, 10),
+                           np.random.normal(0, 10, (5,1))])
+    test2 = midhandle('blah', False, gps)
+    
+    # test2
+    gps = np.column_stack([np.random.uniform(255.5, 255.6, 5),
+                           np.random.uniform(32.6, 32.7, 5),
+                           np.full(5, 10),
+                           np.random.normal(0, 10, (5,20))])
+    test3 = midhandle('blah', False, gps)
+    
     
     
     

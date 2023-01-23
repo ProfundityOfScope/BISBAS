@@ -9,52 +9,54 @@ Created on Thu Nov 10 11:53:50 2022
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 import tracemalloc
-from scipy.io import netcdf
+from scipy.io import netcdf_file
 import h5py
 
-
-
-A = np.random.random((1000,4))
-B = np.random.random((1000,))
-# B[np.random.choice(1000, 10)] = np.nan
-
-AB_dot = A.T.dot(B)
-AB_dot = np.nansum(np.einsum('ij,j->ij', A.T, B), axis=1)
-AA_dot = A.T.dot(A)
-AA_dot = np.nansum(np.einsum('ij,jk->ijk', A.T, A), axis=1)
-
-
-AB_accum = np.zeros(np.size(A.T,0))
-AA_accum = np.zeros((np.size(A.T,0),)*2)
-
-regions = np.arange(B.size).reshape(-1,10)
-for region in regions:
-    AB_accum += np.nansum(np.einsum('ij,j->ij', A.T[:,region], B[region]), axis=1)
+def imviz(x,y,z1,z2, sig=2, name='dummy.grd'):
     
-    AA_accum += np.nansum(np.einsum('ij,jk->ijk', A[region].T, A[region]), axis=1)
+    vl = np.nanmean(z1) - sig * np.nanstd(z1)
+    vh = np.nanmean(z1) + sig * np.nanstd(z1)
+    fig = plt.figure(figsize=(16,8), dpi=192)
+    ax = plt.subplot2grid((1,2),(0,0))
+    plt.pcolormesh(x, y, z1, shading='auto', norm=Normalize(vl, vh),
+                   cmap='Spectral')
+    plt.colorbar()
+    plt.xlim(x.min(), x.max())
+    plt.ylim(y.min(), y.max())
+    plt.title('Blah')
     
-print('A.T dot B matches:', np.allclose(AB_accum, AB_dot))
-print('A.T dot A matches:', np.allclose(AA_accum, AA_dot))
-
-################
-A = np.random.random((1000,4))
-B = np.random.random((1000,20))
-
-isgood = np.random.choice([True, False], (1000,20), p=[0.8, 0.2])
-B[~isgood] = np.nan
-
-ATA1 = np.zeros((4,4,20))
-ATB1 = np.zeros((4,20))
-for i in range(20):
-    igl = isgood[:,i]
-    Al = A[igl]
-    Bl = B[igl,i]
     
-    ATA1[:,:,i] = np.dot(Al.T, Al)
-    ATB1[:,i] = np.dot(Al.T, Bl)
+    vl = np.nanmean(z2) - sig * np.nanstd(z2)
+    vh = np.nanmean(z2) + sig * np.nanstd(z2)
+    ax = plt.subplot2grid((1,2),(0,1))
+    plt.pcolormesh(x, y, z2, shading='auto', norm=Normalize(vl, vh),
+                   cmap='Spectral')
+    plt.colorbar()
+    plt.xlim(x.min(), x.max())
+    plt.ylim(y.min(), y.max())
+    plt.title('Blah')
+    
+    imname = name.replace('grd', 'png')
+    plt.tight_layout()
+    # plt.savefig(f'/Users/bruzewskis/Dropbox/bisbasgenmap.png', bbox_inches='tight')
+    plt.show()
 
-ATA2 = np.einsum('ij,jk,jl->ikl', A.T, A, isgood)
-ATB2 = np.nansum(np.einsum('ij,jk->ijk', A.T, B), axis=1)
-print(np.allclose(ATA1, ATA2))
-print(np.allclose(ATB1, ATB2))
+i = 15
+with h5py.File('/Users/bruzewskis/Downloads/timeseries.h5', 'r') as f:
+    z = f['displacements']
+    t = f['t']
+    im1 = z[i][:]
+    x = f['x'][:]
+    y = f['y'][:]
+    
+    file = f'ts_mm_{t[i]:04d}.grd'
+    print(t[i], file)
+    
+tgt = f'/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_nodetrend/{file}'
+with netcdf_file(tgt, 'r') as f2:
+    im2 = f2.variables['z'][:]
+    
+X,Y = np.meshgrid(x,y)
+imviz(X, Y, im2, im1)
