@@ -148,21 +148,19 @@ if __name__=='__main__':
     GTG = np.fromfile('testing_gtg.dat')
     GTd = np.fromfile('testing_gtd.dat')
 
-    print('Test 1a')
-    m1a = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     print('Test 1b')
-    m1b = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    print('No GPS:', m1a, m1b)
+    m1a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    print('No GPS:', m1a)
     """
-    m2a = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    m2a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
     print('Test 2a')
-    m2b = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    m2b = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     print('Test 2b')
     print('GPS once:', m2a, m2b)
 
-    m3a = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    m3a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
     print('Test 3a')
-    m3b = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    m3b = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     print('Test 3b')
     print('GPS multiple:', m3a, m3b)
     """
