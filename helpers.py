@@ -71,10 +71,10 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
         print(xmin, xmax, ymin, ymax)
 
         # Grab that bit of the images
-        zarr = z[ymin:ymax, xmin:xmax,:]
+        zarr = z[:,ymin:ymax, xmin:xmax]
         print(z.shape, zarr.shape)
         # Check if what we grabbed is nice enough
-        good_count = np.sum(~np.isnan(zarr), axis=(0,1))
+        good_count = np.sum(~np.isnan(zarr), axis=(1,2))
         print(good_count)
         if np.all(good_count>=min_points):
             # Skip lugging around the meshgrid
@@ -105,22 +105,22 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
     with h5py.File(filename, 'r') as fo:
         # Grab data around that point
         ndates = fo['t'].size
-        Gg = np.zeros((ngps, 6, ndates))
-        dg = np.zeros((ngps, ndates))
+        Gg = np.zeros((ndates, ngps, 6))
+        dg = np.zeros((ndates, ngps))
         for i in range(ngps):
             # Find a good chunk of data
             xa, ya, za = get_data_near_h5(fo, xg[i], yg[i], ng[i])
             isgood = ~np.isnan(za)
-            numgood = np.sum(isgood, axis=(0, 1))
+            numgood = np.sum(isgood, axis=(1, 2))
 
             # Record it's bulk properties
-            Gg[i] = np.array([numgood,
-                              np.sum(xa,    axis=(0, 1), where=isgood),
-                              np.sum(ya,    axis=(0, 1), where=isgood),
-                              np.sum(xa**2, axis=(0, 1), where=isgood),
-                              np.sum(ya**2, axis=(0, 1), where=isgood),
-                              np.sum(xa*ya, axis=(0, 1), where=isgood)])
-            dg[i] = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
+            Gg[:,i] = np.array([numgood,
+                              np.sum(xa,    axis=(1, 2), where=isgood),
+                              np.sum(ya,    axis=(1, 2), where=isgood),
+                              np.sum(xa**2, axis=(1, 2), where=isgood),
+                              np.sum(ya**2, axis=(1, 2), where=isgood),
+                              np.sum(xa*ya, axis=(1, 2), where=isgood)])
+            dg[:,i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
 
     if constrained:
         # Build K-matrix
