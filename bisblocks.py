@@ -235,7 +235,7 @@ class ConvertToMillimeters(bfp.TransformBlock):
         return out_nframe
 
 class WriteAndAccumBlock(bfp.SinkBlock):
-    def __init__(self, iring, name, overwrite=True, trendparams=3, *args, **kwargs):
+    def __init__(self, iring, name, overwrite=True, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
 
         if os.path.exists(name):
@@ -251,7 +251,6 @@ class WriteAndAccumBlock(bfp.SinkBlock):
 
         # Set up accumulation
         self.niter = 0
-        self.trendparams = trendparams
 
     def on_sequence(self, iseq):
         # I'm doing a lot of setup here, but this should only be called once
@@ -279,7 +278,9 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         self.shape = ( ft.size, fy.size, fx.size )
         self.imshape = ( fy.size, fx.size )
         blockslogger.debug(f'Here is the shape {self.shape}')
-        data = self.fo.create_dataset('displacements', data=np.empty(self.shape, dtype=hdr['zdtype']))
+        data = self.fo.create_dataset('displacements', 
+                                      data=np.empty(self.shape, 
+                                                    dtype=hdr['zdtype']))
 
         # Set up scales
         data.dims[0].attach_scale(ft)
@@ -291,21 +292,21 @@ class WriteAndAccumBlock(bfp.SinkBlock):
 
         # Record gulp, set up buffer
         self.gulp = hdr['gulp']
-        self.buffer = np.empty((ft.size, 2*max([self.gulp, fx.size])+1), dtype=hdr['zdtype'])
+        self.buffer = np.empty((ft.size, 2*max([self.gulp, fx.size])+1), 
+                               dtype=hdr['zdtype'])
         self.head = 0
         self.linelen = fx.size
         self.linecount = 0
         blockslogger.debug(f'Generated a buffer of shape {self.buffer.shape}')
 
-        # Set up some stuff for the accumulation
-        self.GTG = np.zeros((self.trendparams, self.trendparams, ft.size))
-        self.GTd = np.zeros((self.trendparams, ft.size))
+        # Set up some stuff for the accumulation (keeping all terms)
+        self.GTG = np.zeros((6, 6, ft.size))
+        self.GTd = np.zeros((6, ft.size))
 
     def on_data(self, ispan):
 
         ### WRITE STUFF ###
         # Put data into the file
-        #blockslogger.debug(f'Writing {self.gulp} values to disk, head at {self.head}')
         self.buffer[:,self.head:self.head+self.gulp] = ispan.data[0].T
         self.head += self.gulp
 
