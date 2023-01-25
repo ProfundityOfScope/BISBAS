@@ -345,8 +345,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
         self.niter += 1
 
-        blockslogger.debug(f'Shape: {gooddata.shape}')
-        blockslogger.debug(f'{self.niter}: \n{self.GTG}')
+        blockslogger.debug(f'Iteration: {self.niter} ({perc:04.1f}%)')
 
 
 
