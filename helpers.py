@@ -73,16 +73,15 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
 
         # Check if what we grabbed is nice enough
         good_count = np.sum(~np.isnan(zarr), axis=(0,1))
-        if np.all(good_count>min_points):
+        if np.all(good_count>=min_points):
             # Skip lugging around the meshgrid
             ym, xm = np.mgrid[ymin:ymax, xmin:xmax]
             xarr = np.broadcast_to(x[xm, None], zarr.shape)
             yarr = np.broadcast_to(y[ym, None], zarr.shape)
+            print(f'nice block at {chunk_size}')
             break
     else:
-        print('WAIT FUCK')
-        xarr = None
-        yarr = None
+        raise ValueError('KILLED')
         
     return xarr, yarr, zarr
 

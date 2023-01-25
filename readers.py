@@ -353,7 +353,7 @@ class DataStack():
             subdata = self.data_near(x0, y0, chunk_size)
 
             # Check to see if we have enough good pixels
-            num_good_per_date = np.sum(~np.isnan(subdata), axis=0)
+            num_good_per_date = np.sum(~np.isnan(subdata), axis=1)
             mngpd = np.min(num_good_per_date)
             readerslogger.debug(f'chunk_size={chunk_size} worst intf has {mngpd} valid pixels')
             if np.all(num_good_per_date >= num):

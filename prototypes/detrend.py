@@ -366,13 +366,14 @@ def get_data_near_h5(file, x0, y0, min_points, max_size=20):
             ymax = ymin + chunk_size
             
             zarr = z[ymin:ymax, xmin:xmax,:]
-            good_count = np.sum(~np.isnan(zarr), axis=(0,1))
             
-            if np.all(good_count>min_points):
-                xarr = np.broadcast_to(X[ymin:ymax, xmin:xmax, None], zarr.shape)
-                yarr = np.broadcast_to(Y[ymin:ymax, xmin:xmax, None], zarr.shape)
+            cond1 = np.all(np.sum(~np.isnan(zarr), axis=(0,1))>min_points)
+            if cond1:
+                ym, xm = np.mgrid[ymin:ymax, xmin:xmax]
+                xarr = np.broadcast_to(x[xm, None], zarr.shape)
+                yarr = np.broadcast_to(y[ym, None], zarr.shape)
                 break
-        
+    
     return xarr, yarr, zarr
 
 def midhandle(filename, gps, contrained=True, trendparams=3,
@@ -397,10 +398,6 @@ def midhandle(filename, gps, contrained=True, trendparams=3,
     yg = gps[:,1]
     ng = gps[:,2]
     zg = gps[:,3:]
-    
-    # Promote to something (n_gps, n_dates)
-    # zg = np.broadcast_to(zg, (len(gps), z.shape[-1]))
-    print('test', zg.shape)
     
     # Grab data around that point
     G = np.zeros((len(gps), 6, z.shape[-1]))
@@ -444,9 +441,4 @@ if __name__=='__main__':
                            np.full(5, 10),
                            np.random.normal(0, 10, (5,20))])
     test3 = midhandle('blah.h5', gps)
-    
-    
-    
-    
-    
     
