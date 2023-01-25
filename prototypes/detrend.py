@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, LogNorm, SymLogNorm
 from matplotlib.patches import Rectangle
+import h5py
 
 from time import time
 import tracemalloc
@@ -337,8 +338,44 @@ def main():
         
     return im_corr, im_real
 
+def get_data_near_h5(file, x0, y0, min_points, max_size=20):
+    
+    min_size = np.ceil(np.sqrt(min_points)).astype(int)
 
-def midhandle(filename='blah.h5', contrained=True, gps=None, 
+    with h5py.File(file, 'r') as fo:
+        x = fo['x'][:]
+        y = fo['y'][:]
+        z = fo['displacements']
+        X, Y = np.meshgrid(x, y)
+
+        for chunk_size in np.arange(min_size, max_size):
+
+            # This is how we would deal with a non-uniform spacing
+            xp = np.interp(x0, x, np.arange(len(x)))
+            yp = np.interp(y0, y, np.arange(len(y)))
+        
+            # Check if the position is outside of image
+            if any([xp <= chunk_size, xp >= len(x)-chunk_size,
+                    yp <= chunk_size, yp >= len(y-chunk_size)]):
+                raise ValueError('This position too close to edge of image')
+        
+            # Find corners
+            xmin = np.ceil( xp - chunk_size/2 ).astype(int)
+            ymin = np.ceil( yp - chunk_size/2 ).astype(int)
+            xmax = xmin + chunk_size
+            ymax = ymin + chunk_size
+            
+            zarr = z[ymin:ymax, xmin:xmax,:]
+            good_count = np.sum(~np.isnan(zarr), axis=(0,1))
+            
+            if np.all(good_count>min_points):
+                xarr = np.broadcast_to(X[ymin:ymax, xmin:xmax, None], zarr.shape)
+                yarr = np.broadcast_to(Y[ymin:ymax, xmin:xmax, None], zarr.shape)
+                break
+        
+    return xarr, yarr, zarr
+
+def midhandle(filename, gps, contrained=True, trendparams=3,
               GTG=None, GTd=None):
     
     # Accumulated these
@@ -349,9 +386,11 @@ def midhandle(filename='blah.h5', contrained=True, gps=None,
     x = np.linspace(255.5, 255.6, 310)
     y = np.linspace(32.6, 32.7, 330)
     z = np.random.normal(0, 100, (y.size, x.size, 20))
-    z[np.random.choice([True, False], z.shape, p=[0.1, 0.9])] = np.nan
-    
-    # This would be the actual function
+    z[np.random.choice([True, False], z.shape, p=[0.25, 0.75])] = np.nan
+    with h5py.File(filename, 'w') as fo:
+        fo['x'] = x
+        fo['y'] = y
+        fo['displacements'] = z
     
     # Grab the bits
     xg = gps[:,0]
@@ -361,9 +400,31 @@ def midhandle(filename='blah.h5', contrained=True, gps=None,
     
     # Promote to something (n_gps, n_dates)
     zg = np.broadcast_to(zg, (len(gps), z.shape[-1]))
+    print('test', zg.shape)
     
+    # Grab data around that point
+    G = np.zeros((len(gps), trendparams, z.shape[-1]))
+    d = np.zeros((len(gps), z.shape[-1]))
+    for i in range(len(gps)):
+        xa, ya, za = get_data_near_h5(filename, xg[i], yg[i], ng[i])
+        isgood = ~np.isnan(za)
+        numgood = np.sum(isgood, axis=(0, 1))
+        Gpoint = np.array([numgood,
+                           np.sum(xa, axis=(0, 1), where=isgood),
+                           np.sum(ya, axis=(0, 1), where=isgood),
+                           np.sum(xa**2, axis=(0, 1), where=isgood),
+                           np.sum(ya**2, axis=(0, 1), where=isgood),
+                           np.sum(xa*ya, axis=(0, 1), where=isgood)])
+        dpoint = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
+        
+        G[i] = Gpoint[:tp,:]
+        d[i] = dpoint
+    print(G.shape, d.shape)
+    for i in range(G.shape[-1]):
+        test = np.linalg.lstsq(G[:,:,i], d[:,i], rcond=None)
+        print(i, test[0])
     
-    return z
+    return test
 
 if __name__=='__main__':
     # i1, i2 = main()
@@ -374,15 +435,15 @@ if __name__=='__main__':
     test1 = midhandle('blah', False, gps)
     
     # test2
-    gps = np.column_stack([np.random.uniform(255.5, 255.6, 5),
-                           np.random.uniform(32.6, 32.7, 5),
+    gps = np.column_stack([np.random.uniform(255.51, 255.59, 5),
+                           np.random.uniform(32.61, 32.69, 5),
                            np.full(5, 10),
                            np.random.normal(0, 10, (5,1))])
     test2 = midhandle('blah', False, gps)
     
     # test2
-    gps = np.column_stack([np.random.uniform(255.5, 255.6, 5),
-                           np.random.uniform(32.6, 32.7, 5),
+    gps = np.column_stack([np.random.uniform(255.51, 255.59, 5),
+                           np.random.uniform(32.61, 32.69, 5),
                            np.full(5, 10),
                            np.random.normal(0, 10, (5,20))])
     test3 = midhandle('blah', False, gps)

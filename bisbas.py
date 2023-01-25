@@ -108,6 +108,7 @@ def main(args):
     igram_ids = readers.read_igram_ids(SAT, intfs_dir, ids)
     logger.info(f'Read {len(igram_ids)} interferogram ids from {intfs}')
 
+    # Get the parameter file
     prm_dir = os.path.join(path, prmfile)
     rad2mm_conv = readers.read_wavelength_conversion(prm_dir)
     logger.info(f'Read unit conversion from {prmfile}')
@@ -133,6 +134,7 @@ def main(args):
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
     # Generates the timeseries
+    outfile = 'timeseries.h5'
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
         b_read = bisblocks.IntfReadBlock([path], 1000, 'f32', files)
@@ -141,19 +143,34 @@ def main(args):
         b_tsmm = bisblocks.ConvertToMillimeters(b_tseries, rad2mm_conv)
 
         # Sink block
-        b_write = bisblocks.WriteAndAccumBlock(b_tsmm, 'timeseries.h5')
+        b_write = bisblocks.WriteAndAccumBlock(b_tsmm, outfile)
 
         PIPELINE1.run()
 
-
+        # Keep track of accumulated values
         GTG = b_write.GTG
         GTd = b_write.GTd
 
-    with h5py.File('timeseries.h5', 'r') as fo:
-        total = np.sum( fo['displacements'])
-        logger.debug(f'==== output array sums to {total:.2e} ====')
+    GTG.tofile('testing_gtg.dat')
+    GTd.tofile('testing_gtd.dat')
 
-    logger.info(f'I accumulated these: {GTG.shape} (sum={np.sum(GTG)}) and {GTd.shape} (sum={np.sum(GTd)})')
+    logger.info('Finished timeseries generation.')
+
+    # If user requested detrend, we do it
+    if detrend:
+        logger.info('Detrend requested.')
+
+        # Figure out GPS
+        if os.path.exists(gpsfile):
+            logger.info('Loading GPS file.')
+            gps = np.loadtxt(gpsfile):
+        else:
+            logger.info('No GPS, zeroing at reference point.')
+            gps = np.array([[reflon, reflat, refnum, 0]])
+
+        model = generate_model(outfile, gps, GTG, GTd, False, 4)
+
+        print(model(1,2))
 
 if __name__=='__main__':
     globalstart=time.time()

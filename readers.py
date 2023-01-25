@@ -13,6 +13,7 @@ import sys
 import logging
 import numpy as np
 from scipy.io import netcdf
+import h5py
 
 __all__ = ['DataStack', 'read_baselines', 'read_igram_ids']
 __version__ = 0.1
@@ -346,7 +347,6 @@ class DataStack():
 
         max_size = 20
 
-        min_size = np.ceil(np.sqrt(num)).astype(int)
         best = min_size
         for chunk_size in np.arange(min_size, max_size):
             subdata = self.data_near(x0, y0, chunk_size)
@@ -419,48 +419,5 @@ def read_wavelength_conversion(prmfile: str) -> float:
     readerslogger.debug(f'Wavelength is {wavelen}')
     return conv
 
-def get_data_near(file, x0, y0, chunk_size):
-
-    # This is how we would deal with a non-uniform spacing
-    xp = np.interp(x0, x, np.arange(len(x)))
-    yp = np.interp(y0, y, np.arange(len(y)))
-    coord_str = f'x:{xp:.0f}, y:{yp:.0f}'
-    readerslogger.debug(f'Requested reference around pixel {coord_str}')
-
-    # Check if the position is outside of image
-    if any([xp <= chunk_size, xp >= len(x)-chunk_size,
-            yp <= chunk_size, yp >= len(y-chunk_size)]):
-        readerslogger.error('This position too close to edge of image')
-        raise ValueError('This position too close to edge of image')
-
-    # Find corners
-    xmin = np.ceil( xp - chunk_size/2 ).astype(int)
-    ymin = np.ceil( yp - chunk_size/2 ).astype(int)
-    xmax = xmin + chunk_size
-    ymax = ymin + chunk_size
-
-    return arr[:,ymin:ymax,xmin:xmax]
-
-def stack_read_test():
-    
-    import h5py
-
-    xa = np.linspace(110.4, 110.5, 2000)
-    ya = np.linspace(36.2, 36.3, 2100)
-    os.remove('test.hdf5')
-    with h5py.File('test.hdf5', 'a') as f:
-        hx = f.create_dataset('x', data=xa)
-        hx.attrs += {'name': 'lon'}
-        hy = f.create_dataset('y', data=ya)
-        hy.attrs += {'name': 'lat'}
-        hz = f.create_dataset('z', data=np.random.random((10,ya.size,xa.size)))
-        hz.attrs += {'name': 'LOS-displace'}
-
-    n = 10
-    gps_x = np.random.choice(xa, n)
-    gps_y = np.random.choice(ya, n)
-
-    test = get_data_near('test.hdf5', gps_x, gps_y)
-
 if __name__=='__main__':
-    stack_read_test()
+    pass

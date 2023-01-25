@@ -15,7 +15,7 @@ import logging
 
 __version__ = 0.1
 
-readerslogger = logging.getLogger('__main__')
+helperslogger = logging.getLogger('__main__')
 
 def make_gmatrix(ids, dates):
     # Fast generates G matrix
@@ -37,3 +37,117 @@ def make_gmatrix(ids, dates):
         readerslogger.error('G is of incorrect order')
         raise ValueError('G is of incorrect order')
     return G
+
+def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
+    
+    # We don't need to check smaller chunks
+    min_size = np.ceil(np.sqrt(min_points)).astype(int)
+
+    with h5py.File(file, 'r') as fo:
+        x = fo['x'][:]
+        y = fo['y'][:]
+        z = fo['displacements']
+        X, Y = np.meshgrid(x, y)
+
+        # This is how we would deal with a non-uniform spacing
+        xp = np.interp(x0, x, np.arange(len(x)))
+        yp = np.interp(y0, y, np.arange(len(y)))
+
+        # We need to find a good chunk size
+        for chunk_size in np.arange(min_size, max_size):
+
+            # Check if the position is outside of image
+            if any([xp <= chunk_size, xp >= len(x)-chunk_size,
+                    yp <= chunk_size, yp >= len(y-chunk_size)]):
+                raise ValueError('This position too close to edge of image')
+        
+            # Find corners
+            xmin = np.ceil( xp - chunk_size/2 ).astype(int)
+            ymin = np.ceil( yp - chunk_size/2 ).astype(int)
+            xmax = xmin + chunk_size
+            ymax = ymin + chunk_size
+            
+            # Grab that bit of the images
+            zarr = z[ymin:ymax, xmin:xmax,:]
+
+            # Check if what we grabbed is nice enough
+            good_count = np.sum(~np.isnan(zarr), axis=(0,1))
+            if np.all(good_count>min_points):
+                xarr = np.broadcast_to(X[ymin:ymax, xmin:xmax, None], zarr.shape)
+                yarr = np.broadcast_to(Y[ymin:ymax, xmin:xmax, None], zarr.shape)
+                break
+        
+    return xarr, yarr, zarr
+
+def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
+
+    # Warnings
+    if len(gps)<trendparams:
+        helperslogger.warning('Less GPS points than requested trendparams')
+    
+    # Grab the bits
+    xg = gps[:,0]
+    yg = gps[:,1]
+    ng = gps[:,2]
+    zg = gps[:,3:]
+    
+    # Promote to something (n_gps, n_dates)
+    zg = np.broadcast_to(zg, (len(gps), z.shape[-1]))
+    
+    # Grab data around that point
+    Gg = np.zeros((len(gps), 6, z.shape[-1]))
+    dg = np.zeros((len(gps), z.shape[-1]))
+    for i in range(len(gps)):
+        # Find a good chunk of data
+        xa, ya, za = get_data_near_h5(filename, xg[i], yg[i], ng[i])
+        isgood = ~np.isnan(za)
+        numgood = np.sum(isgood, axis=(0, 1))
+
+        # Record it's bulk properties
+        Gg[i] = np.array([numgood,
+                          np.sum(xa,    axis=(0, 1), where=isgood),
+                          np.sum(ya,    axis=(0, 1), where=isgood),
+                          np.sum(xa**2, axis=(0, 1), where=isgood),
+                          np.sum(ya**2, axis=(0, 1), where=isgood),
+                          np.sum(xa*ya, axis=(0, 1), where=isgood)])
+        dg[i] = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
+
+    if constrained:
+        # Build K-matrix
+        K = np.zeros((6,6))
+
+        # Solve for model params
+        if np.log10(np.linalg.cond(K)):
+            pass
+    else:
+        # Solve for model params (only gps)
+        Gt = Gg[:,:trendparams,:]
+        m, res, rank, sng = np.linalg.lstsq(Gt, dg, None)
+    
+    return m
+
+if __name__=='__main__':
+    # Grab or generate some testing cases
+    gpsref = np.array([[255.285, 36.675, 10, 0]])
+    gpstest1 = np.column_stack([np.random.uniform(254.8, 255.8, 5),
+                                np.random.uniform(36.2, 37.2, 5),
+                                np.full(5, 10),
+                                np.random.normal(0, 10, (5,1))])
+    gpstest2 = np.column_stack([np.random.uniform(254.8, 255.8, 5),
+                                np.random.uniform(36.2, 37.2, 5),
+                                np.full(5, 10),
+                                np.random.normal(0, 10, (5,20))])
+
+    GTG = np.fromfile('testing_gtg.dat')
+    GTd = np.fromfile('testing_gtd.dat')
+
+    m1n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    m1c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+
+    m2n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    m2c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+
+    m3n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    m3c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+
+

@@ -327,8 +327,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         xchunk = self.xarr[xinds]
         ychunk = self.yarr[yinds]
         ones = np.ones_like(xchunk)
-        Gfull = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
-        G = Gfull[:,:self.trendparams]
+        G = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
 
         # Accumulate dot-product
         """
