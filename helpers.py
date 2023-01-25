@@ -150,9 +150,9 @@ if __name__=='__main__':
     GTG = np.fromfile('testing_gtg.dat')
     GTd = np.fromfile('testing_gtd.dat')
 
-    m1n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    #m1n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     m1c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    print('No GPS:', m1n, m1c)
+    #print('No GPS:', m1n, m1c)
     """
     m2n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     m2c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
