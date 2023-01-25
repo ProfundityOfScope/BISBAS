@@ -125,11 +125,15 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
         # Solve for model params
         if np.log10(np.linalg.cond(K)):
             pass
-        m = [1,1,1,1,1,1]
+        m = np.array(20*[1,1,1,1,1,1])
     else:
         # Solve for model params (only gps)
+        ndates = np.size(Gt, 0)
         Gt = Gg[:,:trendparams,:]
-        m, res, rank, sng = np.linalg.lstsq(Gt, dg, None)
+        m = np.zeros((ndates, trendparams))
+        for i in range(ndates):
+            md, res, rank, sng = np.linalg.lstsq(Gt, dg, None)
+            m[i] = md
     
     return m
 
