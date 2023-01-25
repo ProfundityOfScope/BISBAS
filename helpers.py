@@ -45,8 +45,8 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
     min_size = np.ceil(np.sqrt(min_points)).astype(int)
 
     # Grab variables
-    x = file['x']
-    y = file['y']
+    x = file['x'][:]
+    y = file['y'][:]
     z = file['displacements']
     #X, Y = np.meshgrid(x, y)
 
