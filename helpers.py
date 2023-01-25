@@ -103,7 +103,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
         nd = fo['t'].size
         Gg = np.zeros((nd, ng, 6))
         dg = np.zeros((nd, ng))
-        for i in range(ngps):
+        for i in range(ng):
             # Find a good chunk of data
             xa, ya, za = get_data_near_h5(fo, xg[i], yg[i], pg[i])
             isgood = ~np.isnan(za)
