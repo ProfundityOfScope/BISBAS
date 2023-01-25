@@ -399,11 +399,11 @@ def midhandle(filename, gps, contrained=True, trendparams=3,
     zg = gps[:,3:]
     
     # Promote to something (n_gps, n_dates)
-    zg = np.broadcast_to(zg, (len(gps), z.shape[-1]))
+    # zg = np.broadcast_to(zg, (len(gps), z.shape[-1]))
     print('test', zg.shape)
     
     # Grab data around that point
-    G = np.zeros((len(gps), trendparams, z.shape[-1]))
+    G = np.zeros((len(gps), 6, z.shape[-1]))
     d = np.zeros((len(gps), z.shape[-1]))
     for i in range(len(gps)):
         xa, ya, za = get_data_near_h5(filename, xg[i], yg[i], ng[i])
@@ -417,36 +417,33 @@ def midhandle(filename, gps, contrained=True, trendparams=3,
                            np.sum(xa*ya, axis=(0, 1), where=isgood)])
         dpoint = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
         
-        G[i] = Gpoint[:tp,:]
+        G[i] = Gpoint
         d[i] = dpoint
     print(G.shape, d.shape)
-    for i in range(G.shape[-1]):
-        test = np.linalg.lstsq(G[:,:,i], d[:,i], rcond=None)
-        print(i, test[0])
-    
-    return test
+    return None
 
 if __name__=='__main__':
     # i1, i2 = main()
+    np.random.seed(10)
     
     
     # test1
     gps = np.array([[255.52, 32.64, 10, 0]])
-    test1 = midhandle('blah', False, gps)
+    test1 = midhandle('blah.h5', gps)
     
     # test2
     gps = np.column_stack([np.random.uniform(255.51, 255.59, 5),
                            np.random.uniform(32.61, 32.69, 5),
                            np.full(5, 10),
                            np.random.normal(0, 10, (5,1))])
-    test2 = midhandle('blah', False, gps)
+    test2 = midhandle('blah.h5', gps)
     
     # test2
     gps = np.column_stack([np.random.uniform(255.51, 255.59, 5),
                            np.random.uniform(32.61, 32.69, 5),
                            np.full(5, 10),
                            np.random.normal(0, 10, (5,20))])
-    test3 = midhandle('blah', False, gps)
+    test3 = midhandle('blah.h5', gps)
     
     
     

@@ -168,7 +168,7 @@ def main(args):
             logger.info('No GPS, zeroing at reference point.')
             gps = np.array([[reflon, reflat, refnum, 0]])
 
-        model = generate_model(outfile, gps, GTG, GTd, False, 4)
+        model = helpers.generate_model(outfile, gps, GTG, GTd, False, 4)
 
         print(model)
 
