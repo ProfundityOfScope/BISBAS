@@ -113,7 +113,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
             numgood = np.sum(isgood, axis=(1, 2))
 
             # Record it's bulk properties
-            Gp = np.array([numgood,
+            Gp = np.column_stack([numgood,
                               np.sum(xa,    axis=(1, 2), where=isgood),
                               np.sum(ya,    axis=(1, 2), where=isgood),
                               np.sum(xa**2, axis=(1, 2), where=isgood),
