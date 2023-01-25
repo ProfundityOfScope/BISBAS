@@ -68,10 +68,11 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
         ymin = np.ceil( yp - chunk_size/2 ).astype(int)
         xmax = xmin + chunk_size
         ymax = ymin + chunk_size
-        
+        print(xmin, xmax, ymin, ymax)
+
         # Grab that bit of the images
         zarr = z[ymin:ymax, xmin:xmax,:]
-        print(zarr.shape)
+        print(z.shape, zarr.shape)
         # Check if what we grabbed is nice enough
         good_count = np.sum(~np.isnan(zarr), axis=(0,1))
         print(good_count)
