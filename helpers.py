@@ -81,10 +81,9 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
             ym, xm = np.mgrid[ymin:ymax, xmin:xmax]
             xarr = np.broadcast_to(x[None, xm], zarr.shape)
             yarr = np.broadcast_to(y[None, ym], zarr.shape)
-            print('xs', xarr.shape, 'ys', yarr.shape)
             break
     else:
-        raise ValueError('KILLED')
+        raise ValueError('Couldn\'t find a good chunk, try a different reference')
         
     return xarr, yarr, zarr
 
@@ -114,13 +113,14 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
             numgood = np.sum(isgood, axis=(1, 2))
 
             # Record it's bulk properties
-            Gg[:,i] = np.array([numgood,
+            Gp = np.array([numgood,
                               np.sum(xa,    axis=(1, 2), where=isgood),
                               np.sum(ya,    axis=(1, 2), where=isgood),
                               np.sum(xa**2, axis=(1, 2), where=isgood),
                               np.sum(ya**2, axis=(1, 2), where=isgood),
                               np.sum(xa*ya, axis=(1, 2), where=isgood)])
-            dg[:,i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
+            dp = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
+            print('shapes:', Gp.shape, dp.shape)
 
     if constrained:
         # Build K-matrix
