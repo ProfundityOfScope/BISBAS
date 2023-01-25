@@ -81,7 +81,7 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
             ym, xm = np.mgrid[ymin:ymax, xmin:xmax]
             xarr = np.broadcast_to(x[None, xm], zarr.shape)
             yarr = np.broadcast_to(y[None, ym], zarr.shape)
-            print(f'nice block at {chunk_size}')
+            print('xs', xarr.shape, 'ys', yarr.shape)
             break
     else:
         raise ValueError('KILLED')
