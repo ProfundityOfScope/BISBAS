@@ -143,11 +143,14 @@ if __name__=='__main__':
 
     m1n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     m1c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    print('No GPS:', m1n, m1c)
 
     m2n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     m2c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    print('GPS once:', m2n, m2c)
 
     m3n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     m3c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    print('GPS multiple:', m3n, m3c)
 
 
