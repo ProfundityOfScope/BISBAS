@@ -90,7 +90,8 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
 def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
 
     # Warnings
-    if len(gps)<trendparams:
+    ngps = len(gps)
+    if not constrained and len(gps)<trendparams:
         helperslogger.warning('Less GPS points than requested trendparams')
     
     # Grab the bits
@@ -103,7 +104,6 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
     with h5py.File(filename, 'r') as fo:
         # Grab data around that point
         ndates = fo['t'].size
-        ngps = len(gps)
         Gg = np.zeros((ngps, 6, ndates))
         dg = np.zeros((ngps, ndates))
         for i in range(ngps):
