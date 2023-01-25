@@ -148,17 +148,23 @@ if __name__=='__main__':
     GTG = np.fromfile('testing_gtg.dat')
     GTd = np.fromfile('testing_gtd.dat')
 
-    #m1n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
-    m1c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    #print('No GPS:', m1n, m1c)
+    print('Test 1a')
+    m1a = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    print('Test 1b')
+    m1b = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    print('No GPS:', m1a, m1b)
     """
-    m2n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
-    m2c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    print('GPS once:', m2n, m2c)
+    m2a = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    print('Test 2a')
+    m2b = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    print('Test 2b')
+    print('GPS once:', m2a, m2b)
 
-    m3n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
-    m3c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    print('GPS multiple:', m3n, m3c)
+    m3a = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    print('Test 3a')
+    m3b = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    print('Test 3b')
+    print('GPS multiple:', m3a, m3b)
     """
 
 
