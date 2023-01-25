@@ -39,7 +39,7 @@ def make_gmatrix(ids, dates):
         raise ValueError('G is of incorrect order')
     return G
 
-def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
+def get_data_near_h5(file, x0, y0, min_points=10, max_size=100):
     
     # We don't need to check smaller chunks
     min_size = np.ceil(np.sqrt(min_points)).astype(int)
