@@ -345,6 +345,7 @@ class DataStack():
 
         '''
 
+        min_size = np.ceil(np.sqrt(num)).astype(int)
         max_size = 20
 
         best = min_size
