@@ -120,7 +120,6 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
                                        np.sum(ya**2, axis=(1, 2), where=isgood),
                                        np.sum(xa*ya, axis=(1, 2), where=isgood)])
             dg[:,i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
-            print('shapes:', Gp.shape, dp.shape)
 
     if constrained:
         # Build K-matrix
