@@ -129,7 +129,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
     else:
         # Solve for model params (only gps)
         ndates = np.size(Gg, 0)
-        Gt = Gg[:,:trendparams,:]
+        Gt = Gg[:,:,:trendparams]
         m = np.zeros((ndates, trendparams))
         for i in range(ndates):
             md, res, rank, sng = np.linalg.lstsq(Gt[i], dg[i], None)
