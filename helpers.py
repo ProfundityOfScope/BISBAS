@@ -12,6 +12,7 @@ import os
 import sys
 import time
 import logging
+import h5py
 
 __version__ = 0.1
 
