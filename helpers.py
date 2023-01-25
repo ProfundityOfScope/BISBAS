@@ -113,13 +113,13 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
             numgood = np.sum(isgood, axis=(1, 2))
 
             # Record it's bulk properties
-            Gp = np.column_stack([numgood,
-                              np.sum(xa,    axis=(1, 2), where=isgood),
-                              np.sum(ya,    axis=(1, 2), where=isgood),
-                              np.sum(xa**2, axis=(1, 2), where=isgood),
-                              np.sum(ya**2, axis=(1, 2), where=isgood),
-                              np.sum(xa*ya, axis=(1, 2), where=isgood)])
-            dp = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
+            Gg[:,i] = np.column_stack([numgood,
+                                       np.sum(xa,    axis=(1, 2), where=isgood),
+                                       np.sum(ya,    axis=(1, 2), where=isgood),
+                                       np.sum(xa**2, axis=(1, 2), where=isgood),
+                                       np.sum(ya**2, axis=(1, 2), where=isgood),
+                                       np.sum(xa*ya, axis=(1, 2), where=isgood)])
+            dg[:,i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
             print('shapes:', Gp.shape, dp.shape)
 
     if constrained:
@@ -129,6 +129,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
         # Solve for model params
         if np.log10(np.linalg.cond(K)):
             pass
+        m = [1,1,1,1,1,1]
     else:
         # Solve for model params (only gps)
         Gt = Gg[:,:trendparams,:]
