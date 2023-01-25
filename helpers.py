@@ -44,10 +44,10 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
     min_size = np.ceil(np.sqrt(min_points)).astype(int)
 
     # Grab variables
-    x = file['x'][:]
-    y = file[]'y'][:]
+    x = file['x']
+    y = file['y']
     z = file['displacements']
-    X, Y = np.meshgrid(x, y)
+    #X, Y = np.meshgrid(x, y)
 
     # This is how we would deal with a non-uniform spacing
     xp = np.interp(x0, x, np.arange(len(x)))
@@ -73,8 +73,10 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
         # Check if what we grabbed is nice enough
         good_count = np.sum(~np.isnan(zarr), axis=(0,1))
         if np.all(good_count>min_points):
-            xarr = np.broadcast_to(X[ymin:ymax, xmin:xmax, None], zarr.shape)
-            yarr = np.broadcast_to(Y[ymin:ymax, xmin:xmax, None], zarr.shape)
+            # Skip lugging around the meshgrid
+            ym, xm = np.mgrid[ymin:ymax, xmin:xmax]
+            xarr = np.broadcast_to(x[xm, None], zarr.shape)
+            yarr = np.broadcast_to(y[ym, None], zarr.shape)
             break
         
     return xarr, yarr, zarr
