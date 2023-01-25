@@ -163,7 +163,7 @@ def main(args):
         # Figure out GPS
         if os.path.exists(gpsfile):
             logger.info('Loading GPS file.')
-            gps = np.loadtxt(gpsfile):
+            gps = np.loadtxt(gpsfile)
         else:
             logger.info('No GPS, zeroing at reference point.')
             gps = np.array([[reflon, reflat, refnum, 0]])
