@@ -84,34 +84,30 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
         
     return xarr, yarr, zarr
 
-def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
+def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
 
     # Warnings
-    ngps = len(gps)
-    if not constrained and len(gps)<trendparams:
+    ng = len(gps)
+    if not constrained and len(gps)<nt:
         helperslogger.warning('Less GPS points than requested trendparams')
     
     # Grab the bits
     xg = gps[:,0]
     yg = gps[:,1]
-    ng = gps[:,2]
+    pg = gps[:,2]
     zg = gps[:,3:]
 
     # Open file and do stuff with it
     with h5py.File(filename, 'r') as fo:
         # Grab data around that point
-        ndates = fo['t'].size
-        Gg = np.zeros((ndates, ngps, 6))
-        dg = np.zeros((ndates, ngps))
+        nd = fo['t'].size
+        Gg = np.zeros((nd, ng, 6))
+        dg = np.zeros((nd, ng))
         for i in range(ngps):
             # Find a good chunk of data
-            xa, ya, za = get_data_near_h5(fo, xg[i], yg[i], ng[i])
+            xa, ya, za = get_data_near_h5(fo, xg[i], yg[i], pg[i])
             isgood = ~np.isnan(za)
             numgood = np.sum(isgood, axis=(1, 2))
-
-            print(xa[5])
-            print(ya[5])
-            print(za[5])
 
             # Record it's bulk properties
             Gg[:,i] = np.column_stack([numgood,
@@ -122,21 +118,34 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
                                        np.sum(xa*ya, axis=(1, 2), where=isgood)])
             dg[:,i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
 
+    m = np.zeros((nd, nt))
     if constrained:
-        # Build K-matrix
-        K = np.zeros((6,6))
+        print(GTG.shape, GTd.shape)
+        i = 5
+        """
+        # Assemble K matrix
+        K = np.zeros((nt+ng, nt+ng))
+        K[:nt, :nt] = 2 * GTG[:nt, :nt]
+        K[:nt, nt:] = Gg.T
+        K[nt:, :nt] = Gg
+
+        # Assemble D matrix
+        D = np.zeros((ng+nt, 1))
+        D[:nt] = 2 * GTd
+        D[nt:] = dg
+
+        print(K)
+        print(D)"""
 
         # Solve for model params
         if np.log10(np.linalg.cond(K)):
             pass
         m = np.array(20*[[1,1,1,1,1,1]])
     else:
-        # Solve for model params (only gps)
-        ndates = np.size(Gg, 0)
-        Gt = Gg[:,:,:trendparams]
-        m = np.zeros((ndates, trendparams))
-        for i in range(ndates):
-            md, res, rank, sng = np.linalg.lstsq(Gt[i], dg[i], None)
+
+        # Solve for model params
+        for i in range(nd):
+            md, res, rank, sng = np.linalg.lstsq(Gg[i,:,:nt], dg[i], None)
             m[i] = md
     
     return m
