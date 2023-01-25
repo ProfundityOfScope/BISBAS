@@ -54,6 +54,7 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=100):
     xp = np.interp(x0, x, np.arange(len(x)))
     yp = np.interp(y0, y, np.arange(len(y)))
 
+    print('coords:', xp, yp)
     # We need to find a good chunk size
     for chunk_size in np.arange(min_size, max_size):
 
@@ -70,9 +71,10 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=100):
         
         # Grab that bit of the images
         zarr = z[ymin:ymax, xmin:xmax,:]
-
+        print(zarr.shape)
         # Check if what we grabbed is nice enough
         good_count = np.sum(~np.isnan(zarr), axis=(0,1))
+        print(good_count)
         if np.all(good_count>=min_points):
             # Skip lugging around the meshgrid
             ym, xm = np.mgrid[ymin:ymax, xmin:xmax]
@@ -147,7 +149,7 @@ if __name__=='__main__':
 
     GTG = np.fromfile('testing_gtg.dat')
     GTd = np.fromfile('testing_gtd.dat')
-
+    """
     m1n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     m1c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
     print('No GPS:', m1n, m1c)
@@ -159,5 +161,6 @@ if __name__=='__main__':
     m3n = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
     m3c = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
     print('GPS multiple:', m3n, m3c)
+    """
 
 
