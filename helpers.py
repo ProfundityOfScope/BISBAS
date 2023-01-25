@@ -158,19 +158,17 @@ if __name__=='__main__':
 
     print('Test 1a')
     m1a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    print('No GPS:', m1a)
+    print('No GPS, constrained:\n', m1a)
 
     m2a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    print('Test 2a')
     m2b = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
-    print('Test 2b')
-    print('GPS once:', m2a, m2b)
+    print('GPS once, constrained:\n', m2a)
+    print('GPS once, not constrained:\n', m2b)
     """
     m3a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    print('Test 3a')
     m3b = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
-    print('Test 3b')
-    print('GPS multiple:', m3a, m3b)
+    print('GPS multiple, constrained:\n', m3a)
+    print('GPS multiple, not constrained:\n', m3b)
     """
 
 
