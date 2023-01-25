@@ -109,9 +109,9 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
             isgood = ~np.isnan(za)
             numgood = np.sum(isgood, axis=(1, 2))
 
-            print(xa[0])
-            print(ya[0])
-            print(za[0])
+            print(xa[5])
+            print(ya[5])
+            print(za[5])
 
             # Record it's bulk properties
             Gg[:,i] = np.column_stack([numgood,
