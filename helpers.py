@@ -128,7 +128,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
         m = np.array(20*[[1,1,1,1,1,1]])
     else:
         # Solve for model params (only gps)
-        ndates = np.size(Gt, 0)
+        ndates = np.size(Gg, 0)
         Gt = Gg[:,:trendparams,:]
         m = np.zeros((ndates, trendparams))
         for i in range(ndates):
