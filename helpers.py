@@ -79,6 +79,10 @@ def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
             xarr = np.broadcast_to(x[xm, None], zarr.shape)
             yarr = np.broadcast_to(y[ym, None], zarr.shape)
             break
+    else:
+        print('WAIT FUCK')
+        xarr = None
+        yarr = None
         
     return xarr, yarr, zarr
 
