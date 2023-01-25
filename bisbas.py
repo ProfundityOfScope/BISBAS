@@ -170,7 +170,7 @@ def main(args):
 
         model = generate_model(outfile, gps, GTG, GTd, False, 4)
 
-        print(model(1,2))
+        print(model)
 
 if __name__=='__main__':
     globalstart=time.time()
