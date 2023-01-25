@@ -125,7 +125,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, trendparams=3):
         # Solve for model params
         if np.log10(np.linalg.cond(K)):
             pass
-        m = np.array(20*[1,1,1,1,1,1])
+        m = np.array(20*[[1,1,1,1,1,1]])
     else:
         # Solve for model params (only gps)
         ndates = np.size(Gt, 0)
