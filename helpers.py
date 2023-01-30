@@ -120,7 +120,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
             dg[i] = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
 
     print('GPS:', Gg.shape, dg.shape)
-    m = np.zeros((nd, nt))
+    m = np.zeros((nt, nd))
     if constrained:
         print('DATA:', GTG.shape, GTd.shape)
         i = 5
@@ -148,7 +148,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
         # Solve for model params
         for i in range(nd):
             md, res, rank, sng = np.linalg.lstsq(Gg[:,:nt,i], dg[:,i], None)
-            print('NC m:', md)
+            m[:,i] = md
     
     return m
 
