@@ -162,8 +162,8 @@ if __name__=='__main__':
                                 np.full(5, 10),
                                 np.random.normal(0, 10, (5,20))])
 
-    GTG = np.fromfile('testing_gtg.dat')
-    GTd = np.fromfile('testing_gtd.dat')
+    GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
+    GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
 
     print('Test 1a')
     m1a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)

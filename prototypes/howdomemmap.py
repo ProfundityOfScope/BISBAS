@@ -57,22 +57,31 @@ def imviz(x,y,z1,z2, sig=3, name=''):
                 bbox_inches='tight')
     plt.show()
 
+if False:
+    for i in range(20):
+    
+        with h5py.File('/Users/bruzewskis/Downloads/timeseries.h5', 'r') as f:
+            z = f['displacements']
+            t = f['t']
+            im1 = z[i][:] * -18.303
+            x = f['x'][:]
+            y = f['y'][:]
+    
+            file = f'ts_mm_{t[i]:04d}.grd'
+            print(t[i], file)
+      
+        tgt = f'/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_nodetrend/{file}'
+        with netcdf_file(tgt, 'r') as f2:
+            im2 = f2.variables['z'][:]
+    
+        X, Y = np.meshgrid(x, y)
+        imviz(X, Y, im2, im1, name=file)
+    
+G = np.random.random((1000,6))
+d = np.random.random((1000,20))
+g = ~np.isnan(d)
 
-for i in range(20):
+print(G.shape, d.shape)
 
-    with h5py.File('/Users/bruzewskis/Downloads/timeseries.h5', 'r') as f:
-        z = f['displacements']
-        t = f['t']
-        im1 = z[i][:] * -18.303
-        x = f['x'][:]
-        y = f['y'][:]
-
-        file = f'ts_mm_{t[i]:04d}.grd'
-        print(t[i], file)
-  
-    tgt = f'/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_nodetrend/{file}'
-    with netcdf_file(tgt, 'r') as f2:
-        im2 = f2.variables['z'][:]
-
-    X, Y = np.meshgrid(x, y)
-    imviz(X, Y, im2, im1, name=file)
+GTG = np.einsum('jl,ij,jk->lik', g, G.T, G)
+print(GTG.shape)
