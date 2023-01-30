@@ -145,7 +145,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
 
         # Solve for model params
         for i in range(nd):
-            md, res, rank, sng = np.linalg.lstsq(Gg[i,:,:nt], dg[i], None)
+            md, res, rank, sng = np.linalg.lstsq(Gg[:,:nt,i], dg[i], None)
             m[i] = md
     
     return m
@@ -165,10 +165,11 @@ if __name__=='__main__':
     GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
     GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
 
-    print('Test 1a')
+    print('Test 1')
     m1a = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, True, 4)
     print('No GPS, constrained:\n', m1a)
 
+    print('Test 2')
     m2a = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, True, 4)
     m2b = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, False, 4)
     print('GPS once, constrained:\n', m2a)
