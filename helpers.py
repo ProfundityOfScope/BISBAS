@@ -138,9 +138,9 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
         print('D:', D.shape)
 
         # Solve for model params
-        if np.log10(np.linalg.cond(K[:,:,0]))>8:
-            pass
-        m = np.array(20*[[1,1,1,1,1,1]])
+        for i in range(nd):
+            md, res, rank, sng = np.linalg.lstsq(K[:,:,i], D[:,i], None)
+            m[:,i] = md
     else:
 
         # Solve for model params
