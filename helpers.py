@@ -96,6 +96,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
     yg = gps[:,1]
     pg = gps[:,2]
     zg = gps[:,3:]
+    print('XG', xg)
 
     # Open file and do stuff with it
     with h5py.File(filename, 'r') as fo:
