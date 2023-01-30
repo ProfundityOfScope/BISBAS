@@ -136,6 +136,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
         D = np.zeros((ng+nt, 1))
         D[:nt] = 2 * GTd
         D[nt:] = dg
+        print('D:', D.shape)
         """
 
         # Solve for model params
@@ -146,8 +147,8 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
 
         # Solve for model params
         for i in range(nd):
-            md, res, rank, sng = np.linalg.lstsq(Gg[:,:nt,i], dg[i], None)
-            m[i] = md
+            md, res, rank, sng = np.linalg.lstsq(Gg[:,:nt,i], dg[:,i], None)
+            print('NC m:', md)
     
     return m
 
