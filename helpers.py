@@ -152,12 +152,12 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
 
 if __name__=='__main__':
     # Grab or generate some testing cases
-    gpsref = np.array([[255.285, 36.675, 10, 0]])
-    gpstest1 = np.column_stack([np.random.uniform(254.8, 255.8, 5),
+    gpstest1 = np.array([[255.285, 36.675, 10, 0]])
+    gpstest2 = np.column_stack([np.random.uniform(254.8, 255.8, 5),
                                 np.random.uniform(36.2, 37.2, 5),
                                 np.full(5, 10),
                                 np.random.normal(0, 10, (5,1))])
-    gpstest2 = np.column_stack([np.random.uniform(254.8, 255.8, 5),
+    gpstest3 = np.column_stack([np.random.uniform(254.8, 255.8, 5),
                                 np.random.uniform(36.2, 37.2, 5),
                                 np.full(5, 10),
                                 np.random.normal(0, 10, (5,20))])
@@ -166,17 +166,18 @@ if __name__=='__main__':
     GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
 
     print('Test 1')
-    m1a = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, True, 4)
+    m1a = generate_model('timeseries_backup.h5', gpstest1, GTG, GTd, True, 4)
     print('No GPS, constrained:\n', m1a)
 
     print('Test 2')
-    m2a = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, True, 4)
-    m2b = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, False, 4)
+    m2a = generate_model('timeseries_backup.h5', gpstest2, GTG, GTd, True, 4)
+    m2b = generate_model('timeseries_backup.h5', gpstest2, GTG, GTd, False, 4)
     print('GPS once, constrained:\n', m2a)
     print('GPS once, not constrained:\n', m2b)
     """
-    m3a = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, True, 4)
-    m3b = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, False, 4)
+    print('Test 3')
+    m3a = generate_model('timeseries_backup.h5', gpstest3, GTG, GTd, True, 4)
+    m3b = generate_model('timeseries_backup.h5', gpstest3, GTG, GTd, False, 4)
     print('GPS multiple, constrained:\n', m3a)
     print('GPS multiple, not constrained:\n', m3b)
     """
