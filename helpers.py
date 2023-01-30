@@ -118,24 +118,24 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
                                      np.sum(xa*ya, axis=(0, 1), where=isgood)])
             dg[i] = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
 
+    print('GPS:', Gg.shape, dg.shape)
     m = np.zeros((nd, nt))
     if constrained:
-        print(GTG.shape, GTd.shape)
+        print('DATA:', GTG.shape, GTd.shape)
         i = 5
-        """
+
         # Assemble K matrix
-        K = np.zeros((nt+ng, nt+ng))
+        K = np.zeros((nt+ng, nt+ng, nd))
         K[:nt, :nt] = 2 * GTG[:nt, :nt]
         K[:nt, nt:] = Gg.T
         K[nt:, :nt] = Gg
-
+        print(K)
+        """
         # Assemble D matrix
         D = np.zeros((ng+nt, 1))
         D[:nt] = 2 * GTd
         D[nt:] = dg
-
-        print(K)
-        print(D)"""
+        """
 
         # Solve for model params
         if np.log10(np.linalg.cond(K)):
