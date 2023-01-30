@@ -259,23 +259,23 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         hdr = iseq.header
 
         # Create the axes
-        self.tarr = np.fromfile(hdr['tfile'], dtype=hdr['tdtype'])
-        ft = self.fo.create_dataset('t', data=self.tarr)
-        ft.make_scale('t coordinate')
-        os.remove(hdr['tfile'])
+        self.yarr = np.fromfile(hdr['yfile'], dtype=hdr['ydtype'])
+        fy = self.fo.create_dataset('y', data=self.yarr)
+        fy.make_scale('y coordinate')
+        os.remove(hdr['yfile'])
 
         self.xarr = np.fromfile(hdr['xfile'], dtype=hdr['xdtype'])
         fx = self.fo.create_dataset('x', data=self.xarr)
         fx.make_scale('x coordinate')
         os.remove(hdr['xfile'])
 
-        self.yarr = np.fromfile(hdr['yfile'], dtype=hdr['ydtype'])
-        fy = self.fo.create_dataset('y', data=self.yarr)
-        fy.make_scale('y coordinate')
-        os.remove(hdr['yfile'])
+        self.tarr = np.fromfile(hdr['tfile'], dtype=hdr['tdtype'])
+        ft = self.fo.create_dataset('t', data=self.tarr)
+        ft.make_scale('t coordinate')
+        os.remove(hdr['tfile'])
 
         # Generate new data object
-        self.shape = ( ft.size, fy.size, fx.size )
+        self.shape = ( fy.size, fx.size, ft.size )
         self.imshape = ( fy.size, fx.size )
         blockslogger.debug(f'Here is the shape {self.shape}')
         data = self.fo.create_dataset('displacements', 
@@ -283,16 +283,16 @@ class WriteAndAccumBlock(bfp.SinkBlock):
                                                     dtype=hdr['zdtype']))
 
         # Set up scales
-        data.dims[0].attach_scale(ft)
-        data.dims[0].label = hdr['tname']
-        data.dims[1].attach_scale(fy)
-        data.dims[1].label = hdr['yname']
-        data.dims[2].attach_scale(fx)
-        data.dims[2].label = hdr['xname']
+        data.dims[0].attach_scale(fy)
+        data.dims[0].label = hdr['yname']
+        data.dims[1].attach_scale(fx)
+        data.dims[1].label = hdr['xname']
+        data.dims[2].attach_scale(ft)
+        data.dims[2].label = hdr['tname']
 
         # Record gulp, set up buffer
         self.gulp = hdr['gulp']
-        self.buffer = np.empty((ft.size, 2*max([self.gulp, fx.size])+1), 
+        self.buffer = np.empty((2*max([self.gulp, fx.size])+1, ft.size), 
                                dtype=hdr['zdtype'])
         self.head = 0
         self.linelen = fx.size
@@ -307,16 +307,16 @@ class WriteAndAccumBlock(bfp.SinkBlock):
 
         ### WRITE STUFF ###
         # Put data into the file
-        self.buffer[:,self.head:self.head+self.gulp] = ispan.data[0].T
+        self.buffer[self.head:self.head+self.gulp,:] = ispan.data[0].T
         self.head += self.gulp
 
         # Write out as many times as needed
         while self.head > self.linelen:
-            self.fo['displacements'][:,self.linecount] = self.buffer[:,:self.linelen]
+            self.fo['displacements'][self.linecount,:,:] = self.buffer[:self.linelen,:]
             self.linecount += 1
 
             self.head -= self.linelen
-            self.buffer = np.roll(self.buffer, -self.linelen, axis=1)
+            self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
         perc = 100*self.gulp*self.niter/np.product(self.imshape)
         #blockslogger.debug(f'Written {perc:04.1f}% of data')
@@ -340,9 +340,10 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         summation (ijk,jl->ikl). The G.T*d dot can be done similarly, just with
         a nansum instead of weighting.
         """
-        gooddata = ~np.isnan(ispan.data[0])
-        self.GTG += np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
-        self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
+        blockslogger.debug('='*10+f'{ispan.data[0].shape}')
+        #gooddata = ~np.isnan(ispan.data[0].T)
+        #self.GTG += np.einsum('ij,jk,lj->ikl', G.T, G, gooddata)
+        #self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0].T), axis=1)
         self.niter += 1
 
         blockslogger.debug(f'Iteration: {self.niter} ({perc:04.1f}%)')
