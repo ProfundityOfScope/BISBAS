@@ -166,16 +166,16 @@ if __name__=='__main__':
     GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
 
     print('Test 1a')
-    m1a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
+    m1a = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, True, 4)
     print('No GPS, constrained:\n', m1a)
 
-    m2a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    m2b = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    m2a = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, True, 4)
+    m2b = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, False, 4)
     print('GPS once, constrained:\n', m2a)
     print('GPS once, not constrained:\n', m2b)
     """
-    m3a = generate_model('timeseries.h5', gpsref, GTG, GTd, True, 4)
-    m3b = generate_model('timeseries.h5', gpsref, GTG, GTd, False, 4)
+    m3a = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, True, 4)
+    m3b = generate_model('timeseries_backup.h5', gpsref, GTG, GTd, False, 4)
     print('GPS multiple, constrained:\n', m3a)
     print('GPS multiple, not constrained:\n', m3b)
     """
