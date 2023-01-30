@@ -96,7 +96,6 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
     yg = gps[:,1]
     pg = gps[:,2]
     zg = gps[:,3:]
-    print('XG', xg)
 
     # Open file and do stuff with it
     with h5py.File(filename, 'r') as fo:
@@ -167,17 +166,17 @@ if __name__=='__main__':
     GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
     GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
 
-    print('Test 1')
+    print('='*10, 'Test 1', '='*10)
     m1a = generate_model('timeseries_backup.h5', gpstest1, GTG, GTd, True, 4)
     print('No GPS, constrained:\n', m1a)
 
-    print('Test 2')
+    print('='*10, 'Test 2', '='*10)
     m2a = generate_model('timeseries_backup.h5', gpstest2, GTG, GTd, True, 4)
     m2b = generate_model('timeseries_backup.h5', gpstest2, GTG, GTd, False, 4)
     print('GPS once, constrained:\n', m2a)
     print('GPS once, not constrained:\n', m2b)
     """
-    print('Test 3')
+    print('='*10, 'Test 3', '='*10)
     m3a = generate_model('timeseries_backup.h5', gpstest3, GTG, GTd, True, 4)
     m3b = generate_model('timeseries_backup.h5', gpstest3, GTG, GTd, False, 4)
     print('GPS multiple, constrained:\n', m3a)
