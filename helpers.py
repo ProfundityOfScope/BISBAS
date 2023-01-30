@@ -154,12 +154,12 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
 if __name__=='__main__':
     # Grab or generate some testing cases
     gpstest1 = np.array([[255.285, 36.675, 10, 0]])
-    gpstest2 = np.column_stack([np.random.uniform(254.8, 255.8, 5),
-                                np.random.uniform(36.2, 37.2, 5),
+    gpstest2 = np.column_stack([np.random.normal(255.3, 0.1, 5),
+                                np.random.normal(36.7, 0.1, 5),
                                 np.full(5, 10),
                                 np.random.normal(0, 10, (5,1))])
-    gpstest3 = np.column_stack([np.random.uniform(254.8, 255.8, 5),
-                                np.random.uniform(36.2, 37.2, 5),
+    gpstest3 = np.column_stack([np.random.normal(255.3, 0.1, 5),
+                                np.random.normal(36.7, 0.1, 5),
                                 np.full(5, 10),
                                 np.random.normal(0, 10, (5,20))])
 
