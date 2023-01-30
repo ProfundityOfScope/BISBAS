@@ -101,22 +101,22 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
     with h5py.File(filename, 'r') as fo:
         # Grab data around that point
         nd = fo['t'].size
-        Gg = np.zeros((nd, ng, 6))
-        dg = np.zeros((nd, ng))
+        Gg = np.zeros((ng, 6, nd))
+        dg = np.zeros((ng, nd))
         for i in range(ng):
             # Find a good chunk of data
             xa, ya, za = get_data_near_h5(fo, xg[i], yg[i], pg[i])
             isgood = ~np.isnan(za)
-            numgood = np.sum(isgood, axis=(1, 2))
+            numgood = np.sum(isgood, axis=(0, 1))
 
             # Record it's bulk properties
-            Gg[:,i] = np.column_stack([numgood,
-                                       np.sum(xa,    axis=(1, 2), where=isgood),
-                                       np.sum(ya,    axis=(1, 2), where=isgood),
-                                       np.sum(xa**2, axis=(1, 2), where=isgood),
-                                       np.sum(ya**2, axis=(1, 2), where=isgood),
-                                       np.sum(xa*ya, axis=(1, 2), where=isgood)])
-            dg[:,i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
+            Gg[i] = np.column_stack([numgood,
+                                     np.sum(xa,    axis=(0, 1), where=isgood),
+                                     np.sum(ya,    axis=(0, 1), where=isgood),
+                                     np.sum(xa**2, axis=(0, 1), where=isgood),
+                                     np.sum(ya**2, axis=(0, 1), where=isgood),
+                                     np.sum(xa*ya, axis=(0, 1), where=isgood)])
+            dg[i] = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
 
     m = np.zeros((nd, nt))
     if constrained:
