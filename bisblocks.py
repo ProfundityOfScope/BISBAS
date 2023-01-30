@@ -307,7 +307,8 @@ class WriteAndAccumBlock(bfp.SinkBlock):
 
         ### WRITE STUFF ###
         # Put data into the file
-        self.buffer[self.head:self.head+self.gulp,:] = ispan.data[0].T
+        blockslogger.debug('='*10+f'{ispan.data[0].shape}')
+        self.buffer[self.head:self.head+self.gulp,:] = ispan.data[0]
         self.head += self.gulp
 
         # Write out as many times as needed
@@ -340,7 +341,6 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         summation (ijk,jl->ikl). The G.T*d dot can be done similarly, just with
         a nansum instead of weighting.
         """
-        blockslogger.debug('='*10+f'{ispan.data[0].shape}')
         #gooddata = ~np.isnan(ispan.data[0].T)
         #self.GTG += np.einsum('ij,jk,lj->ikl', G.T, G, gooddata)
         #self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0].T), axis=1)
