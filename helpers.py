@@ -174,12 +174,12 @@ if __name__=='__main__':
     m2b = generate_model('timeseries_backup.h5', gpstest2, GTG, GTd, False, 4)
     print('GPS once, constrained:\n', m2a)
     print('GPS once, not constrained:\n', m2b)
-    """
+    
     print('='*10, 'Test 3', '='*10)
     m3a = generate_model('timeseries_backup.h5', gpstest3, GTG, GTd, True, 4)
     m3b = generate_model('timeseries_backup.h5', gpstest3, GTG, GTd, False, 4)
     print('GPS multiple, constrained:\n', m3a)
     print('GPS multiple, not constrained:\n', m3b)
-    """
+    
 
 
