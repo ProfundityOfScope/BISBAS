@@ -129,7 +129,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
         K[:nt, :nt] = 2 * GTG[:nt, :nt]
         K[:nt, nt:] = np.transpose(Gg[:,:nt], (1,0,2))
         K[nt:, :nt] = Gg[:,:nt]
-        print(K.shape)
+        print('K:', K.shape)
         """
         # Assemble D matrix
         D = np.zeros((ng+nt, 1))
