@@ -138,12 +138,16 @@ def main(args):
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
         b_read = bisblocks.IntfReadBlock([path], 1000, 'f32', files)
-        b_reffed = bisblocks.ReferenceBlock(b_read, median_stack)
+
+        # This on GPU?
+        b_ongpu = bf.blocks.copy(b_read, space='cuda')
+        b_reffed = bisblocks.ReferenceBlock(b_ongpu, median_stack)
         b_tseries = bisblocks.GenTimeseriesBlock(b_reffed, dates, G)
         b_tsmm = bisblocks.ConvertToMillimeters(b_tseries, rad2mm_conv)
+        b_offgpu = bf.blocks.copy(b_tsmm, space='cuda_host')
 
         # Sink block
-        b_write = bisblocks.WriteAndAccumBlock(b_tsmm, outfile)
+        b_write = bisblocks.WriteAndAccumBlock(b_offgpu, outfile)
 
         PIPELINE1.run()
 

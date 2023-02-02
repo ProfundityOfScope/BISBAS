@@ -119,9 +119,9 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
             dg[i] = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
 
     print('GPS:', Gg.shape, dg.shape)
+    print('DATA:', GTG.shape, GTd.shape)
     m = np.zeros((nt, nd))
     if constrained:
-        print('DATA:', GTG.shape, GTd.shape)
         i = 5
 
         # Assemble K matrix
@@ -129,24 +129,20 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
         K[:nt, :nt] = 2 * GTG[:nt, :nt]
         K[:nt, nt:] = np.transpose(Gg[:,:nt], (1,0,2))
         K[nt:, :nt] = Gg[:,:nt]
-        print('K:', K.shape)
-        
+
         # Assemble D matrix
         D = np.zeros((ng+nt, nd))
         D[:nt] = 2 * GTd[:nt]
         D[nt:] = dg
-        print('D:', D.shape)
-
-        # Solve for model params
-        for i in range(nd):
-            md, res, rank, sng = np.linalg.lstsq(K[:,:,i], D[:,i], None)
-            m[:,i] = md[:nt]
     else:
+        # If not constrain just use data
+        K = Gg[:,:nt]
+        D = dg
 
-        # Solve for model params
-        for i in range(nd):
-            md, res, rank, sng = np.linalg.lstsq(Gg[:,:nt,i], dg[:,i], None)
-            m[:,i] = md
+    # Solve for model params
+    for i in range(nd):
+        md, res, rank, sng = np.linalg.lstsq(Gg[:,:nt,i], dg[:,i], None)
+        m[:,i] = md
     
     return m
 
