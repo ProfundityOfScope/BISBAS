@@ -357,6 +357,142 @@ class WriteAndAccumBlock(bfp.SinkBlock):
 
         blockslogger.debug(f'Iteration: {self.niter} ({perc:04.1f}%)')
 
+class H5Reader(object):
+    '''
+    File read object
+    '''
+    def __init__(self, filename, gulp_size, dtype, file_order):
+
+        # Figure out order
+        files = [ f'{filename}/{f}' for f in file_order ]
+        self.files = files
+
+        # Initialize our reader object
+        self.step = 0
+        self.fo = h5py.File(filename, 'r')
+        self.data = self.fo['displacements']
+        self.dtype = dtype
+
+        # Double check this gulp-size is acceptable
+        self.imshape = (self.fo['y'].size, self.fo['x'].size)
+        self.imsize = np.product(self.imshape)
+        self.ndays = self.fo['t'].size
+        if imsize%gulp_size==0:
+            self.gulp_size = gulp_size
+        else:
+            raise ValueError('Gulp must evenly divide image size')
+
+        # Generate regions for entire image
+        self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
+        blockslogger.debug(f'Regions have shape {self.regions.shape}')
+
+
+    def read(self):
+
+        try:
+            # We try to read files
+            picks = self.regions[self.step]
+            yinds,xinds = np.unravel_index(picks, self.imshape)
+            d = self.fo[yinds,xinds,:]
+            self.step += 1
+
+            return d.astype(self.dtype)
+        except IndexError:
+            # Catch the index error if we're past the end
+            return np.empty((0, len(self.files)), dtype=self.dtype)
+
+    def __enter__(self):
+        return self
+
+    def close(self):
+        pass
+
+    def __exit__(self, type, value, tb):
+        self.fo.close()
+
+class ReadH5Block(bfp.SinkBlock):
+    """ 
+    This guy will read hdf5 files
+    """
+
+    def __init__(self, filenames, gulp_pixels, dtype, *args, **kwargs):
+        super().__init__(filenames, 1, *args, **kwargs)
+        self.dtype = dtype
+        self.gulp_pixels = gulp_pixels
+
+        # Do a lookup on bifrost datatype to numpy datatype
+        dcode = self.dtype.rstrip('0123456789')
+        nbits = int(self.dtype[len(dcode):])
+        self.np_dtype = bf.dtype.name_nbit2numpy(dcode, nbits)
+
+    def create_reader(self, filename):
+        # Log line about reading
+
+        return IntfRead(filename, self.gulp_pixels, self.np_dtype, file_order=self.file_order)
+
+    def on_sequence(self, ireader, filename):
+
+        ndats = ireader.ndays
+
+        ohdr = {'name':     filename,
+                'gulp':     self.gulp_pixels,
+                '_tensor':  {'dtype':  self.dtype,
+                             'shape':  [-1, self.gulp_pixels, ireader.ndays],
+                            },
+                }
+        return [ohdr]
+
+    def on_data(self, reader, ospans):
+        indata = reader.read()
+
+        if indata.shape[0] == self.gulp_pixels:
+            ospans[0].data[...] = indata
+            return [1]
+        else:
+            return [0]
+
+class ApplyModelBlock(bfp.TransformBlock):
+
+    def __init__(self, iring, models, xaxis, yaxis, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+        self.models = models
+        self.xaxis = xaxis
+        self.yaxis = yaxis
+
+        self.step = 0
+        self.ntrend = np.shape(models, 0)
+        self.imshape = (yaxis.size, xaxis.size)
+
+    def on_sequence(self, iseq):
+        ohdr = deepcopy(iseq.header)
+        ohdr['write_name'] = 'detrended'
+        return ohdr
+
+    def on_data(self, ispan, ospan):
+        in_nframe  = ispan.nframe
+        out_nframe = in_nframe
+
+        idata = ispan.data
+        odata = ospan.data
+
+        # Do some stuff with idata
+        gulp_size = np.size(idata[0],0)
+        r_start = self.step * gulp_size
+        r_end = (self.step+1) * gulp_size
+        yind, xind = np.unravel_index(np.arange(r_start, r_end), self.imsize)
+
+        xc = self.xaxis[xind]
+        yc = self.yaxis[yind]
+
+        self.step += 1
+
+        odata[...] = idata
+        #odata *= self.conv
+        ospan.data[...] = bf.ndarray(odata)# may be unneeded?
+
+        return out_nframe
+
+
 
 
     
