@@ -138,7 +138,7 @@ def main(args):
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
-        b_read = bisblocks.IntfReadBlock([path], gulp, 'f32', files)
+        b_read = bisblocks.IntfReadBlock([path], gulp, 'f32', files, space='system')
 
         # This on GPU?
         b_ongpu = bf.blocks.copy(b_read, space='cuda')
