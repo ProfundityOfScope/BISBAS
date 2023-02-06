@@ -114,6 +114,8 @@ def main(args):
     logger.info(f'Read unit conversion from {prmfile}')
 
     ##### Set up tools we'll use later #####
+    outfile = 'timeseries.h5'
+    gulp = 1000
 
     # Figure out the order we'll want to read in the intfs
     files = []
@@ -134,10 +136,9 @@ def main(args):
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
     # Generates the timeseries
-    outfile = 'timeseries.h5'
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
-        b_read = bisblocks.IntfReadBlock([path], 1000, 'f32', files)
+        b_read = bisblocks.IntfReadBlock([path], gulp, 'f32', files)
 
         # This on GPU?
         b_ongpu = bf.blocks.copy(b_read, space='cuda')
@@ -157,11 +158,15 @@ def main(args):
 
     GTG.tofile('testing_gtg.dat')
     GTd.tofile('testing_gtd.dat')
-
     logger.info('Finished timeseries generation.')
 
+    ###### DELETE ME #######
+    GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
+    GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
+    ###### DELETE ME #######
+
     # If user requested detrend, we do it
-    if detrend:
+    if False:
         logger.info('Detrend requested.')
 
         # Figure out GPS
@@ -172,9 +177,26 @@ def main(args):
             logger.info('No GPS, zeroing at reference point.')
             gps = np.array([[reflon, reflat, refnum, 0]])
 
-        model = helpers.generate_model(outfile, gps, GTG, GTd, False, 4)
+        model = helpers.generate_model(outfile, gps, GTG, GTd, True, 3)
 
-        print(model)
+        # These will be useful for model fitting
+        with h5py.File(outfile) as fo:
+            x_axis = fo['x'][:]
+            y_axis = fo['y'][:]
+            t_axis = fo['t'][:]
+
+        # Second pipeline
+        with bf.get_default_pipeline() as PIPELINE2:
+            # Read in data
+            b_read = bisblocks.ReadH5Block([outfile], gulp)
+
+            # Apply model
+            b_amod = bisblocks.ApplyModelBlock(b_read, model, x_axis, y_axis)
+
+            # Fit data
+            # Write data
+
+            # Write fit
 
 if __name__=='__main__':
     globalstart=time.time()
