@@ -167,9 +167,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
     def __init__(self, iring, dates, G, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
-        self.dates = dates.as_cupy()
+        self.dates = cp.asarray(dates)
         self.nd = len(dates) #cp
-        self.G = G.as_cupy() #cp
+        self.G = cp.asarray(G) #cp
 
     def on_sequence(self, iseq):
 
