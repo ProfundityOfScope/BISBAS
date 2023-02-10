@@ -194,24 +194,24 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             odata = ospan.data.as_cupy()
 
             # Set up matrices to solve
-            zdata = np.array(idata[0])
-            M = ~np.isnan(zdata)
-            A = np.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
-            B = np.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
+            zdata = idata[0]
+            M = ~cp.isnan(zdata)
+            A = cp.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
+            B = cp.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
 
             # Mask out low-rank values
-            lowrank = np.linalg.matrix_rank(A) != self.nd - 1
-            A[lowrank] = np.eye(self.nd-1)
-            B[lowrank] = np.full(self.nd-1, np.nan)
+            lowrank = cp.linalg.matrix_rank(A) != self.nd - 1
+            A[lowrank] = cp.eye(self.nd-1)
+            B[lowrank] = cp.full(self.nd-1, np.nan)
 
             # Solve
-            model = np.linalg.solve(A, B)
+            model = cp.linalg.solve(A, B)
 
             # Turn it into a cumulative timeseries
-            datediffs = (self.dates - np.roll(self.dates, 1))[1:]
+            datediffs = (self.dates - cp.roll(self.dates, 1))[1:]
             changes = datediffs[None,:] * model
-            ts = np.zeros((1,np.size(zdata,0), self.nd))
-            ts[:,:,1:] = np.cumsum(changes, axis=1)
+            ts = cp.zeros((1,cp.size(zdata,0), self.nd))
+            ts[:,:,1:] = cp.cumsum(changes, axis=1)
 
             odata[...] = ts
             ospan.data[...] = bf.ndarray(odata) # may be unneeded?
