@@ -442,3 +442,40 @@ if __name__=='__main__':
                            np.random.normal(0, 10, (5,20))])
     test3 = midhandle('blah.h5', gps)
     
+    xarr = np.linspace(0, 10, 50)
+    yarr = np.linspace(-10, 0, 60)
+    tarr = np.arange(555, 559)
+    zarr = np.random.random((yarr.size, xarr.size, tarr.size))
+    
+    with h5py.File('testing.h5', 'w') as fo:
+        
+        fy = fo.create_dataset('y', data=yarr)
+        fy.make_scale('y coordinate')
+
+        fx = fo.create_dataset('x', data=xarr)
+        fx.make_scale('x coordinate')
+
+        ft = fo.create_dataset('t', data=tarr)
+        ft.make_scale('t coordinate')
+
+        data = fo.create_dataset('displacements', data=np.empty(zarr.shape))
+
+        # Set up scales
+        data.dims[0].attach_scale(fy)
+        data.dims[0].label = 'lon'
+        data.dims[1].attach_scale(fx)
+        data.dims[1].label = 'lat'
+        data.dims[2].attach_scale(ft)
+        data.dims[2].label = 'days'
+
+    dimnames = []
+    labels = []
+    with h5py.File('testing.h5', 'r') as fz:
+        for d in fz['displacements'].dims:
+            dimnames.append( d[0].name )
+            labels.append( d.label )
+        
+        print(fz['displacements'].dtype)
+    print(dimnames)
+    print(labels)
+    

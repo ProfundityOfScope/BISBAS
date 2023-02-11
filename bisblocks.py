@@ -181,7 +181,6 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         ohdr['tfile'] = 'tmp_t.dat'
         ohdr['tdtype'] = self.dates.dtype.name
         ohdr['tname'] = 'time'
-        ohdr['_tensor']['shape'][2] = self.nd
         return ohdr
 
     def on_data(self, ispan, ospan):
@@ -214,7 +213,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             ts[:,:,1:] = cp.cumsum(changes, axis=1)
 
             odata[...] = ts
-            ospan.data[...] = bf.ndarray(odata) # may be unneeded?
+            ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
 
@@ -345,7 +344,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         I know this looks complicated but I promise it's not so bad. We're
         basically just zero-weighting all the places in the dot product where
         we have bad data in each image. To do this for all images at once
-        we take out universal G matrix, do the first half the of dot-product
+        we take our universal G matrix, do the first half the of dot-product
         (ij,jk->ijk), then we multiply in a boolean weighting and perform the
         summation (ijk,jl->ikl). The G.T*d dot can be done similarly, just with
         a nansum instead of weighting.
@@ -432,14 +431,13 @@ class ReadH5Block(bfp.SinkBlock):
 
     def on_sequence(self, ireader, filename):
 
-        ndats = ireader.ndays
-
         ohdr = {'name':     filename,
                 'gulp':     self.gulp_pixels,
                 '_tensor':  {'dtype':  self.dtype,
                              'shape':  [-1, self.gulp_pixels, ireader.ndays],
                             },
                 }
+
         return [ohdr]
 
     def on_data(self, reader, ospans):
@@ -455,9 +453,9 @@ class ApplyModelBlock(bfp.TransformBlock):
 
     def __init__(self, iring, models, xaxis, yaxis, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
-        self.models = models
-        self.xaxis = xaxis
-        self.yaxis = yaxis
+        self.models = cp.asarray(models)
+        self.xaxis = cp.asarray(xaxis)
+        self.yaxis = cp.asarray(yaxis)
 
         self.step = 0
         self.ntrend = np.shape(models, 0)
@@ -465,33 +463,112 @@ class ApplyModelBlock(bfp.TransformBlock):
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
-        ohdr['write_name'] = 'detrended'
         return ohdr
 
     def on_data(self, ispan, ospan):
         in_nframe  = ispan.nframe
         out_nframe = in_nframe
 
-        idata = ispan.data
-        odata = ospan.data
+        stream = bf.device.get_stream()
+        with cp.cuda.ExternalStream(stream):
+            idata = ispan.data.as_cupy() 
+            odata = ospan.data.as_cupy()
 
-        # Do some stuff with idata
-        gulp_size = np.size(idata[0],0)
-        r_start = self.step * gulp_size
-        r_end = (self.step+1) * gulp_size
-        yind, xind = np.unravel_index(np.arange(r_start, r_end), self.imsize)
+            # Do some stuff with idata
+            gulp_size = np.size(idata[0],0)
+            r_start = self.step * gulp_size
+            r_end = (self.step+1) * gulp_size
+            yind, xind = np.unravel_index(np.arange(r_start, r_end), self.imsize)
 
-        xc = self.xaxis[xind]
-        yc = self.yaxis[yind]
+            xc = self.xaxis[xind]
+            yc = self.yaxis[yind]
 
-        self.step += 1
+            self.step += 1
 
-        odata[...] = idata
-        #odata *= self.conv
-        ospan.data[...] = bf.ndarray(odata)# may be unneeded?
+            odata[...] = idata
+            odata -= self.ref_stack
+            ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
 
+class CalcRateBlock(bfp.TransformBlock):
+
+    def __init__(self, iring, taxis, deg=1, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+        self.taxis = cp.asarray(taxis)
+        self.deg = deg
+
+    def on_sequence(self, iseq):
+        ohdr = deepcopy(iseq.header)
+        ohdr['_tensor']['shape'] = iseq.header['_tensor']['shape'][:-1]
+        return ohdr
+
+    def on_data(self, ispan, ospan):
+        in_nframe  = ispan.nframe
+        out_nframe = in_nframe
+
+        stream = bf.device.get_stream()
+        with cp.cuda.ExternalStream(stream):
+            idata = ispan.data.as_cupy() 
+            odata = ospan.data.as_cupy()
+
+            fits = cp.polyfit(self.taxis, idata[0].T)
+            rate = fits[0].reshape((1,-1))
+
+            odata[...] = rate
+            ospan.data[...] = bf.ndarray(odata)
+
+        return out_nframe
+
+class WriteH5Block(bfp.SinkBlock):
+
+    def __init__(self, iring, filename, dsetname, reference, *args, **kwargs):
+        super().__unit__(iring, *args, **kwargs)
+        self.fo = h5py.File(filename, 'w')
+        self.dname = dsetname
+        self.ref = reference
+
+        # Set up accumulation
+        self.niter = 0
+
+    def on_sequence(self, iseq):
+
+        # Grab useful things from header
+        hdr = iseq.header
+        span, self.gulp, depth = hdr['_tensor']['shape'][-1]
+
+        # Grab useful things from file
+        ref_dtype = self.fo[self.ref].dtype
+        outshape = (self.fo[self.ref].shape[0], 
+                    self.fo[self.ref].shape[1], 
+                    depth)
+        blockslogger.debug(f'Write block is writing to a {outshape} object')
+
+        # Create dataset
+        data = self.fo.create_dataset(self.dname, 
+                                      data=np.empty(outshape, 
+                                                    dtype=ref_dtype))
+        # Assign scales
+        for i in range(len(data.ndim)):
+            if outshape[i]==1:
+                blockslogger.debug('We don\'t need to label this axis')
+                continue
+
+            ref_dim = self.fo[self.ref].dims[i]
+
+            data.dims[i].attach_scale(ref_dim[0])
+            data.dims[i].label = ref_dim.label
+
+        # Record gulp, set up buffer
+        self.linelen = outshape[1]
+        self.buffer = np.empty((2*max([self.gulp, self.linelen])+1, depth), 
+                               dtype=ref_dtype)
+        self.head = 0
+        self.linecount = 0
+
+    def on_data(self, ispan):
+
+        pass
 
 
 

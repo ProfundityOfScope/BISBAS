@@ -135,38 +135,40 @@ def main(args):
     median_stack = np.nanmedian(ref_stack, axis=0)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
+    """
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
         b_read = bisblocks.IntfReadBlock([path], gulp, 'f32', files, space='system')
 
         # This on GPU?
-        b_ongpu = bf.blocks.copy(b_read, space='cuda')
-        b_reffed = bisblocks.ReferenceBlock(b_ongpu, median_stack)
-        b_tseries = bisblocks.GenTimeseriesBlock(b_reffed, dates, G)
-        b_tsmm = bisblocks.ConvertToMillimeters(b_tseries, rad2mm_conv)
-        b_offgpu = bf.blocks.copy(b_tsmm, space='cuda_host')
+        b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+        b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
+        b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates, G)
+        b_tsmm_gpu = bisblocks.ConvertToMillimeters(b_tser_gpu, rad2mm_conv)
+        b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
         # Sink block
-        b_write = bisblocks.WriteAndAccumBlock(b_offgpu, outfile)
+        b_write = bisblocks.WriteAndAccumBlock(b_tsmm, outfile)
 
         PIPELINE1.run()
 
         # Keep track of accumulated values
         GTG = b_write.GTG
         GTd = b_write.GTd
+    """
 
+    ###### DELETE ME #######
     GTG.tofile('testing_gtg.dat')
     GTd.tofile('testing_gtd.dat')
     logger.info('Finished timeseries generation.')
 
-    ###### DELETE ME #######
     GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
     GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
     ###### DELETE ME #######
 
     # If user requested detrend, we do it
-    if False:
+    if True:
         logger.info('Detrend requested.')
 
         # Figure out GPS
@@ -191,12 +193,19 @@ def main(args):
             b_read = bisblocks.ReadH5Block([outfile], gulp)
 
             # Apply model
-            b_amod = bisblocks.ApplyModelBlock(b_read, model, x_axis, y_axis)
+            b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+            b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model, x_axis, y_axis)
+            b_rate_gpu = bisblocks.CalcRateBlock(b_amod_gpu, taxis)
 
-            # Fit data
             # Write data
+            b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
+            b_write2 = bisblocks.WriteH5Block(b_amod, outfile, 'detrended', 'displacements')
 
-            # Write fit
+            b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
+            b_write3 = bisblocks.WriteH5Block(b_rate, outfile, 'rate', 'displacements')
+
+    if plot:
+        logger.info('Plots requested')
 
 if __name__=='__main__':
     globalstart=time.time()
