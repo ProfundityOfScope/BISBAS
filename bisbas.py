@@ -190,7 +190,7 @@ def main(args):
         # Second pipeline
         with bf.get_default_pipeline() as PIPELINE2:
             # Read in data
-            b_read = bisblocks.ReadH5Block([outfile], gulp, 'f32')
+            b_read = bisblocks.ReadH5Block([outfile], gulp, 'f32', space='system')
 
             # Apply model
             b_read_gpu = bf.blocks.copy(b_read, space='cuda')
