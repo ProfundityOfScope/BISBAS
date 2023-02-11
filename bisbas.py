@@ -156,12 +156,12 @@ def main(args):
         # Keep track of accumulated values
         GTG = b_write.GTG
         GTd = b_write.GTd
-    """
 
     ###### DELETE ME #######
     GTG.tofile('testing_gtg.dat')
     GTd.tofile('testing_gtd.dat')
     logger.info('Finished timeseries generation.')
+    """
 
     GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
     GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
