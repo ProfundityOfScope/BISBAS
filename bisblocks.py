@@ -458,7 +458,7 @@ class ApplyModelBlock(bfp.TransformBlock):
         self.yaxis = cp.asarray(yaxis)
 
         self.step = 0
-        self.ntrend = np.shape(models, 0)
+        self.ntrend = models.shape[0]
         self.imshape = (yaxis.size, xaxis.size)
 
     def on_sequence(self, iseq):
