@@ -409,7 +409,7 @@ class H5Reader(object):
     def __exit__(self, type, value, tb):
         self.fo.close()
 
-class ReadH5Block(bfp.SinkBlock):
+class ReadH5Block(bfp.SourceBlock):
     """ 
     This guy will read hdf5 files
     """
