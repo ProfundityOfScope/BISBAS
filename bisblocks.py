@@ -433,6 +433,7 @@ class ReadH5Block(bfp.SourceBlock):
 
         ohdr = {'name':     filename,
                 'gulp':     self.gulp_pixels,
+                'imshape':  str(ireader.imshape),
                 '_tensor':  {'dtype':  self.dtype,
                              'shape':  [-1, self.gulp_pixels, ireader.ndays],
                             },
@@ -519,6 +520,31 @@ class CalcRateBlock(bfp.TransformBlock):
             ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
+
+class AccumRateBlocks(bfp.SinkBlock):
+
+    def __init__(self, iring, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+
+        # Set up accumulation
+        self.niter = 0
+
+    def on_sequence(self, iseq):
+
+        # Grab useful things from header
+        hdr = iseq.header
+        self.imshape = eval(hdr['imshape'])
+        self.rates = np.empty(self.imshape)
+
+    def on_data(self, ispan):
+
+        gulp = np.shape(ispan.data, 1)
+
+        inds = gulp*self.niter + np.arange(0, gulp)
+        yind, xind = np.unravel_index(inds, self.imshape)
+
+        self.rates[yinds,xinds] = ispan.data[0]
+        self.niter += 1
 
 class WriteH5Block(bfp.SinkBlock):
 

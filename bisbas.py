@@ -195,14 +195,21 @@ def main(args):
             # Apply model
             b_read_gpu = bf.blocks.copy(b_read, space='cuda')
             b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model, x_axis, y_axis)
-            b_rate_gpu = bisblocks.CalcRateBlock(b_amod_gpu, t_axis)
+            b_rate_gpu = bisblocks.CalcRateBlock(b_amod_gpu, taxis)
 
             # Write data
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
             b_write2 = bisblocks.WriteH5Block(b_amod, outfile, 'detrended', 'displacements')
 
+            # Load rates back to cpu and track them in RAM
+            # since we cant simultaniuously write with H5py :(
             b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
-            b_write3 = bisblocks.WriteH5Block(b_rate, outfile, 'rate', 'displacements')
+            b_racc = bisblocks.AccumRatesBlock(b_rate, outfile)
+
+        # Put the rates into the outfile
+        with h5py.File(outfile, 'a') as fo:
+            fo.create_dataset('rates', data=b_racc.rates)
+            # attach dims?
 
     if plot:
         logger.info('Plots requested')
