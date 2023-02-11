@@ -523,7 +523,7 @@ class CalcRateBlock(bfp.TransformBlock):
 class WriteH5Block(bfp.SinkBlock):
 
     def __init__(self, iring, filename, dsetname, reference, *args, **kwargs):
-        super().__unit__(iring, *args, **kwargs)
+        super().__init__(iring, *args, **kwargs)
         self.fo = h5py.File(filename, 'w')
         self.dname = dsetname
         self.ref = reference
