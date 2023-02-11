@@ -182,12 +182,14 @@ def main(args):
         model = helpers.generate_model(outfile, gps, GTG, GTd, True, 3)
 
         # These will be useful for model fitting
+        logger.debug('Grabbing axes from generated file')
         with h5py.File(outfile) as fo:
             x_axis = fo['x'][:]
             y_axis = fo['y'][:]
             t_axis = fo['t'][:]
 
         # Second pipeline
+        logger.debug('Starting second pipeline')
         with bf.get_default_pipeline() as PIPELINE2:
             # Read in data
             b_read = bisblocks.ReadH5Block([outfile], gulp, 'f32', space='system')
