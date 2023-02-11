@@ -177,6 +177,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
         ohdr = deepcopy(iseq.header)
         ohdr['name'] += '_as_ts'
+        ohdr['_tensor']['shape'][-1] = self.nd
 
         ohdr['tfile'] = 'tmp_t.dat'
         ohdr['tdtype'] = self.dates.dtype.name
