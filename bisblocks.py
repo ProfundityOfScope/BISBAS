@@ -371,9 +371,9 @@ class H5Reader(object):
 
         # Double check this gulp-size is acceptable
         self.imshape = (self.fo['y'].size, self.fo['x'].size)
-        self.imsize = np.product(self.imshape)
+        imsize = np.product(self.imshape)
         self.ndays = self.fo['t'].size
-        if self.imsize%gulp_size==0:
+        if imsize%gulp_size==0:
             self.gulp_size = gulp_size
         else:
             raise ValueError('Gulp must evenly divide image size')
