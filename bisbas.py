@@ -166,7 +166,7 @@ def main(args):
     ###### DELETE ME #######
 
     # If user requested detrend, we do it
-    if True:
+    if detrend:
         logger.info('Detrend requested.')
 
         # Figure out GPS
@@ -221,7 +221,7 @@ def main(args):
             data.dims[1].attach_scale(fo['x'])
             data.dims[1].label = fo['displacements'].dims[1].label
 
-    if plot:
+    if makeplots:
         logger.info('Plots requested')
 
 if __name__=='__main__':
