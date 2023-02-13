@@ -577,7 +577,7 @@ class WriteH5Block(bfp.SinkBlock):
                                       data=np.empty(outshape, 
                                                     dtype=ref_dtype))
         # Assign scales
-        for i in range(len(data.ndim)):
+        for i in range(data.ndim):
             if outshape[i]==1:
                 blockslogger.debug('We don\'t need to label this axis')
                 continue
