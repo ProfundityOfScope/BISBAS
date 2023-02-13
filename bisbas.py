@@ -206,7 +206,9 @@ def main(args):
             b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
             b_racc = bisblocks.AccumRatesBlock(b_rate, outfile)
 
-        rates = b_racc.rates
+
+            PIPELINE2.run()
+            rates = b_racc.rates
 
         # Put the rates into the outfile
         with h5py.File(outfile, 'a') as fo:
