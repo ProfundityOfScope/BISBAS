@@ -427,14 +427,13 @@ class ReadH5Block(bfp.SourceBlock):
         return H5Reader(filename, self.gulp_pixels, self.np_dtype)
 
     def on_sequence(self, ireader, filename):
-        blockslogger.debug('='*50 + 'GOT HERE 1')
+        ndays = int(ireader.ndays)
         ohdr = {'name':     filename,
                 'imshape':  str(ireader.imshape),
                 '_tensor':  {'dtype':  self.dtype,
-                             'shape':  [-1, self.gulp_pixels, ireader.ndays],
+                             'shape':  [-1, self.gulp_pixels, ndays],
                             },
                 }
-        blockslogger.debug('='*50 + 'GOT HERE 2')
 
         return [ohdr]
 
