@@ -195,7 +195,7 @@ def main(args):
             # Apply model
             b_read_gpu = bf.blocks.copy(b_read, space='cuda')
             b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model, x_axis, y_axis)
-            b_rate_gpu = bisblocks.CalcRateBlock(b_amod_gpu, taxis)
+            b_rate_gpu = bisblocks.CalcRateBlock(b_amod_gpu, t_axis)
 
             # Write data
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
