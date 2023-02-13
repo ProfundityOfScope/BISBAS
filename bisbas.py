@@ -188,6 +188,8 @@ def main(args):
 
         # Second pipeline
         logger.debug('Starting second pipeline')
+        p = bf.Pipeline()
+        p.as_default()
         with bf.get_default_pipeline() as PIPELINE2:
             # Read in data
             b_read = bisblocks.ReadH5Block([outfile], gulp, 'f32', space='system')
@@ -199,21 +201,27 @@ def main(args):
 
             # Write data
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
-            #b_write2 = bisblocks.WriteH5Block(b_amod, outfile, 'detrended', 'displacements')
+            b_write2 = bisblocks.WriteH5Block(b_amod, outfile, 'detrended', 'displacements')
 
             # Load rates back to cpu and track them in RAM
             # since we cant simultaniuously write with H5py :(
             b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
-            b_racc = bisblocks.AccumRatesBlock(b_rate, outfile)
-
+            b_racc = bisblocks.AccumRatesBlock(b_rate)
 
             PIPELINE2.run()
+
+            # Store accumulated stuff
             rates = b_racc.rates
 
         # Put the rates into the outfile
         with h5py.File(outfile, 'a') as fo:
             fo.create_dataset('rates', data=rates)
-            # attach dims?
+
+            # Attach scales
+            data.dims[0].attach_scale(fo['y'])
+            data.dims[0].label = fo['displacements'].dims[0].label
+            data.dims[1].attach_scale(fo['x'])
+            data.dims[1].label = fo['displacements'].dims[1].label
 
     if plot:
         logger.info('Plots requested')
