@@ -429,7 +429,7 @@ class ReadH5Block(bfp.SourceBlock):
     def on_sequence(self, ireader, filename):
 
         ohdr = {'name':     filename,
-                'gulp':     self.gulp_pixels,
+                'gulp':     str(self.gulp_pixels),
                 'imshape':  str(ireader.imshape),
                 '_tensor':  {'dtype':  self.dtype,
                              'shape':  [-1, self.gulp_pixels, ireader.ndays],
