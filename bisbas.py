@@ -213,7 +213,7 @@ def main(args):
 
         # Put the rates into the outfile
         with h5py.File(outfile, 'a') as fo:
-            fo.create_dataset('rates', data=rates)
+            data = fo.create_dataset('rates', data=rates)
 
             # Attach scales
             data.dims[0].attach_scale(fo['y'])
