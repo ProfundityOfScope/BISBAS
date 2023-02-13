@@ -199,7 +199,7 @@ def main(args):
 
             # Write data
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
-            b_write2 = bisblocks.WriteH5Block(b_amod, outfile, 'detrended', 'displacements')
+            #b_write2 = bisblocks.WriteH5Block(b_amod, outfile, 'detrended', 'displacements')
 
             # Load rates back to cpu and track them in RAM
             # since we cant simultaniuously write with H5py :(
