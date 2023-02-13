@@ -363,10 +363,6 @@ class H5Reader(object):
     '''
     def __init__(self, filename, gulp_size, dtype):
 
-        # Figure out order
-        files = [ f'{filename}/{f}' for f in file_order ]
-        self.files = files
-
         # Initialize our reader object
         self.step = 0
         self.fo = h5py.File(filename, 'a')
