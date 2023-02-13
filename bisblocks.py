@@ -563,7 +563,7 @@ class WriteH5Block(bfp.SinkBlock):
 
         # Grab useful things from header
         hdr = iseq.header
-        span, self.gulp, depth = hdr['_tensor']['shape'][-1]
+        span, self.gulp, depth = hdr['_tensor']['shape']
 
         # Grab useful things from file
         ref_dtype = self.fo[self.ref].dtype
