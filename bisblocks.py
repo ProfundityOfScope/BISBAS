@@ -522,7 +522,7 @@ class CalcRateBlock(bfp.TransformBlock):
 
         return out_nframe
 
-class AccumRateBlocks(bfp.SinkBlock):
+class AccumRatesBlocks(bfp.SinkBlock):
 
     def __init__(self, iring, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
