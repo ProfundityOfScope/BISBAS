@@ -389,7 +389,7 @@ class H5Reader(object):
             # We try to read files
             picks = self.regions[self.step]
             yinds,xinds = np.unravel_index(picks, self.imshape)
-            d = self.fo[yinds,xinds,:]
+            d = self.fo['displacements'][yinds,xinds,:]
             self.step += 1
 
             return d.astype(self.dtype)
@@ -550,11 +550,9 @@ class AccumRatesBlock(bfp.SinkBlock):
 
 class WriteH5Block(bfp.SinkBlock):
 
-    def __init__(self, iring, filename, dsetname, reference, *args, **kwargs):
+    def __init__(self, iring, dsetname, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.fo = h5py.File(filename, 'a')
-        self.dname = dsetname
-        self.ref = reference
 
         # Set up accumulation
         self.niter = 0
@@ -566,14 +564,14 @@ class WriteH5Block(bfp.SinkBlock):
         span, self.gulp, depth = hdr['_tensor']['shape']
 
         # Grab useful things from file
-        ref_dtype = self.fo[self.ref].dtype
-        outshape = (self.fo[self.ref].shape[0], 
-                    self.fo[self.ref].shape[1], 
+        ref_dtype = self.fo['displacements'].dtype
+        outshape = (self.fo['displacements'].shape[0], 
+                    self.fo['displacements'].shape[1], 
                     depth)
         blockslogger.debug(f'Write block is writing to a {outshape} object')
 
         # Create dataset
-        data = self.fo.create_dataset(self.dname, 
+        data = self.fo.create_dataset('detrended', 
                                       data=np.empty(outshape, 
                                                     dtype=ref_dtype))
         # Assign scales
@@ -582,7 +580,7 @@ class WriteH5Block(bfp.SinkBlock):
                 blockslogger.debug('We don\'t need to label this axis')
                 continue
 
-            ref_dim = self.fo[self.ref].dims[i]
+            ref_dim = self.fo['displacements'].dims[i]
 
             data.dims[i].attach_scale(ref_dim[0])
             data.dims[i].label = ref_dim.label
