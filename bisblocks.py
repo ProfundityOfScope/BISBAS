@@ -485,10 +485,12 @@ class ApplyModelBlock(bfp.TransformBlock):
             xc = self.xaxis[xind]
             yc = self.yaxis[yind]
 
+            # WRITE DETREND SUBTRACT HERE
+
             self.step += 1
 
             odata[...] = idata
-            odata -= self.ref_stack
+            odata -= 0
             ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
