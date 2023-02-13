@@ -361,7 +361,7 @@ class H5Reader(object):
     '''
     File read object
     '''
-    def __init__(self, filename, gulp_size, dtype, file_order):
+    def __init__(self, filename, gulp_size, dtype):
 
         # Figure out order
         files = [ f'{filename}/{f}' for f in file_order ]
@@ -428,7 +428,7 @@ class ReadH5Block(bfp.SourceBlock):
     def create_reader(self, filename):
         # Log line about reading
 
-        return IntfRead(filename, self.gulp_pixels, self.np_dtype, file_order=self.file_order)
+        return H5Reader(filename, self.gulp_pixels, self.np_dtype)
 
     def on_sequence(self, ireader, filename):
 
