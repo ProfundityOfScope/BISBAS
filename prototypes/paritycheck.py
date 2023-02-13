@@ -49,6 +49,8 @@ def imviz(x, y, z, sigma=3):
 
 with h5py.File('/Users/bruzewskis/Downloads/timeseries.h5', 'r') as fo:
     
-    i = 10
-    imviz(fo['x'], fo['y'], fo['displacements'][:,:,i])
-    pass
+    i = 1
+    date = fo['t'][i]
+    real = f'ts_mm_{date:04d}.grd'
+    print(date, real)
+    # imviz(fo['x'], fo['y'], fo['displacements'][:,:,i])
