@@ -427,7 +427,7 @@ class ReadH5Block(bfp.SourceBlock):
         return H5Reader(filename, self.gulp_pixels, self.np_dtype)
 
     def on_sequence(self, ireader, filename):
-        blockslogger.debug('='*20 + f'{self.dtype}')
+        blockslogger.debug('='*20 + f'{self.dtype} {str(self.gulp_pixels)}')
         ohdr = {'name':     filename,
                 'gulp':     str(self.gulp_pixels),
                 'imshape':  str(ireader.imshape),
