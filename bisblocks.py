@@ -369,7 +369,7 @@ class H5Reader(object):
 
         # Initialize our reader object
         self.step = 0
-        self.fo = h5py.File(filename, 'r')
+        self.fo = h5py.File(filename, 'a')
         self.data = self.fo['displacements']
         self.dtype = dtype
 
@@ -551,7 +551,7 @@ class WriteH5Block(bfp.SinkBlock):
 
     def __init__(self, iring, filename, dsetname, reference, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
-        self.fo = h5py.File(filename, 'w')
+        self.fo = h5py.File(filename, 'a')
         self.dname = dsetname
         self.ref = reference
 
