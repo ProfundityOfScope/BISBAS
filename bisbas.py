@@ -188,9 +188,7 @@ def main(args):
 
         # Second pipeline
         logger.debug('Starting second pipeline')
-        p = bf.Pipeline()
-        p.as_default()
-        with bf.get_default_pipeline() as PIPELINE2:
+        with bf.Pipeline() as PIPELINE2:
             # Read in data
             b_read = bisblocks.ReadH5Block([outfile], gulp, 'f32', space='system')
 
