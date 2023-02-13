@@ -535,7 +535,7 @@ class AccumRatesBlock(bfp.SinkBlock):
         # Grab useful things from header
         hdr = iseq.header
         self.imshape = eval(hdr['imshape'])
-        self.rates = np.empty(self.imshape)
+        self.rates = np.zeros(self.imshape)
 
     def on_data(self, ispan):
 
@@ -546,6 +546,10 @@ class AccumRatesBlock(bfp.SinkBlock):
 
         self.rates[yinds,xinds] = ispan.data[0]
         self.niter += 1
+
+        cntr = self.niter*gulp % (np.floor(np.product(self.imshape)/10))
+        if cnt==0:
+            blockslogger.debug('We\'re at {self.niter}')
 
 class WriteH5Block(bfp.SinkBlock):
 
