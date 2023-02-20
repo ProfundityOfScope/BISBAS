@@ -134,9 +134,9 @@ def main(args):
     ref_stack = read_stack.data_near(reflon, reflat, best_chunk_size)
     median_stack = np.nanmedian(ref_stack, axis=0)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
-    
+
     import pickle
-    pickle.dump(ref_stack, open('ref_stack.p'))
+    pickle.dump(ref_stack, open('ref_stack.p', 'w'))
     return None
 
     # Generates the timeseries
