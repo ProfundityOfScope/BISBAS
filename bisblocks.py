@@ -382,17 +382,28 @@ class H5Reader(object):
         self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
         blockslogger.debug(f'Regions have shape {self.regions.shape}')
 
+        # Make a buffer for reading (hdf5 being picky)
+        self.linelen = self.fo['x'].size
+        bsize = 2*max(self.gulp_size, self.linelen)
+        self.buffer = np.zeros((bsize, self.ndays), dtype=self.dtype)
+        self.head = 0
+        self.linecount = 0
 
     def read(self):
 
         try:
-            # We try to read files
-            picks = self.regions[self.step]
-            yinds,xinds = np.unravel_index(picks, self.imshape)
-            d = self.fo['displacements'][yinds,xinds,:]
-            self.step += 1
+            # This will read via the buffer
+            while self.head < self.gulp_size:
+                self.buffer[self.head:self.head+self.linelen] = self.fo['displacements'][self.linecount]
 
-            return d.astype(self.dtype)
+                self.head += self.linelen
+                self.linecount += 1
+
+            out = self.buffer[:self.gulp_size]
+            self.head -= self.gulp_size
+            self.buffer = np.roll(self.buffer, -self.gulp_size, axis=0)
+
+            return out.astype(self.dtype)
         except IndexError:
             # Catch the index error if we're past the end
             return np.empty((0, len(self.files)), dtype=self.dtype)
