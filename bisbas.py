@@ -171,6 +171,7 @@ def main(args):
             gps = np.array([[reflon, reflat, refnum, 0]])
 
         model = helpers.generate_model(outfile, gps, GTG, GTd, True, 3)
+        logger.debug(f'Model: {model}')
 
         # These will be useful for model fitting
         logger.debug('Grabbing axes from generated file')
