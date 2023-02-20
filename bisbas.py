@@ -132,9 +132,10 @@ def main(args):
     read_stack = readers.DataStack.read(files)
     best_chunk_size = read_stack.find_best_chunk_size(reflon, reflat, refnum)
     ref_stack = read_stack.data_near(reflon, reflat, best_chunk_size)
+    print(ref_stack)
     median_stack = np.nanmedian(ref_stack, axis=0)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
-    """
+    return None
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
@@ -156,17 +157,7 @@ def main(args):
         GTG = b_write.GTG
         GTd = b_write.GTd
 
-    ###### DELETE ME #######
-    GTG.tofile('testing_gtg.dat')
-    GTd.tofile('testing_gtd.dat')
     logger.info('Finished timeseries generation.')
-    """
-
-    os.system('rm -rf timeseries.h5')
-    os.system('cp timeseries_backup.h5 timeseries.h5')
-    GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
-    GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
-    ###### DELETE ME #######
 
     # If user requested detrend, we do it
     if detrend:
@@ -198,7 +189,7 @@ def main(args):
             # Apply model
             b_read_gpu = bf.blocks.copy(b_read, space='cuda')
             b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model, x_axis, y_axis)
-            b_rate_gpu = bisblocks.CalcRateBlock(b_amod_gpu, t_axis)
+            b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, t_axis)
 
             # Write data
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')

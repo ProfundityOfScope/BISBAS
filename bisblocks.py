@@ -145,6 +145,9 @@ class ReferenceBlock(bfp.TransformBlock):
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
         ohdr["name"] += "_referenced"
+
+        blockslogger.debug('Started ReferenceBlock')
+
         return ohdr
 
     def on_data(self, ispan, ospan):
@@ -182,6 +185,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         ohdr['tfile'] = 'tmp_t.dat'
         ohdr['tdtype'] = self.dates.dtype.name
         ohdr['tname'] = 'time'
+
+        blockslogger.debug('Started GenTimeseriesBlock')
+
         return ohdr
 
     def on_data(self, ispan, ospan):
@@ -355,8 +361,6 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
         self.niter += 1
 
-        blockslogger.debug(f'Iteration: {self.niter} ({perc:04.1f}%)')
-
 class H5Reader(object):
     '''
     File read object
@@ -471,6 +475,9 @@ class ApplyModelBlock(bfp.TransformBlock):
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
+
+        blockslogger.debug('Started ApplyModelBlock')
+
         return ohdr
 
     def on_data(self, ispan, ospan):
@@ -501,7 +508,7 @@ class ApplyModelBlock(bfp.TransformBlock):
 
         return out_nframe
 
-class CalcRateBlock(bfp.TransformBlock):
+class CalcRatesBlock(bfp.TransformBlock):
 
     def __init__(self, iring, taxis, deg=1, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -511,6 +518,9 @@ class CalcRateBlock(bfp.TransformBlock):
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
         ohdr['_tensor']['shape'] = iseq.header['_tensor']['shape'][:-1]
+
+        blockslogger.debug('Started CalcRatesBlock')
+
         return ohdr
 
     def on_data(self, ispan, ospan):
@@ -545,6 +555,8 @@ class AccumRatesBlock(bfp.SinkBlock):
         self.imshape = eval(hdr['imshape'])
         self.rates = np.zeros(self.imshape)
 
+        blockslogger.debug('Started AccumRatesBlock')
+
     def on_data(self, ispan):
 
         s,gulp = ispan.data.shape
@@ -554,11 +566,6 @@ class AccumRatesBlock(bfp.SinkBlock):
 
         self.rates[yinds,xinds] = ispan.data[0]
         self.niter += 1
-
-        cntr = self.niter*gulp % (np.floor(np.product(self.imshape)/10))
-        if cntr==0:
-            perc = 100 * self.niter * gulp / np.product(self.imshape)
-            blockslogger.debug(f'We\'re at {perc:.2f}%')
 
 class WriteH5Block(bfp.SinkBlock):
 
