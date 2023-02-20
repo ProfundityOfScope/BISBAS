@@ -135,10 +135,6 @@ def main(args):
     median_stack = np.nanmedian(ref_stack, axis=0)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
-    import pickle
-    pickle.dump(ref_stack, open('ref_stack.p', 'wb'))
-    return None
-
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
