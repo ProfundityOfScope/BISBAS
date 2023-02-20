@@ -556,7 +556,7 @@ class AccumRatesBlock(bfp.SinkBlock):
         self.niter += 1
 
         cntr = self.niter*gulp % (np.floor(np.product(self.imshape)/10))
-        if cnt==0:
+        if cntr==0:
             blockslogger.debug('We\'re at {self.niter}')
 
 class WriteH5Block(bfp.SinkBlock):
