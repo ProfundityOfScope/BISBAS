@@ -557,7 +557,8 @@ class AccumRatesBlock(bfp.SinkBlock):
 
         cntr = self.niter*gulp % (np.floor(np.product(self.imshape)/10))
         if cntr==0:
-            blockslogger.debug('We\'re at {self.niter}')
+            perc = 100 * self.niter * gulp / np.product(self.imshape)
+            blockslogger.debug(f'We\'re at {perc:.2f}%')
 
 class WriteH5Block(bfp.SinkBlock):
 
@@ -610,7 +611,18 @@ class WriteH5Block(bfp.SinkBlock):
 
     def on_data(self, ispan):
 
-        pass
+        ### WRITE STUFF ###
+        # Put data into the file
+        self.buffer[self.head:self.head+self.gulp,:] = ispan.data[0]
+        self.head += self.gulp
+
+        # Write out as many times as needed
+        while self.head > self.linelen:
+            self.fo['displacements'][self.linecount,:,:] = self.buffer[:self.linelen,:]
+            self.linecount += 1
+
+            self.head -= self.linelen
+            self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
 
 
