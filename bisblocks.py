@@ -406,7 +406,7 @@ class H5Reader(object):
             return out.astype(self.dtype)
         except IndexError:
             # Catch the index error if we're past the end
-            return np.empty((0, len(self.files)), dtype=self.dtype)
+            return np.empty((0, self.ndays), dtype=self.dtype)
 
     def __enter__(self):
         return self
@@ -486,7 +486,7 @@ class ApplyModelBlock(bfp.TransformBlock):
             gulp_size = np.size(idata[0],0)
             r_start = self.step * gulp_size
             r_end = (self.step+1) * gulp_size
-            yind, xind = np.unravel_index(np.arange(r_start, r_end), self.imsize)
+            yind, xind = np.unravel_index(np.arange(r_start, r_end), self.imshape)
 
             xc = self.xaxis[xind]
             yc = self.yaxis[yind]
