@@ -547,7 +547,7 @@ class AccumRatesBlock(bfp.SinkBlock):
 
     def on_data(self, ispan):
 
-        gulp = np.shape(ispan.data, 1)
+        s,gulp = ispan.data.shape
 
         inds = gulp*self.niter + np.arange(0, gulp)
         yind, xind = np.unravel_index(inds, self.imshape)
