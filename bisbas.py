@@ -134,7 +134,7 @@ def main(args):
     ref_stack = read_stack.data_near(reflon, reflat, best_chunk_size)
     median_stack = np.nanmedian(ref_stack, axis=0)
     logger.info(f'Extracted {median_stack.size} median values to reference to')
-    
+    """
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
@@ -160,7 +160,7 @@ def main(args):
     GTG.tofile('testing_gtg.dat')
     GTd.tofile('testing_gtd.dat')
     logger.info('Finished timeseries generation.')
-    
+    """
     GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
     GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
     ###### DELETE ME #######
