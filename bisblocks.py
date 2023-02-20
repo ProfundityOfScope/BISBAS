@@ -490,20 +490,23 @@ class ApplyModelBlock(bfp.TransformBlock):
             odata = ospan.data.as_cupy()
 
             # Do some stuff with idata
-            gulp_size = np.size(idata[0],0)
+            gulp_size = cp.size(idata[0],0)
             r_start = self.step * gulp_size
             r_end = (self.step+1) * gulp_size
-            yind, xind = np.unravel_index(np.arange(r_start, r_end), self.imshape)
+            yind, xind = cp.unravel_index(cp.arange(r_start, r_end), self.imshape)
 
             xc = self.xaxis[xind]
             yc = self.yaxis[yind]
 
-            # WRITE DETREND SUBTRACT HERE
+            # d(7800) m(3,20) -> c(7800,20)
+            ones = cp.full_like(xc, 1)
+            raw = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])
+            corr = cp.dot(raw[:,:self.ntrend], self.models)
 
             self.step += 1
 
             odata[...] = idata
-            odata -= 0
+            odata -= corr
             ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
