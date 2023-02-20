@@ -582,9 +582,14 @@ class WriteH5Block(bfp.SinkBlock):
         blockslogger.debug(f'Write block is writing to a {outshape} object')
 
         # Create dataset
-        data = self.fo.create_dataset('detrended', 
-                                      data=np.empty(outshape, 
-                                                    dtype=ref_dtype))
+        if 'detrended' in self.fo:
+            # should probably verify this is good
+            data = self.fo['detrended']
+        else:
+            data = self.fo.create_dataset('detrended', 
+                                          data=np.empty(outshape, 
+                                                        dtype=ref_dtype))
+
         # Assign scales
         for i in range(data.ndim):
             if outshape[i]==1:

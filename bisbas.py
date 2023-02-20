@@ -161,6 +161,8 @@ def main(args):
     GTd.tofile('testing_gtd.dat')
     logger.info('Finished timeseries generation.')
     """
+
+    os.system('cp timeseries_backup.h5 timeseries.h5')
     GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
     GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
     ###### DELETE ME #######
