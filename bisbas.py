@@ -162,6 +162,7 @@ def main(args):
     logger.info('Finished timeseries generation.')
     """
 
+    os.system('rm -rf timeseries.h5')
     os.system('cp timeseries_backup.h5 timeseries.h5')
     GTG = np.fromfile('testing_gtg.dat').reshape((6,6,20))
     GTd = np.fromfile('testing_gtd.dat').reshape((6,20))
