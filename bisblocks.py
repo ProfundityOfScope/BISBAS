@@ -505,6 +505,9 @@ class ApplyModelBlock(bfp.TransformBlock):
 
             self.step += 1
 
+            blockslogger.debug(f'idata shape {idata.shape}')
+            blockslogger.debug(f'corr shape {corr.shape}')
+
             odata[...] = idata
             odata -= corr
             ospan.data[...] = bf.ndarray(odata)
