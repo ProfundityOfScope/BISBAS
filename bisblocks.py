@@ -522,7 +522,7 @@ class CalcRateBlock(bfp.TransformBlock):
             idata = ispan.data.as_cupy() 
             odata = ospan.data.as_cupy()
 
-            fits = cp.polyfit(self.taxis, idata[0].T)
+            fits = cp.polyfit(self.taxis, idata[0].T, 1)
             rate = fits[0].reshape((1,-1))
 
             odata[...] = rate
