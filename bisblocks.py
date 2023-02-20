@@ -563,7 +563,7 @@ class WriteH5Block(bfp.SinkBlock):
 
     def __init__(self, iring, filename, dsetname, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
-        self.fo = h5py.File(filename, 'a')
+        self.fo = h5py.File(filename, 'w')
 
         # Set up accumulation
         self.niter = 0
