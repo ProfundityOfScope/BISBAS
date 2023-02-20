@@ -502,7 +502,7 @@ class ApplyModelBlock(bfp.TransformBlock):
             ones = cp.full_like(xc, 1)
             raw = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])
             corr = cp.dot(raw[:,:self.ntrend], self.models)
-            blockslogger.debug(f'On step: {self.step} \n{corr}')
+            #blockslogger.debug(f'On step: {self.step} \n{corr}')
             corr = cp.expand_dims(corr, axis=0)
 
             self.step += 1
