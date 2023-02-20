@@ -406,7 +406,6 @@ class H5Reader(object):
             out = self.buffer[:self.gulp_size]
             self.head -= self.gulp_size
             self.buffer = np.roll(self.buffer, -self.gulp_size, axis=0)
-            blockslogger.debug(f'What is happening? {self.buffer.shape} {self.head} \n{out}')
 
             return out.astype(self.dtype)
         except IndexError:
@@ -626,7 +625,7 @@ class WriteH5Block(bfp.SinkBlock):
 
         # Write out as many times as needed
         while self.head > self.linelen:
-            self.fo['displacements'][self.linecount,:,:] = self.buffer[:self.linelen,:]
+            self.fo['detrended'][self.linecount,:,:] = self.buffer[:self.linelen,:]
             self.linecount += 1
 
             self.head -= self.linelen
