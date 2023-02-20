@@ -136,7 +136,7 @@ def main(args):
     logger.info(f'Extracted {median_stack.size} median values to reference to')
 
     import pickle
-    pickle.dump(ref_stack, open('ref_stack.p', 'w'))
+    pickle.dump(ref_stack, open('ref_stack.p', 'wb'))
     return None
 
     # Generates the timeseries
