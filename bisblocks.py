@@ -406,6 +406,7 @@ class H5Reader(object):
             out = self.buffer[:self.gulp_size]
             self.head -= self.gulp_size
             self.buffer = np.roll(self.buffer, -self.gulp_size, axis=0)
+            blockslogger.debug(f'What is happening? {self.buffer.shape} {self.head} \n{out}')
 
             return out.astype(self.dtype)
         except IndexError:
