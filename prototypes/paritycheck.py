@@ -190,19 +190,13 @@ with h5py.File('/Users/bruzewskis/Downloads/timeseries.h5', 'r') as fo:
 
     fig = plt.figure(figsize=(10,10), dpi=72)
     ax = plt.subplot2grid((2,2),(0,0), fig=fig)
-    imviz(fo['x'], fo['y'], im_true, norm, fig=fig, ax=ax)
-    ax.set_title('ISBAS')
+    imviz(fo['x'], fo['y'], im_true, norm, 'ISBAS', fig=fig, ax=ax)
     
     ax = plt.subplot2grid((2,2),(1,0), fig=fig)
-    imviz(fo['x'], fo['y'], im_true_corr, norm, fig=fig, ax=ax)
-    ax.set_title('ISBAS Corrected')
+    imviz(fo['x'], fo['y'], im_true_corr, norm, 'ISBAS Corrected', fig=fig, ax=ax)
     
     ax = plt.subplot2grid((2,2),(0,1), fig=fig)
-    imviz(fo['x'], fo['y'], fo['displacements'][:,:,i], norm, fig=fig, ax=ax)
-    ax.set_title('Bifrost')
+    imviz(fo['x'], fo['y'], fo['displacements'][:,:,i], norm, 'Bifrost', fig=fig, ax=ax)
     
     ax = plt.subplot2grid((2,2),(1,1), fig=fig)
-    imviz(fo['x'], fo['y'], corr, norm, fig=fig, ax=ax)
-    ax.set_title('Bifrost Corrected')
-    
-    dummy = fo['detrended'][:]
+    imviz(fo['x'], fo['y'], fo['detrended'][:,:,i], norm, 'Bifrost Corrected', fig=fig, ax=ax)
