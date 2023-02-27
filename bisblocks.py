@@ -407,6 +407,7 @@ class H5Reader(object):
             self.head -= self.gulp_size
             self.buffer = np.roll(self.buffer, -self.gulp_size, axis=0)
 
+            blockslogger.debug(f'Hey where are the zeros: {out}')
             return out.astype(self.dtype)
         except IndexError:
             # Catch the index error if we're past the end
