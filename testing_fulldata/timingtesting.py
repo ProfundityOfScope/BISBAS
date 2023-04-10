@@ -28,7 +28,7 @@ if __name__=='__main__':
     print('Total Pixels:', total_size)
     factors = find_factors(total_size)
     
-    steps = int(len(factors)-10)/20
+    steps = int((len(factors)-10)/20)
     rfactors = factors[7:-5:steps]
 
     with open('timings.csv', 'w') as fp:
