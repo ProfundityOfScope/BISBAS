@@ -31,6 +31,9 @@ __version__ = 0.1
 
 
 def main(args):
+
+    # Timekeeping
+    start_time = time.time()
     
     ##### Setup a logger #####
     logger = logging.getLogger(__name__)
@@ -167,7 +170,7 @@ def main(args):
             gps = np.array([[reflon, reflat, refnum, 0]])
 
         model = helpers.generate_model(args.outfile, gps, GTG, GTd, True, 3)
-        logger.debug(f'Model: {model}')
+        logger.debug(f'Generated a model: {model.shape}')
 
         # These will be useful for model fitting
         logger.debug('Grabbing axes from generated file')
@@ -213,6 +216,9 @@ def main(args):
 
     if makeplots:
         logger.info('Plots requested')
+
+    total_time = time.time() - start_time
+    logger.info(f'Total runtime was {total_time} seconds')
 
 if __name__=='__main__':
     globalstart=time.time()
