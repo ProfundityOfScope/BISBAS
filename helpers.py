@@ -118,8 +118,8 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
                                      np.sum(xa*ya, axis=(0, 1), where=isgood)])
             dg[i] = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
 
-    print('GPS:', Gg.shape, dg.shape)
-    print('DATA:', GTG.shape, GTd.shape)
+    helperslogger.debug(f'GPS Matrix:  {Gg.shape} and {dg.shape}')
+    helperslogger.debug(f'Data Matrix: {GTG.shape} and {GTd.shape}')
     m = np.zeros((nt, nd))
     if constrained:
 
