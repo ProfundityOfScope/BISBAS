@@ -35,8 +35,9 @@ if __name__=='__main__':
         fp.write('size, time\n')
         for factor in rfactors:
             size = factor * lt
+            
             start = time.time()
-            time.sleep(np.random.uniform(1e-4, 1e-3)*np.sqrt(factor))
+            os.system(f'python ../bisbas.py -g {factor}')
             diff = time.time() - start
             
             fp.write(f'{size:d}, {diff:.5e}\n')
