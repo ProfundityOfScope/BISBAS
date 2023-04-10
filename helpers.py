@@ -140,7 +140,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
 
     # Solve for model params
     for i in range(nd):
-        md, res, rank, sng = np.linalg.lstsq(K, D, None)
+        md, res, rank, sng = np.linalg.lstsq(K[:,:,i], D[:,i], None)
         m[:,i] = md[:nt]
     
     return m
