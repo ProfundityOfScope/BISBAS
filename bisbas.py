@@ -155,7 +155,8 @@ def main(args):
         GTG = b_write.GTG
         GTd = b_write.GTd
 
-    logger.info('Finished timeseries generation.')
+    ts_time = time.time() - start_time
+    logger.info(f'Finished timeseries generation in {ts_time} s')
 
     # If user requested detrend, we do it
     if detrend:
