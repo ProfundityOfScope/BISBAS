@@ -122,7 +122,6 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
     print('DATA:', GTG.shape, GTd.shape)
     m = np.zeros((nt, nd))
     if constrained:
-        i = 5
 
         # Assemble K matrix
         K = np.zeros((nt+ng, nt+ng, nd))
@@ -141,8 +140,8 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
 
     # Solve for model params
     for i in range(nd):
-        md, res, rank, sng = np.linalg.lstsq(Gg[:,:nt,i], dg[:,i], None)
-        m[:,i] = md
+        md, res, rank, sng = np.linalg.lstsq(K, D, None)
+        m[:,i] = md[:nt]
     
     return m
 

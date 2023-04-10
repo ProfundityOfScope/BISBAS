@@ -113,10 +113,6 @@ def main(args):
     rad2mm_conv = readers.read_wavelength_conversion(prm_dir)
     logger.info(f'Read unit conversion from {prmfile}')
 
-    ##### Set up tools we'll use later #####
-    outfile = 'timeseries.h5'
-    gulp = 1000
-
     # Figure out the order we'll want to read in the intfs
     files = []
     for igram in igram_ids:
@@ -138,7 +134,7 @@ def main(args):
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
-        b_read = bisblocks.IntfReadBlock([path], gulp, 'f32', files, space='system')
+        b_read = bisblocks.IntfReadBlock([path], args.gulp, 'f32', files, space='system')
 
         # This on GPU?
         b_read_gpu = bf.blocks.copy(b_read, space='cuda')
@@ -148,7 +144,7 @@ def main(args):
         b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
         # Sink block
-        b_write = bisblocks.WriteAndAccumBlock(b_tsmm, outfile)
+        b_write = bisblocks.WriteAndAccumBlock(b_tsmm, args.outfile)
 
         PIPELINE1.run()
 
@@ -170,12 +166,12 @@ def main(args):
             logger.info('No GPS, zeroing at reference point.')
             gps = np.array([[reflon, reflat, refnum, 0]])
 
-        model = helpers.generate_model(outfile, gps, GTG, GTd, True, 3)
+        model = helpers.generate_model(args.outfile, gps, GTG, GTd, True, 3)
         logger.debug(f'Model: {model}')
 
         # These will be useful for model fitting
         logger.debug('Grabbing axes from generated file')
-        with h5py.File(outfile) as fo:
+        with h5py.File(args.outfile, 'r') as fo:
             x_axis = fo['x'][:]
             y_axis = fo['y'][:]
             t_axis = fo['t'][:]
@@ -184,7 +180,7 @@ def main(args):
         logger.debug('Starting second pipeline')
         with bf.Pipeline() as PIPELINE2:
             # Read in data
-            b_read = bisblocks.ReadH5Block([outfile], gulp, 'f32', space='system')
+            b_read = bisblocks.ReadH5Block([args.outfile], args.gulp, 'f32', space='system')
 
             # Apply model
             b_read_gpu = bf.blocks.copy(b_read, space='cuda')
@@ -193,7 +189,7 @@ def main(args):
 
             # Write data
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
-            b_write2 = bisblocks.WriteH5Block(b_amod, outfile, 'detrended')
+            b_write2 = bisblocks.WriteH5Block(b_amod, args.outfile, 'detrended')
 
             # Load rates back to cpu and track them in RAM
             # since we cant simultaniuously write with H5py :(
@@ -206,7 +202,7 @@ def main(args):
             rates = b_racc.rates
 
         # Put the rates into the outfile
-        with h5py.File(outfile, 'a') as fo:
+        with h5py.File(args.outfile, 'a') as fo:
             data = fo.create_dataset('rates', data=rates)
 
             # Attach scales
@@ -227,6 +223,10 @@ if __name__=='__main__':
                         help='name of logfile to write information to')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='print debug messages as well as info and higher')
+    parser.add_argument('-g', '--gulp', type=int, default=1000,
+                        help='size of gulps to intake data with')
+    parser.add_argument('-o', '--outfile', type=str, default='timeseries.h5',
+                        help='name of archive file to write out to')
     args = parser.parse_args()
     
     main(args)

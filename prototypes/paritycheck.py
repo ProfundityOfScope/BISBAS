@@ -24,12 +24,13 @@ import pickle
 from tqdm import trange,tqdm
 from time import time
 import h5py
+import pickle
 
 def imviz(x,y,z,norm=None,title='',fig=None,ax=None):
 
     fig = plt.figure(figsize=(6,5), dpi=1080/5) if fig is None else fig
     ax = fig.add_subplot() if ax is None else ax
-        
+
     if norm is None:
         norm = Normalize(np.nanmean(z)-np.nanstd(z),
                          np.nanmean(z)+np.nanstd(z))
@@ -74,11 +75,26 @@ def get_data_near_h5(x,y,z, x0, y0, min_points=10, max_size=20):
             yarr = y[ym]
             break
     else:
-        raise ValueError('Couldn\'t find a good chunk, try a different reference')
+        raise ValueError('Couldn\'t find good chunk, try different reference')
 
     return xarr, yarr, zarr
 
-def make_model(x, y, z, nt=3, gps=None):
+
+def get_near_data(X,Y,image,x0,y0,numpix):
+    # get the mean and median of numpix points near x0,y0, and also return list of
+    # the numpix nearest non-nan X,Y coordinates
+    distarr=np.sqrt((X-x0)**2+(Y-y0)**2)
+    distmask=np.ma.array(distarr,mask=np.isnan(image))
+    nearindx=np.ma.argsort(distmask.ravel())[0:numpix]
+    meannear=np.mean(image.ravel()[nearindx])
+    mediannear=np.median(image.ravel()[nearindx])
+    stdnear=np.std(image.ravel()[nearindx])
+    xn=X.ravel()[nearindx]
+    yn=Y.ravel()[nearindx]
+    return xn,yn,meannear,mediannear,stdnear
+
+
+def make_model(x, y, z, nt=3, gps=None, mc=None):
 
     # Good pixels
     yind, xind = np.where(~np.isnan(z))
@@ -90,7 +106,7 @@ def make_model(x, y, z, nt=3, gps=None):
     # Generate stuff and solve
     ones = np.ones_like(xg)
     A = np.column_stack([ones, xg, yg, xg**2, yg**2, xg*yg])
-    
+
     # Figure out original fit
     m0, res, rank, sing = np.linalg.lstsq(A[:, :nt], d, rcond=None)
 
@@ -110,18 +126,20 @@ def make_model(x, y, z, nt=3, gps=None):
         numgood = np.sum(isgood)
 
         # Record it's bulk properties
-        Gg[i] = np.column_stack([numgood,
-                                 np.sum(xa,    where=isgood),
-                                 np.sum(ya,    where=isgood),
-                                 np.sum(xa**2, where=isgood),
-                                 np.sum(ya**2, where=isgood),
-                                 np.sum(xa*ya, where=isgood)])
-        dg[i] = (np.nanmean(za) - zgps[i]) * numgood
-    
+        scale = pgps[i]/ numgood
+        Gg[i] = np.column_stack([numgood * scale,
+                                 np.sum(xa,    where=isgood) * scale,
+                                 np.sum(ya,    where=isgood) * scale,
+                                 np.sum(xa**2, where=isgood) * scale,
+                                 np.sum(ya**2, where=isgood) * scale,
+                                 np.sum(xa*ya, where=isgood) * scale])
+
+        dg[i] = (np.nanmean(za) - zgps[i]) * numgood * scale
+
     # Build up
     GTG = np.dot(A.T, A)
     GTd = np.dot(A.T, d)
-    
+
     # Assemble K matrix
     K = np.zeros((nt+ng, nt+ng))
     K[:nt, :nt] = 2 * GTG[:nt, :nt]
@@ -132,12 +150,20 @@ def make_model(x, y, z, nt=3, gps=None):
     D = np.zeros((ng+nt))
     D[:nt] = 2 * GTd[:nt]
     D[nt:] = np.squeeze(dg)
-    
+
+    print('K bifrost', '='*10)
+    print(K)
+    print('D bifrost', '='*10)
+    print(D)
+
     # Solve
     m1, res, rank, sing = np.linalg.lstsq(K, D, rcond=None)
     m1 = m1[:nt]
-    
-    test = np.dot(np.linalg.pinv(K), D)
+
+    print('m just data bifrost', '='*10)
+    print(m0)
+    print('m KKT bifrost', '='*10)
+    print(m1)
 
     # Plot model
     xl = np.linspace(np.min(x), np.max(x), 10)
@@ -153,13 +179,12 @@ def make_model(x, y, z, nt=3, gps=None):
     ax1 = plt.subplot2grid((1,2),(0,0), fig=fig, projection='3d')
     ax1.plot_surface(XL, YL, ZL0)
     ax1.set_zlim(bot, top)
+    ax1.set_title('Bifrost Just Data')
     ax2 = plt.subplot2grid((1,2),(0,1), fig=fig, projection='3d')
     ax2.plot_surface(XL, YL, ZL1)
     ax2.set_zlim(bot, top)
-    
-    print(m0)
-    print(m1)
-    print(test)
+    ax2.set_title('Bifrost Constrained')
+
 
     # Return model
     X, Y = np.meshgrid(x, y)
@@ -167,36 +192,86 @@ def make_model(x, y, z, nt=3, gps=None):
     ZM = np.sum(m1[:, None, None]*ZM[:nt], axis=0)
     return ZM
 
-with h5py.File('/Users/bruzewskis/Downloads/timeseries.h5', 'r') as fo:
+def main():
+    with h5py.File('/Users/bruzewskis/Downloads/timeseries.h5', 'r') as fo:
 
-    i = 1
-    date = fo['t'][i]
+        # Pick a specific image
+        i = 8
+        date = fo['t'][i]
 
-    gt = '/Users/bruzewskis/Downloads/isbas_ground_truth'
-    real = f'{gt}/timeseries_nodetrend/ts_mm_{date:04d}.grd'
-    realc = f'{gt}/timeseries_detrended/ts_mm_{date:04d}.grd'
-    with netcdf_file(real) as fr:
-        im_true = fr.variables['z'][:]
-    with netcdf_file(realc) as fr:
-        im_true_corr = fr.variables['z'][:]
+        gt = '/Users/bruzewskis/Downloads/isbas_ground_truth'
+        real = f'{gt}/timeseries_nodetrend/ts_mm_{date:04d}.grd'
+        realc = f'{gt}/timeseries_detrended/ts_mm_{date:04d}.grd'
+        with netcdf_file(real) as fr:
+            im_true = fr.variables['z'][:]
+        with netcdf_file(realc) as fr:
+            im_true_corr = fr.variables['z'][:]
+
+        gps = np.array([[255.30833, 36.645836, 10, 0]])
+
+        ###### THIS IS FROM HIS ISBAS CODE
+        path = '/Users/bruzewskis/Downloads/isbas_ground_truth/rawstuff'
+        # [[ 2H, C.T ],  [[ x ], =  [[ 2d ],
+        #  [ C,  0   ]]   [ l ]]     [ z  ]]
+        H = pickle.load(open(f'{path}/H{i:02d}.p', 'rb'))
+        d = pickle.load(open(f'{path}/d{i:02d}.p', 'rb'))
+        C = pickle.load(open(f'{path}/C{i:02d}.p', 'rb'))
+        z = pickle.load(open(f'{path}/z{i:02d}.p', 'rb'))
+
+        K=np.column_stack((np.row_stack((2*H, C)),
+                           np.row_stack((C.T, np.zeros((np.size(C,0),np.size(C,0)))))))
+        D=np.row_stack(( 2*d[:,None], z ))
+        m = np.dot(np.linalg.inv(K), D)
+
+        print('K isbas', '='*10)
+        print(K)
+        print('D isbas', '='*10)
+        print(D.T)
+        print('m isbas', '='*10)
+        print(m[:3].T)
+        print()
+        #################################
+
+        image = fo['displacements'][:,:,i]
+        zm = make_model(fo['x'][:], fo['y'][:], im_true, gps=gps)
+        corr = image - zm
+
+        norm = Normalize(np.nanmean(im_true_corr)-np.nanstd(im_true_corr),
+                         np.nanmean(im_true_corr)+np.nanstd(im_true_corr))
+
+        # Make some plots
+        if False:
+            fig = plt.figure(figsize=(15, 10), dpi=72, constrained_layout=True)
+            ax = plt.subplot2grid((2, 3), (0, 0), fig=fig)
+            imviz(fo['x'], fo['y'], im_true, norm, 'ISBAS', fig=fig, ax=ax)
         
-    gps = np.array([[255.285,36.675,10,0],[255.286,36.677,10,0]])
+            ax = plt.subplot2grid((2, 3), (1, 0), fig=fig)
+            imviz(fo['x'], fo['y'], im_true_corr, norm, 'ISBAS Corrected', fig=fig, ax=ax)
+        
+            ax = plt.subplot2grid((2, 3), (0, 1), fig=fig)
+            imviz(fo['x'], fo['y'], image, norm, 'Bifrost', fig=fig, ax=ax)
+        
+            ax = plt.subplot2grid((2, 3), (1, 1), fig=fig)
+            imviz(fo['x'], fo['y'], corr, norm, 'Bifrost Corrected', fig=fig, ax=ax)
+        
+            ax = plt.subplot2grid((2, 3), (0, 2))
+            imviz(fo['x'], fo['y'], im_true-image, title='raw difference', fig=fig, ax=ax)
+        
+            ax = plt.subplot2grid((2, 3), (1, 2))
+            imviz(fo['x'], fo['y'], im_true_corr-corr, title='corrected difference', fig=fig, ax=ax)
 
-    zm = make_model(fo['x'][:], fo['y'][:], im_true, gps=gps)
-    corr = fo['displacements'][:,:,i] - zm
-    
-    norm = Normalize(np.nanmean(im_true_corr)-np.nanstd(im_true_corr),
-                     np.nanmean(im_true_corr)+np.nanstd(im_true_corr))
+        X, Y = np.meshgrid(fo['x'], fo['y'])
+        xd, yd, mean, median, std = get_near_data(X, Y, im_true,
+                                           gps[0][0], gps[0][1], 10)
+        xa, ya, za = get_data_near_h5(fo['x'][:], fo['y'][:], im_true, 
+                                      gps[0][0], gps[0][1], 10)
 
-    fig = plt.figure(figsize=(10,10), dpi=72)
-    ax = plt.subplot2grid((2,2),(0,0), fig=fig)
-    imviz(fo['x'], fo['y'], im_true, norm, 'ISBAS', fig=fig, ax=ax)
-    
-    ax = plt.subplot2grid((2,2),(1,0), fig=fig)
-    imviz(fo['x'], fo['y'], im_true_corr, norm, 'ISBAS Corrected', fig=fig, ax=ax)
-    
-    ax = plt.subplot2grid((2,2),(0,1), fig=fig)
-    imviz(fo['x'], fo['y'], fo['displacements'][:,:,i], norm, 'Bifrost', fig=fig, ax=ax)
-    
-    ax = plt.subplot2grid((2,2),(1,1), fig=fig)
-    imviz(fo['x'], fo['y'], fo['detrended'][:,:,i], norm, 'Bifrost Corrected', fig=fig, ax=ax)
+        print()
+        print('ISBAS Mean/Median:  ', mean, median, std)
+        print('\t Should see:', mean*10)
+        print('Bifrost Mean/Median:', np.nanmean(za), np.nanmedian(za), np.nanstd(za))
+        print('\t Should see:', np.nanmean(za)*10)
+        return im_true_corr - corr
+
+
+test = main()
