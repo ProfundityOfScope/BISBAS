@@ -224,7 +224,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
         return out_nframe
 
-class ConvertToMillimeters(bfp.TransformBlock):
+class ConvertToMillimetersBlock(bfp.TransformBlock):
 
     def __init__(self, iring, conv, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -233,6 +233,8 @@ class ConvertToMillimeters(bfp.TransformBlock):
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
         ohdr['conversion'] = f'{self.conv}'
+
+        blockslogger.debug('Started ConvertToMillimetersBlock')
         return ohdr
 
     def on_data(self, ispan, ospan):
@@ -313,6 +315,8 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         self.head = 0
         self.linelen = fx.size
         self.linecount = 0
+
+        blockslogger.debug('Started WriteAndAccumBlock')
         blockslogger.debug(f'Generated a buffer of shape {self.buffer.shape}')
 
         # Set up some stuff for the accumulation (keeping all terms)
@@ -592,6 +596,8 @@ class WriteH5Block(bfp.SinkBlock):
         outshape = (self.fo['displacements'].shape[0], 
                     self.fo['displacements'].shape[1], 
                     depth)
+
+        blockslogger.debug('Started WriteH5Block')
         blockslogger.debug(f'Write block is writing to a {outshape} object')
 
         # Create dataset

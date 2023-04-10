@@ -28,11 +28,12 @@ if __name__=='__main__':
     print('Total Pixels:', total_size)
     factors = find_factors(total_size)
     
-    steps = int(len(factors)/20)
-    rfactors = factors[5::steps]
+    steps = int(len(factors)-10)/20)
+    rfactors = factors[7:-5:steps]
 
     with open('timings.csv', 'w') as fp:
         fp.write('size, time\n')
+        fp.flush()
         for factor in rfactors:
             size = factor * lt
             
@@ -41,4 +42,5 @@ if __name__=='__main__':
             diff = time.time() - start
             
             fp.write(f'{size:d}, {diff:.5e}\n')
+            fp.flush()
             
