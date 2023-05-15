@@ -260,6 +260,11 @@ def main():
             ax = plt.subplot2grid((2, 3), (1, 2))
             imviz(fo['x'], fo['y'], im_true_corr-corr, title='corrected difference', fig=fig, ax=ax)
 
+        fig = plt.figure(figsize=(5,5), dpi=216, constrained_layout=True)
+        imviz(fo['x'], fo['y'], im_true_corr, norm, fig=fig)
+        plt.axis('off')
+        plt.savefig('bisbasexample.png', transparent=True)
+        
         X, Y = np.meshgrid(fo['x'], fo['y'])
         xd, yd, mean, median, std = get_near_data(X, Y, im_true,
                                            gps[0][0], gps[0][1], 10)
