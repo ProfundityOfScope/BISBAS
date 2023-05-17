@@ -1,33 +1,32 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Bifrost implementation of ISBAS algorithms
-
-Created on Tue Jul 26 14:18:33 2022
-@author: bruzewskis
 """
 
-#system-wide imports
 import os
 import sys
 import time
-import numpy as np
+import pickle
 import logging
 import argparse
 import configparser
 import multiprocessing as mp
-import pickle
 
+import h5py
+import numpy as np
 import bifrost as bf
 
 import bisblocks
-import fakeblocks
-import readers
 import helpers
 
-import h5py
+__author__ = "Seth Bruzewski"
+__credits__ = ["Seth Bruzewski", "Jayce Dowell", "Gregory Taylor"]
 
-__version__ = 0.2
+__license__ = "MIT"
+__version__ = "1.0.2"
+__maintainer__ = "Seth Bruzewski"
+__email__ = "bruzewskis@unm.edu"
+__status__ = "development"
 
 
 def old_main(args):

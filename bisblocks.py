@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 This file contains various blocks for the Bifrost-ISBAS pipeline
-
-Created on Sun Aug 14 23:38:03 2022
-@author: bruzewskis
 """
 
-import numpy as np
+import os
 import logging
 from copy import deepcopy
 from datetime import datetime
-import h5py
-import os
 
+import h5py
+import cupy as cp
+import numpy as np
 import bifrost as bf
 import bifrost.pipeline as bfp
-import cupy as cp
 
-from readers import DataStack
+__author__ = "Seth Bruzewski"
+__credits__ = ["Seth Bruzewski", "Jayce Dowell", "Gregory Taylor"]
 
-__version__ = 0.2
+__license__ = "MIT"
+__version__ = "1.0.2"
+__maintainer__ = "Seth Bruzewski"
+__email__ = "bruzewskis@unm.edu"
+__status__ = "development"
 
 blockslogger = logging.getLogger('__main__')
+
 
 class H5Reader(object):
     '''

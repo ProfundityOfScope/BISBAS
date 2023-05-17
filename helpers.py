@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Temp text up here
-
-Created on Thu Sep 8 13:22:33 2022
-@author: bruzewskis
+Helper functions that are not themselves full BISBAS blocks
 """
 
-import numpy as np
 import os
 import sys
 import time
 import logging
-import h5py
 
-__version__ = 0.1
+import h5py
+import numpy as np
+
+__author__ = "Seth Bruzewski"
+__credits__ = ["Seth Bruzewski", "Jayce Dowell", "Gregory Taylor"]
+
+__license__ = "MIT"
+__version__ = "1.0.2"
+__maintainer__ = "Seth Bruzewski"
+__email__ = "bruzewskis@unm.edu"
+__status__ = "development"
 
 helperslogger = logging.getLogger('__main__')
+
 
 def make_gmatrix(ids, dates):
     # Fast generates G matrix
