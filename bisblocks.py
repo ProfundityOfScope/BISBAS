@@ -20,56 +20,58 @@ import cupy as cp
 
 from readers import DataStack
 
-__version__ = 0.1
+__version__ = 0.2
 
 blockslogger = logging.getLogger('__main__')
 
-class IntfRead(object):
+class H5Reader(object):
     '''
     File read object
     '''
-    def __init__(self, filename, gulp_size, dtype, file_order):
-
-        # Figure out order
-        files = [ f'{filename}/{f}' for f in file_order ]
-        self.files = files
+    def __init__(self, filename, dataname, gulp_size):
 
         # Initialize our reader object
         self.step = 0
-        self.reader = DataStack.read(files)
-        self.dtype = dtype
-
-        # Keep track of things we'll need to preserve
-        self.xcoords = self.reader._xarr
-        self.xname = self.reader.xgrd
-        self.ycoords = self.reader._yarr
-        self.yname = self.reader.ygrd
-        self.imshape = self.reader.imshape
+        self.fo = h5py.File(filename, 'a')
+        self.dataname
+        self.data = self.fo[self.dataname]
+        self.dtype = self.data.dtype
 
         # Double check this gulp-size is acceptable
-        imsize = self.reader.imsize
+        self.shape = self.data.shape
+        self.size = np.product(self.shape)
+        self.imsize = np.product(self.shape[-2:])
         if imsize%gulp_size==0:
             self.gulp_size = gulp_size
         else:
             raise ValueError('Gulp must evenly divide image size')
 
-        # Generate regions for entire image
-        self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
-        blockslogger.debug(f'Regions have shape {self.regions.shape}')
-
+        # Make a buffer for reading (hdf5 being picky)
+        self.linelen = np.size(self,)
+        bsize = 2*max(self.gulp_size, self.linelen)
+        self.buffer = np.zeros(bsize, (np.size(self, 0)), dtype=self.dtype)
+        self.head = 0
+        self.linecount = 0
 
     def read(self):
 
         try:
-            # We try to read files
-            picks = self.regions[self.step]
-            d = self.reader[picks]
-            self.step += 1
+            # This will read via the buffer
+            while self.head < self.gulp_size:
+                stop = self.head + self.linelen
+                self.buffer[self.head:stop] = self.data[:, self.linecount].T
 
-            return d.astype(self.dtype)
+                self.head += self.linelen
+                self.linecount += 1
+
+            out = self.buffer[:self.gulp_size]
+            self.head -= self.gulp_size
+            self.buffer = np.roll(self.buffer, -self.gulp_size, axis=0)
+
+            return out
         except IndexError:
             # Catch the index error if we're past the end
-            return np.empty((0, len(self.files), 3), dtype=self.dtype)
+            return np.empty((0, self.ndays), dtype=self.dtype)
 
     def __enter__(self):
         return self
@@ -78,54 +80,33 @@ class IntfRead(object):
         pass
 
     def __exit__(self, type, value, tb):
-        self.close()
-        
-class IntfReadBlock(bfp.SourceBlock):
-    """ Block for reading binary data from file and streaming it into a bifrost pipeline
+        self.fo.close()
 
-    Args:
-        filenames (list): A list of filenames to open
-        gulp_size (int): Number of elements in a gulp (i.e. sub-array size)
-        gulp_nframe (int): Number of frames in a gulp. (Ask Ben / Miles for good explanation)
-        dtype (bifrost dtype string): dtype, e.g. f32, cf32
+class ReadH5Block(bfp.SourceBlock):
+    """ 
+    Meant for reading our data, could be generalized, but difficult
     """
-    def __init__(self, filenames, gulp_pixels, dtype, file_order, *args, **kwargs):
-        super().__init__(filenames, 1, *args, **kwargs)
-        self.dtype = dtype
-        self.file_order = file_order
+
+    def __init__(self, filename, dataname, gulp_pixels, *args, **kwargs):
+        super().__init__([filename], 1, *args, **kwargs)
+        self.dataname = dataname
         self.gulp_pixels = gulp_pixels
-
-        # Do a lookup on bifrost datatype to numpy datatype
-        dcode = self.dtype.rstrip('0123456789')
-        nbits = int(self.dtype[len(dcode):])
-        self.np_dtype = bf.dtype.name_nbit2numpy(dcode, nbits)
-
 
     def create_reader(self, filename):
         # Log line about reading
 
-        return IntfRead(filename, self.gulp_pixels, self.np_dtype, file_order=self.file_order)
+        return H5Reader(filename, self.dataname, self.gulp_pixels)
 
     def on_sequence(self, ireader, filename):
-
-        coord_dtname = np.dtype(self.np_dtype).name
-        ireader.xcoords.astype(coord_dtname).tofile('tmp_x.dat')
-        ireader.ycoords.astype(coord_dtname).tofile('tmp_y.dat')
-        blockslogger.debug(f'{ireader.xcoords.dtype}')
-
+        dshape = ireader.shape
         ohdr = {'name':     filename,
-                'gulp':     self.gulp_pixels,
-                'zdtype':   coord_dtname,
-                'xfile':    'tmp_x.dat',
-                'xdtype':   coord_dtname,
-                'xname':    ireader.xname,
-                'yfile':    'tmp_y.dat',
-                'ydtype':   coord_dtname,
-                'yname':    ireader.yname,
+                'dataname': dataname,
+                'inshape':  str(dshape),
                 '_tensor':  {'dtype':  self.dtype,
-                             'shape':  [-1, self.gulp_pixels, len(self.file_order)],
+                             'shape':  [-1, self.gulp_pixels, dshape[0]],
                             },
                 }
+
         return [ohdr]
 
     def on_data(self, reader, ospans):
@@ -136,6 +117,72 @@ class IntfReadBlock(bfp.SourceBlock):
             return [1]
         else:
             return [0]
+
+class WriteH5Block(bfp.SinkBlock):
+
+    def __init__(self, iring, filename, dsetname, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+        self.fo = h5py.File(filename, 'a')
+
+        # Set up accumulation
+        self.niter = 0
+
+    def on_sequence(self, iseq):
+
+        # Grab useful things from header
+        hdr = iseq.header
+        span, self.gulp, depth = hdr['_tensor']['shape']
+
+        # Grab useful things from file
+        ref_dtype = self.fo['displacements'].dtype
+        outshape = (self.fo['displacements'].shape[0], 
+                    self.fo['displacements'].shape[1], 
+                    depth)
+
+        blockslogger.debug('Started WriteH5Block')
+        blockslogger.debug(f'Write block is writing to a {outshape} object')
+
+        # Create dataset
+        if 'detrended' in self.fo:
+            # should probably verify this is good
+            data = self.fo['detrended']
+        else:
+            data = self.fo.create_dataset('detrended', 
+                                          data=np.empty(outshape, 
+                                                        dtype=ref_dtype))
+
+        # Assign scales
+        for i in range(data.ndim):
+            if outshape[i]==1:
+                blockslogger.debug('We don\'t need to label this axis')
+                continue
+
+            ref_dim = self.fo['displacements'].dims[i]
+
+            data.dims[i].attach_scale(ref_dim[0])
+            data.dims[i].label = ref_dim.label
+
+        # Record gulp, set up buffer
+        self.linelen = outshape[1]
+        self.buffer = np.empty((2*max([self.gulp, self.linelen])+1, depth), 
+                               dtype=ref_dtype)
+        self.head = 0
+        self.linecount = 0
+
+    def on_data(self, ispan):
+
+        ### WRITE STUFF ###
+        # Put data into the file
+        self.buffer[self.head:self.head+self.gulp,:] = ispan.data[0]
+        self.head += self.gulp
+
+        # Write out as many times as needed
+        while self.head > self.linelen:
+            self.fo['detrended'][self.linecount,:,:] = self.buffer[:self.linelen,:]
+            self.linecount += 1
+
+            self.head -= self.linelen
+            self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
 class ReferenceBlock(bfp.TransformBlock):
     def __init__(self, iring, ref_stack, *args, **kwargs):
@@ -365,105 +412,22 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
         self.niter += 1
 
-class H5Reader(object):
+class AccumMatrixBlock(bfp.TransformBlock):
     '''
-    File read object
+    TBD
     '''
-    def __init__(self, filename, gulp_size, dtype):
+    def __init__(self, iring, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
 
-        # Initialize our reader object
-        self.step = 0
-        self.fo = h5py.File(filename, 'a')
-        self.data = self.fo['displacements']
-        self.dtype = dtype
+    def on_sequence(self, iseq):
+        ohdr = deepcopy(iseq.header)
+        return ohdr
 
-        # Double check this gulp-size is acceptable
-        self.imshape = (self.fo['y'].size, self.fo['x'].size)
-        imsize = np.product(self.imshape)
-        self.ndays = self.fo['t'].size
-        if imsize%gulp_size==0:
-            self.gulp_size = gulp_size
-        else:
-            raise ValueError('Gulp must evenly divide image size')
+    def on_data(self, ispan, ospan):
+        in_nframe = ispan.in_nframe
+        out_nframe = in_nframe
 
-        # Generate regions for entire image
-        self.regions = np.arange(0, imsize).reshape(-1, self.gulp_size)
-        blockslogger.debug(f'Regions have shape {self.regions.shape}')
-
-        # Make a buffer for reading (hdf5 being picky)
-        self.linelen = self.fo['x'].size
-        bsize = 2*max(self.gulp_size, self.linelen)
-        self.buffer = np.zeros((bsize, self.ndays), dtype=self.dtype)
-        self.head = 0
-        self.linecount = 0
-
-    def read(self):
-
-        try:
-            # This will read via the buffer
-            while self.head < self.gulp_size:
-                self.buffer[self.head:self.head+self.linelen] = self.fo['displacements'][self.linecount]
-
-                self.head += self.linelen
-                self.linecount += 1
-
-            out = self.buffer[:self.gulp_size]
-            self.head -= self.gulp_size
-            self.buffer = np.roll(self.buffer, -self.gulp_size, axis=0)
-
-            return out.astype(self.dtype)
-        except IndexError:
-            # Catch the index error if we're past the end
-            return np.empty((0, self.ndays), dtype=self.dtype)
-
-    def __enter__(self):
-        return self
-
-    def close(self):
-        pass
-
-    def __exit__(self, type, value, tb):
-        self.fo.close()
-
-class ReadH5Block(bfp.SourceBlock):
-    """ 
-    This guy will read hdf5 files
-    """
-
-    def __init__(self, filenames, gulp_pixels, dtype, *args, **kwargs):
-        super().__init__(filenames, 1, *args, **kwargs)
-        self.dtype = dtype
-        self.gulp_pixels = gulp_pixels
-
-        # Do a lookup on bifrost datatype to numpy datatype
-        dcode = self.dtype.rstrip('0123456789')
-        nbits = int(self.dtype[len(dcode):])
-        self.np_dtype = bf.dtype.name_nbit2numpy(dcode, nbits)
-
-    def create_reader(self, filename):
-        # Log line about reading
-
-        return H5Reader(filename, self.gulp_pixels, self.np_dtype)
-
-    def on_sequence(self, ireader, filename):
-        ndays = int(ireader.ndays)
-        ohdr = {'name':     filename,
-                'imshape':  str(ireader.imshape),
-                '_tensor':  {'dtype':  self.dtype,
-                             'shape':  [-1, self.gulp_pixels, ndays],
-                            },
-                }
-
-        return [ohdr]
-
-    def on_data(self, reader, ospans):
-        indata = reader.read()
-
-        if indata.shape[0] == self.gulp_pixels:
-            ospans[0].data[...] = indata
-            return [1]
-        else:
-            return [0]
+        return out_nframe
 
 class ApplyModelBlock(bfp.TransformBlock):
 
@@ -575,73 +539,3 @@ class AccumRatesBlock(bfp.SinkBlock):
 
         self.rates[yinds,xinds] = ispan.data[0]
         self.niter += 1
-
-class WriteH5Block(bfp.SinkBlock):
-
-    def __init__(self, iring, filename, dsetname, *args, **kwargs):
-        super().__init__(iring, *args, **kwargs)
-        self.fo = h5py.File(filename, 'a')
-
-        # Set up accumulation
-        self.niter = 0
-
-    def on_sequence(self, iseq):
-
-        # Grab useful things from header
-        hdr = iseq.header
-        span, self.gulp, depth = hdr['_tensor']['shape']
-
-        # Grab useful things from file
-        ref_dtype = self.fo['displacements'].dtype
-        outshape = (self.fo['displacements'].shape[0], 
-                    self.fo['displacements'].shape[1], 
-                    depth)
-
-        blockslogger.debug('Started WriteH5Block')
-        blockslogger.debug(f'Write block is writing to a {outshape} object')
-
-        # Create dataset
-        if 'detrended' in self.fo:
-            # should probably verify this is good
-            data = self.fo['detrended']
-        else:
-            data = self.fo.create_dataset('detrended', 
-                                          data=np.empty(outshape, 
-                                                        dtype=ref_dtype))
-
-        # Assign scales
-        for i in range(data.ndim):
-            if outshape[i]==1:
-                blockslogger.debug('We don\'t need to label this axis')
-                continue
-
-            ref_dim = self.fo['displacements'].dims[i]
-
-            data.dims[i].attach_scale(ref_dim[0])
-            data.dims[i].label = ref_dim.label
-
-        # Record gulp, set up buffer
-        self.linelen = outshape[1]
-        self.buffer = np.empty((2*max([self.gulp, self.linelen])+1, depth), 
-                               dtype=ref_dtype)
-        self.head = 0
-        self.linecount = 0
-
-    def on_data(self, ispan):
-
-        ### WRITE STUFF ###
-        # Put data into the file
-        self.buffer[self.head:self.head+self.gulp,:] = ispan.data[0]
-        self.head += self.gulp
-
-        # Write out as many times as needed
-        while self.head > self.linelen:
-            self.fo['detrended'][self.linecount,:,:] = self.buffer[:self.linelen,:]
-            self.linecount += 1
-
-            self.head -= self.linelen
-            self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
-
-
-
-    

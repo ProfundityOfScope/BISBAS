@@ -27,10 +27,10 @@ import helpers
 
 import h5py
 
-__version__ = 0.1
+__version__ = 0.2
 
 
-def main(args):
+def old_main(args):
 
     # Timekeeping
     start_time = time.time()
@@ -67,7 +67,6 @@ def main(args):
     config.read(args.config)
     
     # timeseries options
-    ts_type   = config.get('timeseries-config','ts_type')
     mingood   = config.getint('timeseries-config','nsbas_min_intfs')
     
     # ref. pixel options
@@ -220,6 +219,68 @@ def main(args):
 
     total_time = time.time() - start_time
     logger.info(f'Total runtime was {total_time} seconds')
+
+def main(args):
+
+    # Timekeeping
+    start_time = time.time()
+    
+    ##### Setup a logger #####
+    logger = logging.getLogger(__name__)
+    logFormat = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s', 
+                                  datefmt='%Y-%m-%d %H:%M:%S')
+    logFormat.converter = time.gmtime
+    
+    # Decide to write to file or stdout
+    if args.log is None:
+        logHandler = logging.StreamHandler(sys.stdout)
+    else:
+        logHandler = logging.FileHandler(args.log)
+    logHandler.setFormatter(logFormat)
+    logger.addHandler(logHandler)
+    
+    # Decide what level to report
+    logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
+    
+    # Useful info
+    logger.info(f'Starting bisbas.py with PID {os.getpid()}')
+    logger.info(f'Version: {__version__}')
+        
+    ##### Read in the config file #####
+    logger.info(f'Attempting to use {args.config} as config file')
+    if not os.path.exists(args.config):
+        logger.error('Could not find provided')
+    config = configparser.ConfigParser()
+    config.optionxform = str #make the config file case-sensitive
+    config.read(args.config)
+    
+    # Get configuration file paramters
+    mingood     = config.getint('timeseries-config','nsbas_min_intfs')
+    reflat      = config.getfloat('timeseries-config','reflat')
+    reflon      = config.getfloat('timeseries-config','reflon')
+    refnum      = config.getint('timeseries-config','refnum')
+    unw_thresh  = config.getfloat('timeseries-config','unw_check_threshold')
+    calcrate    = config.getboolean('timeseries-config','calcrate')
+    detrend     = config.getboolean('timeseries-config','detrend')
+    trendparams = config.getint('timeseries-config','trendparams')
+    gpsfile     = config.get('timeseries-config','gps_file')
+    constrained = config.getboolean('timeseries-config','constrainedtrend')
+    makeplots   = config.getboolean('timeseries-config','makeplots')
+
+    # Get dates, wavelength
+    # conv = (-1000)*wavelen/(4*np.pi)
+
+    # Build G matrix
+
+    # Get median values from ref
+
+    # Run pipeline1
+
+    # Build model
+
+    # Run pipeline2
+
+    # Make plots
 
 if __name__=='__main__':
     globalstart=time.time()
