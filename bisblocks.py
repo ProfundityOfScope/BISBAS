@@ -210,7 +210,7 @@ class ReferenceBlock(bfp.TransformBlock):
 
             odata[...] = idata
             odata -= self.ref_stack
-            ospan.data[...] = bf.ndarray(odata)# may be unneeded?
+            ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
 

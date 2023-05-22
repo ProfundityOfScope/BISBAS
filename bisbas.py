@@ -319,14 +319,14 @@ def main(args):
         b_read = bisblocks.ReadH5Block(infile, inname, args.gulp, space='system')
 
         # This on GPU?
-        #b_read_gpu = bf.blocks.copy(b_read, space='cuda')
-        #b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
+        b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+        b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
         #b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates, G)
         #b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, rad2mm_conv)
-        #b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
+        b_tsmm = bf.blocks.copy(b_reff_gpu, space='cuda_host')
 
         # Sink block
-        b_write = bisblocks.WriteH5Block(b_read, outfile, outname, True)
+        b_write = bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
 
         PIPELINE1.run()
 
