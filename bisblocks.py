@@ -157,7 +157,7 @@ class WriteH5Block(bfp.SinkBlock):
         # Record gulp, set up buffer
         self.linelen = outshape[1]
         self.buffer = np.empty((2*max([self.gulp, self.linelen])+1, depth), 
-                               dtype=ref_dtype)
+                               dtype=dtype_np)
         self.head = 0
         self.linecount = 0
 
