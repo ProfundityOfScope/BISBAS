@@ -129,7 +129,7 @@ class WriteH5Block(bfp.SinkBlock):
 
     def __init__(self, iring, filename, dataname, overwrite=False, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
-        if overwrite:
+        if os.path.exists(filename) and overwrite:
             os.remove(filename)
         self.fo = h5py.File(filename, 'a')
         self.filename
