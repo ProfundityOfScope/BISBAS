@@ -47,7 +47,7 @@ def make_gmatrix(datepairs):
     
     return G
 
-def get_data_near_h5(data, x0, y0, min_points=10, max_size=20):
+def data_near(data, x0, y0, min_points=10, max_size=20):
     
     # We don't need to check smaller chunks
     min_size = np.ceil(np.sqrt(min_points)).astype(int)

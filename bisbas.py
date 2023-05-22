@@ -254,6 +254,10 @@ def main(args):
     config.read(args.config)
     
     # Get configuration file paramters
+    infile      = config.get('timeseries-config', 'infile')
+    inname      = config.get('timeseries-config', 'inname')
+    outfile     = config.get('timeseries-config', 'outfile')
+    outname     = config.get('timeseries-config', 'outname')
     mingood     = config.getint('timeseries-config','nsbas_min_intfs')
     refnum      = config.getint('timeseries-config','refnum')
     unw_thresh  = config.getfloat('timeseries-config','unw_check_threshold')
@@ -266,7 +270,7 @@ def main(args):
 
     # Extract things from data
     # conv = (-1000)*wavelen/(4*np.pi)
-    with h5py.File(args.infile, 'r') as fo:
+    with h5py.File(infile, 'r') as fo:
         # Record attrs
         attrs = dict(fo.attrs)
 
@@ -274,6 +278,9 @@ def main(args):
         ref_x = int(attrs['REF_X'])
         ref_y = int(attrs['REF_Y'])
         wave = float(attrs['radarWavelength'])
+
+        # Get nearby data
+        ref_stack = helpers.data_near(fo[inname], ref_x, ref_y, refnum)
 
         # Get dates
         datepairs = fo['date'][:].astype(str)
@@ -283,6 +290,10 @@ def main(args):
 
     # Generate G-matrix
     G = helpers.make_gmatrix(datepairs)
+
+    logger.debug(f'conv: {conv}')
+    logger.debug(f'G shape: {G.shape}')
+    logger.debug(f'ref shape: {ref_stack.shape}')
 
     # Overwrite
     if os.path.exists(args.outfile):
@@ -299,7 +310,7 @@ def main(args):
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
-        b_read = bisblocks.ReadH5Block(args.infile, 'unwrapPhase', args.gulp, space='system')
+        b_read = bisblocks.ReadH5Block(infile, inname, args.gulp, space='system')
 
         # This on GPU?
         #b_read_gpu = bf.blocks.copy(b_read, space='cuda')
@@ -309,7 +320,7 @@ def main(args):
         #b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
         # Sink block
-        b_write = bisblocks.WriteH5Block(b_read, args.outfile, 'timeseries', True)
+        b_write = bisblocks.WriteH5Block(b_read, outfile, outname, True)
 
         PIPELINE1.run()
 
