@@ -13,6 +13,7 @@ import cupy as cp
 import numpy as np
 import bifrost as bf
 import bifrost.pipeline as bfp
+from bifrost.dtype import numpy2string, string2numpy
 
 __author__ = "Seth Bruzewski"
 __credits__ = ["Seth Bruzewski", "Jayce Dowell", "Gregory Taylor"]
@@ -33,10 +34,8 @@ class H5Reader(object):
     def __init__(self, filename, dataname, gulp_size):
 
         # Initialize our reader object
-        self.step = 0
         self.fo = h5py.File(filename, 'a')
-        self.dataname
-        self.data = self.fo[self.dataname]
+        self.data = self.fo[dataname]
         self.dtype = self.data.dtype
 
         # Double check this gulp-size is acceptable
@@ -86,7 +85,8 @@ class H5Reader(object):
 
 class ReadH5Block(bfp.SourceBlock):
     """ 
-    Meant for reading our data, could be generalized, but difficult
+    Meant for reading our data, could be generalized, but difficult. Currently assumes
+    we want to keep first dimension, the there are two more we want to ravel, basically.
     """
 
     def __init__(self, filename, dataname, gulp_pixels, *args, **kwargs):
@@ -101,10 +101,11 @@ class ReadH5Block(bfp.SourceBlock):
 
     def on_sequence(self, ireader, filename):
         dshape = ireader.shape
+        dtype_str = numpy2string(ireader.dtype)
         ohdr = {'name':     filename,
                 'dataname': dataname,
                 'inshape':  str(dshape),
-                '_tensor':  {'dtype':  self.dtype,
+                '_tensor':  {'dtype':  dtype_str,
                              'shape':  [-1, self.gulp_pixels, dshape[0]],
                             },
                 }
@@ -122,47 +123,34 @@ class ReadH5Block(bfp.SourceBlock):
 
 class WriteH5Block(bfp.SinkBlock):
 
-    def __init__(self, iring, filename, dsetname, *args, **kwargs):
+    def __init__(self, iring, filename, dataname, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.fo = h5py.File(filename, 'a')
-
-        # Set up accumulation
-        self.niter = 0
+        self.dataname = dataname
 
     def on_sequence(self, iseq):
 
         # Grab useful things from header
         hdr = iseq.header
         span, self.gulp, depth = hdr['_tensor']['shape']
+        dtype_np = string2numpy(hdr['_tensor']['dtype'])
 
         # Grab useful things from file
         ref_dtype = self.fo['displacements'].dtype
-        outshape = (self.fo['displacements'].shape[0], 
-                    self.fo['displacements'].shape[1], 
-                    depth)
+        inshape = eval(hdr['inshape'])
+        outshape = (depth, inshape[1], inshape[2])
 
         blockslogger.debug('Started WriteH5Block')
-        blockslogger.debug(f'Write block is writing to a {outshape} object')
+        blockslogger.debug(f'Write block is writing to a {outshape} object to {self.dataname}')
 
         # Create dataset
-        if 'detrended' in self.fo:
+        if self.dataname in self.fo:
             # should probably verify this is good
-            data = self.fo['detrended']
+            self.data = self.fo[self.dataname]
         else:
-            data = self.fo.create_dataset('detrended', 
+            self.data = self.fo.create_dataset(self.dataname, 
                                           data=np.empty(outshape, 
-                                                        dtype=ref_dtype))
-
-        # Assign scales
-        for i in range(data.ndim):
-            if outshape[i]==1:
-                blockslogger.debug('We don\'t need to label this axis')
-                continue
-
-            ref_dim = self.fo['displacements'].dims[i]
-
-            data.dims[i].attach_scale(ref_dim[0])
-            data.dims[i].label = ref_dim.label
+                                                        dtype=dtype_np))
 
         # Record gulp, set up buffer
         self.linelen = outshape[1]
@@ -173,14 +161,13 @@ class WriteH5Block(bfp.SinkBlock):
 
     def on_data(self, ispan):
 
-        ### WRITE STUFF ###
         # Put data into the file
         self.buffer[self.head:self.head+self.gulp,:] = ispan.data[0]
         self.head += self.gulp
 
         # Write out as many times as needed
         while self.head > self.linelen:
-            self.fo['detrended'][self.linecount,:,:] = self.buffer[:self.linelen,:]
+            self.data[:,self.linecount] = self.buffer[:self.linelen].T
             self.linecount += 1
 
             self.head -= self.linelen

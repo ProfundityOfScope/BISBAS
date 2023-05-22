@@ -273,7 +273,26 @@ def main(args):
 
     # Get median values from ref
 
-    # Run pipeline1
+    # Generates the timeseries
+    with bf.get_default_pipeline() as PIPELINE1:
+        # Do stuff blocks
+        b_read = bisblocks.ReadH5Block('ifgramStack.h5', 'unwrapPhase', args.gulp, space='system')
+
+        # This on GPU?
+        #b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+        #b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
+        #b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates, G)
+        #b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, rad2mm_conv)
+        #b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
+
+        # Sink block
+        b_write = bisblocks.WriteH5Block(b_read, args.outfile, 'detrended', True)
+
+        PIPELINE1.run()
+
+        # Keep track of accumulated values
+        #GTG = b_write.GTG
+        #GTd = b_write.GTd
 
     # Build model
 
