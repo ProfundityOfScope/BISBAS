@@ -42,7 +42,6 @@ class H5Reader(object):
         self.shape = self.data.shape
         self.size = np.product(self.shape)
         self.imsize = np.product(self.shape[-2:])
-        blockslogger.debug(f'Shape: {self.shape}, Size: {self.size}, Imsize: {self.imsize}')
         if self.imsize%gulp_size==0:
             self.gulp_size = gulp_size
         else:
@@ -51,7 +50,7 @@ class H5Reader(object):
         # Make a buffer for reading (hdf5 being picky)
         self.linelen = np.size(self, 1)
         bsize = 2*max(self.gulp_size, self.linelen)
-        self.buffer = np.zeros(bsize, (np.size(self, 0)), dtype=self.dtype)
+        self.buffer = np.zeros((bsize, np.size(self, 0)), dtype=self.dtype)
         self.head = 0
         self.linecount = 0
 
