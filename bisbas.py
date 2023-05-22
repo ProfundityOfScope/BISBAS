@@ -291,9 +291,9 @@ def main(args):
         logger.debug(f'Found {len(median_stack)} median values')
 
         # Get dates and date-matrix
-        datepairs = fo['date'][:].astype(str)
+        datepairs = fo['date'][:]
         dates = np.sort(np.unique(datepairs))
-        G = helpers.make_gmatrix(datepairs)
+        G = helpers.make_gmatrix(datepairs.astype(str))
         logger.debug(f'Used {len(dates)} dates to generate G-matrix {G.shape}')
 
     # Overwrite
