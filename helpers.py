@@ -72,7 +72,6 @@ def data_near(data, x0, y0, min_points=10, max_size=20):
 
         # Grab that bit of the images
         zarr = data[:, ymin:ymax, xmin:xmax]
-        helperslogger.debug(f'ZARR has shape {zarr.shape}')
 
         # Check if what we grabbed is nice enough
         good_count = np.sum(~np.isnan(zarr), axis=(1,2))
