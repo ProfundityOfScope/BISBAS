@@ -51,7 +51,7 @@ class H5Reader(object):
         blockslogger.debug(f'Reading {dataname} ({self.shape}) from {filename}')
 
         # Make a buffer for reading (hdf5 being picky)
-        self.linelen = np.size(self, 1)
+        self.linelen = np.size(self, 2)
         bsize = 2*max(self.gulp_size, self.linelen)
         self.buffer = np.zeros((bsize, np.size(self, 0)), dtype=self.dtype)
         blockslogger.debug(f'Created read buffer with shape {self.buffer.shape}')
@@ -158,7 +158,7 @@ class WriteH5Block(bfp.SinkBlock):
                                                         dtype=dtype_np))
 
         # Record gulp, set up buffer
-        self.linelen = outshape[1]
+        self.linelen = outshape[2]
         self.buffer = np.empty((2*max([self.gulp, self.linelen])+1, depth), 
                                dtype=dtype_np)
         blockslogger.debug(f'Created write buffer with shape {self.buffer.shape}')
