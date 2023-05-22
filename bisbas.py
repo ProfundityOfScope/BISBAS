@@ -258,53 +258,57 @@ def main(args):
     inname      = config.get('timeseries-config', 'inname')
     outfile     = config.get('timeseries-config', 'outfile')
     outname     = config.get('timeseries-config', 'outname')
-    mingood     = config.getint('timeseries-config','nsbas_min_intfs')
-    refnum      = config.getint('timeseries-config','refnum')
-    unw_thresh  = config.getfloat('timeseries-config','unw_check_threshold')
-    calcrate    = config.getboolean('timeseries-config','calcrate')
-    detrend     = config.getboolean('timeseries-config','detrend')
-    trendparams = config.getint('timeseries-config','trendparams')
-    gpsfile     = config.get('timeseries-config','gps_file')
-    constrained = config.getboolean('timeseries-config','constrainedtrend')
-    makeplots   = config.getboolean('timeseries-config','makeplots')
+    mingood     = config.getint('timeseries-config', 'nsbas_min_intfs')
+    refnum      = config.getint('timeseries-config', 'refnum')
+    unw_thresh  = config.getfloat('timeseries-config', 'unw_check_threshold')
+    calcrate    = config.getboolean('timeseries-config', 'calcrate')
+    ratename    = config.get('timeseries-config', 'ratename')
+    detrend     = config.getboolean('timeseries-config', 'detrend')
+    trendparams = config.getint('timeseries-config', 'trendparams')
+    detrendname = config.get('timeseries-config', 'detrendname')
+    gpsfile     = config.get('timeseries-config', 'gps_file')
+    constrained = config.getboolean('timeseries-config', 'constrainedtrend')
+    makeplots   = config.getboolean('timeseries-config', 'makeplots')
 
     # Extract things from data
-    # conv = (-1000)*wavelen/(4*np.pi)
     with h5py.File(infile, 'r') as fo:
         # Record attrs
         attrs = dict(fo.attrs)
+        logger.debug(f'Copying {len(attrs)} attributes')
+
+        # Wavelength
+        wave = float(attrs['radarWavelength'])
+        conv = (-1000)*wave/(4*np.pi)
 
         # Reference coords
         ref_x = int(attrs['REF_X'])
         ref_y = int(attrs['REF_Y'])
-        wave = float(attrs['radarWavelength'])
+        logger.debug(f'Reference point: ({ref_x}, {ref_y})')
 
-        # Get nearby data
+        # Get nearby data median
         _, _, ref_stack = helpers.data_near(fo[inname], ref_x, ref_y, refnum)
         median_stack = np.median(ref_stack, axis=(1,2))
+        logger.debug(f'Found {len(median_stack)} median values')
 
-        # Get dates
+        # Get dates and date-matrix
         datepairs = fo['date'][:].astype(str)
-
-    # Generate conversio
-    conv = (-1000)*wave/(4*np.pi)
-
-    # Generate G-matrix
-    G = helpers.make_gmatrix(datepairs)
-
-    logger.debug(f'conv: {conv}')
-    logger.debug(f'G shape: {G.shape}')
-    logger.debug(f'ref shape: {ref_stack.shape}')
-    logger.debug(f'med shape: {median_stack.shape}')
+        dates = np.sort(np.unique(datepairs))
+        G = helpers.make_gmatrix(datepairs)
+        logger.debug(f'Used {len(dates)} dates to generate G-matrix {G.shape}')
 
     # Overwrite
-    if os.path.exists(args.outfile):
-        os.remove(args.outfile)
+    logger.debug(f'Generating output file {outfile}')
+    if os.path.exists(outfile):
+        os.remove(outfile)
 
     # Generate output file and pass along attrs
-    with h5py.File(args.outfile, 'w') as fo:
+    with h5py.File(outfile, 'w') as fo:
+        # Copy over attrs
         for key in attrs:
             fo.attrs[key] = attrs[key]
+
+        # Remember dates and their order
+        fo['dates'] = dates
 
     # KILL ME
     return None
@@ -352,10 +356,6 @@ if __name__=='__main__':
                         help='print debug messages as well as info and higher')
     parser.add_argument('-g', '--gulp', type=int, default=1000,
                         help='size of gulps to intake data with')
-    parser.add_argument('-i', '--infile', type=str, default='ifgramStack.h5',
-                        help='name of archive file to read in')
-    parser.add_argument('-o', '--outfile', type=str, default='timeseries.h5',
-                        help='name of archive file to write out to')
     args = parser.parse_args()
     
     main(args)
