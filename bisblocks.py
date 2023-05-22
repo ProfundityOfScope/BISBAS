@@ -48,7 +48,7 @@ class H5Reader(object):
             raise ValueError('Gulp must evenly divide image size')
 
         # log
-        blockslogger.debug(f'Reading {self.dataname} ({self.shape}) from {self.filename}')
+        blockslogger.debug(f'Reading {dataname} ({self.shape}) from {filename}')
 
         # Make a buffer for reading (hdf5 being picky)
         self.linelen = np.size(self, 1)
