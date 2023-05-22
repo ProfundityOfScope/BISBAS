@@ -66,6 +66,7 @@ class H5Reader(object):
                 stop = self.head + self.linelen
                 self.buffer[self.head:stop] = self.data[:, self.linecount].T
 
+                blockslogger.debug(f'Read line {self.linecount-1}')
                 self.head += self.linelen
                 self.linecount += 1
 
