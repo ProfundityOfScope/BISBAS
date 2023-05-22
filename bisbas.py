@@ -255,8 +255,6 @@ def main(args):
     
     # Get configuration file paramters
     mingood     = config.getint('timeseries-config','nsbas_min_intfs')
-    reflat      = config.getfloat('timeseries-config','reflat')
-    reflon      = config.getfloat('timeseries-config','reflon')
     refnum      = config.getint('timeseries-config','refnum')
     unw_thresh  = config.getfloat('timeseries-config','unw_check_threshold')
     calcrate    = config.getboolean('timeseries-config','calcrate')
@@ -266,17 +264,42 @@ def main(args):
     constrained = config.getboolean('timeseries-config','constrainedtrend')
     makeplots   = config.getboolean('timeseries-config','makeplots')
 
-    # Get dates, wavelength
+    # Extract things from data
     # conv = (-1000)*wavelen/(4*np.pi)
+    with h5py.File(args.infile, 'r') as fo:
+        # Record attrs
+        attrs = dict(fo.attrs)
 
-    # Build G matrix
+        # Reference coords
+        ref_x = int(attrs['REF_X'])
+        ref_y = int(attrs['REF_Y'])
+        wave = float(attrs['radarWavelength'])
 
-    # Get median values from ref
+        # Get dates
+        datepairs = fo['date'][:].astype(str)
+
+    # Generate conversio
+    conv = (-1000)*wave/(4*np.pi)
+
+    # Generate G-matrix
+    G = helpers.make_gmatrix(datepairs)
+
+    # Overwrite
+    if os.path.exists(args.outname):
+        os.remove(args.outname)
+
+    # Generate output file and pass along attrs
+    with h5py.File(args.outfile, 'w') as fo:
+        for key in attrs:
+            fo.attrs[key] = attrs[key]
+
+    # KILL ME
+    return None
 
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Do stuff blocks
-        b_read = bisblocks.ReadH5Block('ifgramStack.h5', 'unwrapPhase', args.gulp, space='system')
+        b_read = bisblocks.ReadH5Block(args.infile, 'unwrapPhase', args.gulp, space='system')
 
         # This on GPU?
         #b_read_gpu = bf.blocks.copy(b_read, space='cuda')
@@ -316,6 +339,8 @@ if __name__=='__main__':
                         help='print debug messages as well as info and higher')
     parser.add_argument('-g', '--gulp', type=int, default=1000,
                         help='size of gulps to intake data with')
+    parser.add_argument('-i', '--infile', type=str, default='ifgramStack.h5',
+                        help='name of archive file to read in')
     parser.add_argument('-o', '--outfile', type=str, default='timeseries.h5',
                         help='name of archive file to write out to')
     args = parser.parse_args()

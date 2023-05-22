@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import logging
+from datetime import datetime
 
 import h5py
 import numpy as np
@@ -22,62 +23,59 @@ __status__ = "development"
 
 helperslogger = logging.getLogger('__main__')
 
-
-def make_gmatrix(ids, dates):
-    # Fast generates G matrix
+def make_gmatrix(datepairs):
     
+    # Conver to numbers, find differences
+    dates = np.sort(np.unique(datepairs))
+    t0 = datetime.strptime(dates[0], '%Y%m%d')
+    dr = np.array([(datetime.strptime(d, '%Y%m%d')-t0).days for d in dates])
+    diffdates = np.roll(dr, -1)[:-1] - dr[:-1]
+
+    # Convert datestrs to indices
+    indmap = {dates[i]: i for i in range(len(dates))}
+    indpairs = np.vectorize(lambda x: indmap[x])(datepairs)
     idarr = np.arange(1, len(dates))
 
-    # Pre-calculates the date differences
-    diffdates = np.roll(dates, -1)[:-1] - dates[:-1]
-    
     # Numpifies the creation of of the boolean arrays
-    arr_less = ids[:,0][:,None] < idarr
-    arr_greq = ids[:,1][:,None] >= idarr
+    arr_less = indpairs[:, 0][:, None] < idarr
+    arr_greq = indpairs[:, 1][:, None] >= idarr
     bool_arr = np.logical_and(arr_less, arr_greq)
-    
+
     G = bool_arr * diffdates
-    G = np.array(G)
-    
     if not np.linalg.matrix_rank(G) == len(dates)-1:
-        readerslogger.error('G is of incorrect order')
         raise ValueError('G is of incorrect order')
+    
     return G
 
-def get_data_near_h5(file, x0, y0, min_points=10, max_size=20):
+def get_data_near_h5(data, x0, y0, min_points=10, max_size=20):
     
     # We don't need to check smaller chunks
     min_size = np.ceil(np.sqrt(min_points)).astype(int)
 
-    # Grab variables
-    x = file['x'][:]
-    y = file['y'][:]
-    z = file['displacements']
-    #X, Y = np.meshgrid(x, y)
-
-    # This is how we would deal with a non-uniform spacing
-    xp = np.interp(x0, x, np.arange(len(x)))
-    yp = np.interp(y0, y, np.arange(len(y)))
+    # For broadcasting
+    x = np.arange(np.size(data, 2))
+    y = np.arange(np.size(data, 1))
 
     # We need to find a good chunk size
     for chunk_size in np.arange(min_size, max_size):
 
         # Check if the position is outside of image
-        if any([xp <= chunk_size, xp >= len(x)-chunk_size,
-                yp <= chunk_size, yp >= len(y-chunk_size)]):
+        if any([x0 <= chunk_size, x0 >= len(x)-chunk_size,
+                y0 <= chunk_size, y0 >= len(y-chunk_size)]):
             raise ValueError('This position too close to edge of image')
     
         # Find corners
-        xmin = np.ceil( xp - chunk_size/2 ).astype(int)
-        ymin = np.ceil( yp - chunk_size/2 ).astype(int)
+        xmin = np.ceil( x0 - chunk_size/2 ).astype(int)
+        ymin = np.ceil( y0 - chunk_size/2 ).astype(int)
         xmax = xmin + chunk_size
         ymax = ymin + chunk_size
 
         # Grab that bit of the images
-        zarr = z[ymin:ymax, xmin:xmax,:]
+        zarr = data[:, ymin:ymax, xmin:xmax]
+        helperslogger.debug(f'ZARR has shape {zarr.shape}')
 
         # Check if what we grabbed is nice enough
-        good_count = np.sum(~np.isnan(zarr), axis=(0,1))
+        good_count = np.sum(~np.isnan(zarr), axis=(1,2))
         if np.all(good_count>=min_points):
             # Skip lugging around the meshgrid
             ym, xm = np.mgrid[ymin:ymax, xmin:xmax]
