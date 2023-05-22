@@ -91,6 +91,7 @@ class ReadH5Block(bfp.SourceBlock):
 
     def __init__(self, filename, dataname, gulp_pixels, *args, **kwargs):
         super().__init__([filename], 1, *args, **kwargs)
+        self.filename = filename
         self.dataname = dataname
         self.gulp_pixels = gulp_pixels
 
@@ -102,8 +103,8 @@ class ReadH5Block(bfp.SourceBlock):
     def on_sequence(self, ireader, filename):
         dshape = ireader.shape
         dtype_str = numpy2string(ireader.dtype)
-        ohdr = {'name':     filename,
-                'dataname': dataname,
+        ohdr = {'name':     self.filename,
+                'dataname': self.dataname,
                 'inshape':  str(dshape),
                 '_tensor':  {'dtype':  dtype_str,
                              'shape':  [-1, self.gulp_pixels, dshape[0]],
