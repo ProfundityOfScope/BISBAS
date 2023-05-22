@@ -280,7 +280,8 @@ def main(args):
         wave = float(attrs['radarWavelength'])
 
         # Get nearby data
-        ref_stack = helpers.data_near(fo[inname], ref_x, ref_y, refnum)
+        _, _, ref_stack = helpers.data_near(fo[inname], ref_x, ref_y, refnum)
+        median_stack = np.median(ref_stack, axis=(1,2))
 
         # Get dates
         datepairs = fo['date'][:].astype(str)
@@ -294,6 +295,7 @@ def main(args):
     logger.debug(f'conv: {conv}')
     logger.debug(f'G shape: {G.shape}')
     logger.debug(f'ref shape: {ref_stack.shape}')
+    logger.debug(f'med shape: {median_stack.shape}')
 
     # Overwrite
     if os.path.exists(args.outfile):

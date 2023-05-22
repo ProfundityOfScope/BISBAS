@@ -79,13 +79,11 @@ def data_near(data, x0, y0, min_points=10, max_size=20):
         if np.all(good_count>=min_points):
             # Skip lugging around the meshgrid
             ym, xm = np.mgrid[ymin:ymax, xmin:xmax]
-            xarr = np.broadcast_to(x[xm, None], zarr.shape)
-            yarr = np.broadcast_to(y[ym, None], zarr.shape)
             break
     else:
         raise ValueError('Couldn\'t find a good chunk, try a different reference')
         
-    return xarr, yarr, zarr
+    return xm, ym, zarr
 
 def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
 
