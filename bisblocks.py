@@ -48,7 +48,7 @@ class H5Reader(object):
             raise ValueError('Gulp must evenly divide image size')
 
         # log
-        blockslogger.debug(f'Reading {dataname} ({self.shape}) from {filename}')
+        blockslogger.debug(f'Reading {dataname} {self.shape} from {filename}')
 
         # Make a buffer for reading (hdf5 being picky)
         self.linelen = np.size(self, 2)
@@ -132,6 +132,7 @@ class WriteH5Block(bfp.SinkBlock):
         if overwrite:
             os.remove(filename)
         self.fo = h5py.File(filename, 'a')
+        self.filename
         self.dataname = dataname
 
     def on_sequence(self, iseq):
@@ -145,8 +146,7 @@ class WriteH5Block(bfp.SinkBlock):
         inshape = eval(hdr['inshape'])
         outshape = (depth, inshape[1], inshape[2])
 
-        blockslogger.debug('Started WriteH5Block')
-        blockslogger.debug(f'Write block is writing to a {outshape} object to {self.dataname}')
+        blockslogger.debug(f'Writing to {self.dataname} {outshape} in {self.filename}')
 
         # Create dataset
         if self.dataname in self.fo:
@@ -159,7 +159,7 @@ class WriteH5Block(bfp.SinkBlock):
 
         # Record gulp, set up buffer
         self.linelen = outshape[2]
-        self.buffer = np.empty((2*max([self.gulp, self.linelen])+1, depth), 
+        self.buffer = np.empty((2*max([self.gulp, self.linelen]), depth), 
                                dtype=dtype_np)
         blockslogger.debug(f'Created write buffer with shape {self.buffer.shape}')
         self.head = 0
@@ -176,6 +176,7 @@ class WriteH5Block(bfp.SinkBlock):
             self.data[:,self.linecount] = self.buffer[:self.linelen].T
             self.linecount += 1
 
+            blockslogger.debug(f'Wrote line {self.linecount-1}')
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
