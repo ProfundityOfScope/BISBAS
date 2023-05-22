@@ -54,6 +54,7 @@ class H5Reader(object):
         self.linelen = np.size(self, 1)
         bsize = 2*max(self.gulp_size, self.linelen)
         self.buffer = np.zeros((bsize, np.size(self, 0)), dtype=self.dtype)
+        blockslogger.debug(f'Created read buffer with shape {self.buffer.shape}')
         self.head = 0
         self.linecount = 0
 
@@ -160,6 +161,7 @@ class WriteH5Block(bfp.SinkBlock):
         self.linelen = outshape[1]
         self.buffer = np.empty((2*max([self.gulp, self.linelen])+1, depth), 
                                dtype=dtype_np)
+        blockslogger.debug(f'Created write buffer with shape {self.buffer.shape}')
         self.head = 0
         self.linecount = 0
 
