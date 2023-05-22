@@ -285,8 +285,8 @@ def main(args):
     G = helpers.make_gmatrix(datepairs)
 
     # Overwrite
-    if os.path.exists(args.outname):
-        os.remove(args.outname)
+    if os.path.exists(args.outfile):
+        os.remove(args.outfile)
 
     # Generate output file and pass along attrs
     with h5py.File(args.outfile, 'w') as fo:
