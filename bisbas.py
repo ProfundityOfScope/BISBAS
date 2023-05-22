@@ -286,7 +286,7 @@ def main(args):
         #b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
         # Sink block
-        b_write = bisblocks.WriteH5Block(b_read, args.outfile, 'detrended', True)
+        b_write = bisblocks.WriteH5Block(b_read, args.outfile, 'timeseries', True)
 
         PIPELINE1.run()
 
@@ -299,6 +299,11 @@ def main(args):
     # Run pipeline2
 
     # Make plots
+    if makeplots:
+        logger.info('Plots requested')
+
+    total_time = time.time() - start_time
+    logger.info(f'Total runtime was {total_time} seconds')
 
 if __name__=='__main__':
     globalstart=time.time()
