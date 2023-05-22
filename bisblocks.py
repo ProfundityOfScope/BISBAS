@@ -66,7 +66,6 @@ class H5Reader(object):
                 stop = self.head + self.linelen
                 self.buffer[self.head:stop] = self.data[:, self.linecount].T
 
-                blockslogger.debug(f'Read line {self.linecount-1}')
                 self.head += self.linelen
                 self.linecount += 1
 
@@ -177,7 +176,7 @@ class WriteH5Block(bfp.SinkBlock):
             self.data[:,self.linecount] = self.buffer[:self.linelen].T
             self.linecount += 1
 
-            blockslogger.debug(f'Wrote line {self.linecount-1}')
+            blockslogger.debug(f'Wrote line {self.linecount-1} (head: {self.head})')
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
