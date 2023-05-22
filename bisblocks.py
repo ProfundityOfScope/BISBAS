@@ -65,21 +65,17 @@ class H5Reader(object):
             while self.head < self.gulp_size:
                 stop = self.head + self.linelen
                 self.buffer[self.head:stop] = self.data[:, self.linecount].T
-                blockslogger.debug('READ: YOINK FROM DATA')
 
                 self.head += self.linelen
                 self.linecount += 1
 
             out = self.buffer[:self.gulp_size]
-            blockslogger.debug('READ: YOINK FROM BUFFER')
             self.head -= self.gulp_size
             self.buffer = np.roll(self.buffer, -self.gulp_size, axis=0)
-            blockslogger.debug('READ: ROLL BUFFER')
 
             return out
         except IndexError:
             # Catch the index error if we're past the end
-            blockslogger.debug('READ: REACH END')
             return np.empty((0, np.size(self, 0)), dtype=self.dtype)
 
     def __enter__(self):
@@ -121,7 +117,6 @@ class ReadH5Block(bfp.SourceBlock):
         return [ohdr]
 
     def on_data(self, reader, ospans):
-        blockslogger.debug('READ ONDATA')
         indata = reader.read()
 
         if indata.shape[0] == self.gulp_pixels:
@@ -169,22 +164,18 @@ class WriteH5Block(bfp.SinkBlock):
         self.linecount = 0
 
     def on_data(self, ispan):
-        blockslogger.debug('WRITE ONDATA')
 
         # Put data into the file
         self.buffer[self.head:self.head+self.gulp] = ispan.data[0]
         self.head += self.gulp
-        blockslogger.debug('WRITE: SET BUFFER MOVE HEAD')
 
         # Write out as many times as needed
         while self.head > self.linelen:
             self.data[:,self.linecount] = self.buffer[:self.linelen].T
             self.linecount += 1
-            blockslogger.debug('WRITE: DUMP DATA')
 
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
-            blockslogger.debug('WRITE: ROLL BUFFER')
 
 class ReferenceBlock(bfp.TransformBlock):
     def __init__(self, iring, ref_stack, *args, **kwargs):
