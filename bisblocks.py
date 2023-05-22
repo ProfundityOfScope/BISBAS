@@ -132,7 +132,7 @@ class WriteH5Block(bfp.SinkBlock):
         if os.path.exists(filename) and overwrite:
             os.remove(filename)
         self.fo = h5py.File(filename, 'a')
-        self.filename
+        self.filename = filename
         self.dataname = dataname
 
     def on_sequence(self, iseq):
