@@ -139,7 +139,6 @@ class WriteH5Block(bfp.SinkBlock):
         dtype_np = string2numpy(hdr['_tensor']['dtype'])
 
         # Grab useful things from file
-        ref_dtype = self.fo['displacements'].dtype
         inshape = eval(hdr['inshape'])
         outshape = (depth, inshape[1], inshape[2])
 
