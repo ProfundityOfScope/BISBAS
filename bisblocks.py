@@ -42,7 +42,7 @@ class H5Reader(object):
         self.shape = self.data.shape
         self.size = np.product(self.shape)
         self.imsize = np.product(self.shape[-2:])
-        if imsize%gulp_size==0:
+        if self.imsize%gulp_size==0:
             self.gulp_size = gulp_size
         else:
             raise ValueError('Gulp must evenly divide image size')
@@ -123,8 +123,10 @@ class ReadH5Block(bfp.SourceBlock):
 
 class WriteH5Block(bfp.SinkBlock):
 
-    def __init__(self, iring, filename, dataname, *args, **kwargs):
+    def __init__(self, iring, filename, dataname, overwrite=False, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
+        if overwrite:
+            os.remove(filename)
         self.fo = h5py.File(filename, 'a')
         self.dataname = dataname
 
