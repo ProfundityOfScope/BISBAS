@@ -117,6 +117,7 @@ class ReadH5Block(bfp.SourceBlock):
         return [ohdr]
 
     def on_data(self, reader, ospans):
+        blockslogger.debug('READ ONDATA')
         indata = reader.read()
 
         if indata.shape[0] == self.gulp_pixels:
@@ -166,9 +167,10 @@ class WriteH5Block(bfp.SinkBlock):
         self.linecount = 0
 
     def on_data(self, ispan):
+        blockslogger.debug('WRITE ONDATA')
 
         # Put data into the file
-        self.buffer[self.head:self.head+self.gulp,:] = ispan.data[0]
+        self.buffer[self.head:self.head+self.gulp] = ispan.data[0]
         self.head += self.gulp
 
         # Write out as many times as needed
