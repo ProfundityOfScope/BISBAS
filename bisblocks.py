@@ -286,119 +286,6 @@ class ConvertToMillimetersBlock(bfp.TransformBlock):
 
         return out_nframe
 
-class WriteAndAccumBlock(bfp.SinkBlock):
-    def __init__(self, iring, name, overwrite=True, *args, **kwargs):
-        super().__init__(iring, *args, **kwargs)
-
-        if os.path.exists(name):
-            if overwrite:
-                blockslogger.debug('Overwriting existing file')
-                os.remove(name)
-            else:
-                blockslogger.error('File already exists, try overwrite=True')
-                raise OSError('File already exists, try overwrite=True')
-
-        # Open file
-        self.fo = h5py.File(name, mode='x')
-
-        # Set up accumulation
-        self.niter = 0
-
-    def on_sequence(self, iseq):
-        # I'm doing a lot of setup here, but this should only be called once
-
-        # Grab header
-        hdr = iseq.header
-
-        # Create the axes
-        self.yarr = np.fromfile(hdr['yfile'], dtype=hdr['ydtype'])
-        fy = self.fo.create_dataset('y', data=self.yarr)
-        fy.make_scale('y coordinate')
-        os.remove(hdr['yfile'])
-
-        self.xarr = np.fromfile(hdr['xfile'], dtype=hdr['xdtype'])
-        fx = self.fo.create_dataset('x', data=self.xarr)
-        fx.make_scale('x coordinate') 
-        os.remove(hdr['xfile'])
-
-        self.tarr = np.fromfile(hdr['tfile'], dtype=hdr['tdtype'])
-        ft = self.fo.create_dataset('t', data=self.tarr)
-        ft.make_scale('t coordinate')
-        os.remove(hdr['tfile'])
-
-        # Generate new data object
-        self.shape = ( fy.size, fx.size, ft.size )
-        self.imshape = ( fy.size, fx.size )
-        blockslogger.debug(f'Here is the shape {self.shape}')
-        data = self.fo.create_dataset('displacements', 
-                                      data=np.empty(self.shape, 
-                                                    dtype=hdr['zdtype']))
-
-        # Set up scales
-        data.dims[0].attach_scale(fy)
-        data.dims[0].label = hdr['yname']
-        data.dims[1].attach_scale(fx)
-        data.dims[1].label = hdr['xname']
-        data.dims[2].attach_scale(ft)
-        data.dims[2].label = hdr['tname']
-
-        # Record gulp, set up buffer
-        self.gulp = hdr['gulp']
-        self.buffer = np.empty((2*max([self.gulp, fx.size])+1, ft.size), 
-                               dtype=hdr['zdtype'])
-        self.head = 0
-        self.linelen = fx.size
-        self.linecount = 0
-
-        blockslogger.debug('Started WriteAndAccumBlock')
-        blockslogger.debug(f'Generated a buffer of shape {self.buffer.shape}')
-
-        # Set up some stuff for the accumulation (keeping all terms)
-        self.GTG = np.zeros((6, 6, ft.size))
-        self.GTd = np.zeros((6, ft.size))
-
-    def on_data(self, ispan):
-
-        ### WRITE STUFF ###
-        # Put data into the file
-        self.buffer[self.head:self.head+self.gulp,:] = ispan.data[0]
-        self.head += self.gulp
-
-        # Write out as many times as needed
-        while self.head > self.linelen:
-            self.fo['displacements'][self.linecount,:,:] = self.buffer[:self.linelen,:]
-            self.linecount += 1
-
-            self.head -= self.linelen
-            self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
-
-        perc = 100*self.gulp*self.niter/np.product(self.imshape)
-        #blockslogger.debug(f'Written {perc:04.1f}% of data')
-
-        ### ACCUMULATE FOR DOTS ###
-        # Figure out what the G matrix should look like
-        inds = self.niter * self.gulp + np.arange(0, self.gulp)
-        yinds, xinds = np.unravel_index(inds, self.imshape)
-        xchunk = self.xarr[xinds]
-        ychunk = self.yarr[yinds]
-        ones = np.ones_like(xchunk)
-        G = np.column_stack([ones, xchunk, ychunk, xchunk**2, ychunk**2, xchunk*ychunk])
-
-        # Accumulate dot-product
-        """
-        I know this looks complicated but I promise it's not so bad. We're
-        basically just zero-weighting all the places in the dot product where
-        we have bad data in each image. To do this for all images at once
-        we take our universal G matrix, do the first half the of dot-product
-        (ij,jk->ijk), then we multiply in a boolean weighting and perform the
-        summation (ijk,jl->ikl). The G.T*d dot can be done similarly, just with
-        a nansum instead of weighting.
-        """
-        gooddata = ~np.isnan(ispan.data[0])
-        self.GTG += np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
-        self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
-        self.niter += 1
-
 class AccumMatrixBlock(bfp.SinkBlock):
     '''
     TBD
@@ -411,39 +298,41 @@ class AccumMatrixBlock(bfp.SinkBlock):
         # Grab useful things from header
         hdr = iseq.header
         span, self.gulp, depth = hdr['_tensor']['shape']
-        dtype_np = string2numpy(hdr['_tensor']['dtype'])
 
         # Grab useful things from file
         inshape = eval(hdr['inshape'])
         self.imshape = (inshape[1], inshape[2])
 
         # Set up some stuff for the accumulation (keeping all terms)
-        self.GTG = np.zeros((6, 6, depth))
-        self.GTd = np.zeros((6, depth))
+        self.GTG = cp.zeros((depth, 6, 6))
+        self.GTd = cp.zeros((depth, 6))
 
     def on_data(self, ispan):
+        in_nframe  = ispan.nframe
 
-        ### ACCUMULATE FOR DOTS ###
-        # Figure out what the G matrix should look like
-        inds = self.niter * self.gulp + np.arange(0, self.gulp)
-        yinds, xinds = np.unravel_index(inds, self.imshape)
-        ones = np.ones_like(xinds)
-        G = np.column_stack([ones, xinds, yinds, xinds**2, yinds**2, xinds*yinds])
+        stream = bf.device.get_stream()
+        with cp.cuda.ExternalStream(stream):
+            idata = ispan.data.as_cupy() 
 
-        # Accumulate dot-product
-        """
-        I know this looks complicated but I promise it's not so bad. We're
-        basically just zero-weighting all the places in the dot product where
-        we have bad data in each image. To do this for all images at once
-        we take our universal G matrix, do the first half the of dot-product
-        (ij,jk->ijk), then we multiply in a boolean weighting and perform the
-        summation (ijk,jl->ikl). The G.T*d dot can be done similarly, just with
-        a nansum instead of weighting.
-        """
-        gooddata = ~np.isnan(ispan.data[0])
-        self.GTG += np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
-        self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
-        self.niter += 1
+            ### ACCUMULATE FOR DOTS ###
+            # Figure out what the G matrix should look like
+            inds = self.niter * self.gulp + cp.arange(0, self.gulp)
+            yinds, xinds = cp.unravel_index(inds, self.imshape)
+            ones = cp.ones_like(xinds)
+            G = cp.column_stack([ones, xinds, yinds, xinds**2, yinds**2, xinds*yinds])
+
+            # Accumulate dot-product
+            """
+            By elevating to a tensor problem, we can perform multiple solves
+            and avoid a lot of nasty NaN values
+
+            GTG = (ng,nd)(ng,6)(ng,6)->(nd,6,6)
+            GTd = (ng,6)(ng,nd)->(nd,6)
+            """
+            M = ~cp.isnan(ispan.data[0])
+            self.GTG += cp.einsum('jl,ji,jk->lik', M, G, G)
+            self.GTd += cp.nansum(cp.einsum('jk,ji->ijk', G, ispan.data[0]), axis=1)
+            self.niter += 1
 
 class ApplyModelBlock(bfp.TransformBlock):
 

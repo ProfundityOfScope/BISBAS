@@ -45,23 +45,22 @@ def make_gmatrix(datepairs):
     if not np.linalg.matrix_rank(G) == len(dates)-1:
         raise ValueError('G is of incorrect order')
     
-    return G
+    return G, dr
 
 def data_near(data, x0, y0, min_points=10, max_size=20):
     
     # We don't need to check smaller chunks
     min_size = np.ceil(np.sqrt(min_points)).astype(int)
 
-    # For broadcasting
-    x = np.arange(np.size(data, 2))
-    y = np.arange(np.size(data, 1))
+    # Shorthands for use later
+    ts, ys, xs = data.shape
 
     # We need to find a good chunk size
     for chunk_size in np.arange(min_size, max_size):
 
         # Check if the position is outside of image
-        if any([x0 <= chunk_size, x0 >= len(x)-chunk_size,
-                y0 <= chunk_size, y0 >= len(y-chunk_size)]):
+        if any([x0 <= chunk_size, x0 >= xs-chunk_size,
+                y0 <= chunk_size, y0 >= ys-chunk_size]):
             raise ValueError('This position too close to edge of image')
     
         # Find corners
@@ -82,7 +81,9 @@ def data_near(data, x0, y0, min_points=10, max_size=20):
     else:
         raise ValueError('Couldn\'t find a good chunk, try a different reference')
         
-    return xm, ym, zarr
+    xmb = np.broadcast_to(xm, zarr.shape)
+    ymb = np.broadcast_to(ym, zarr.shape)
+    return xmb, ymb, zarr
 
 def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
 
@@ -105,7 +106,7 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
         dg = np.zeros((ng, nd))
         for i in range(ng):
             # Find a good chunk of data
-            xa, ya, za = get_data_near_h5(fo, xg[i], yg[i], pg[i])
+            xa, ya, za = get_data_near(fo, xg[i], yg[i], pg[i])
             isgood = ~np.isnan(za)
             numgood = np.sum(isgood, axis=(0, 1))
 
