@@ -272,6 +272,7 @@ def main(args):
 
     # Extract things from data
     with h5py.File(infile, 'r') as fo:
+        logger.debug(f'Getting some metadata from {infile}')
         # Record attrs
         attrs = dict(fo.attrs)
         logger.debug(f'Copying {len(attrs)} attributes')
