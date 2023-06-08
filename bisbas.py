@@ -273,9 +273,9 @@ def main(args):
     # Extract things from data
     with h5py.File(infile, 'r') as fo:
         logger.debug(f'Getting some metadata from {infile}')
+
         # Record attrs
         attrs = dict(fo.attrs)
-        print(attrs)
         logger.debug(f'Copying {len(attrs)} attributes')
 
         # Wavelength
@@ -321,7 +321,7 @@ def main(args):
         # Reference, generate, and convert timeseries
         b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
         b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates_num, G)
-        b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, rad2mm_conv)
+        b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, conv)
         b_accm_gpu = bisblocks.AccumModelBlock(b_tsmm_gpu)
         b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
