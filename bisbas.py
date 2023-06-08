@@ -275,6 +275,7 @@ def main(args):
         logger.debug(f'Getting some metadata from {infile}')
         # Record attrs
         attrs = dict(fo.attrs)
+        print(attrs)
         logger.debug(f'Copying {len(attrs)} attributes')
 
         # Wavelength
