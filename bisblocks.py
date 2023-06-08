@@ -234,10 +234,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             odata = ospan.data.as_cupy()
 
             # Set up matrices to solve
-            zdata = idata[0]
-            M = ~cp.isnan(zdata)
-            A = cp.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(zdata.dtype)
-            B = cp.nansum(self.G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
+            M = ~cp.isnan(idata[0])
+            A = cp.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(idata.dtype)
+            B = cp.nansum(self.G.T[:, :, None] * (M*idata[0]).T[None, :, :], axis=1).T
 
             # Mask out low-rank values
             lowrank = cp.linalg.matrix_rank(A) != self.nd - 1
@@ -250,7 +249,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Turn it into a cumulative timeseries
             datediffs = (self.dates - cp.roll(self.dates, 1))[1:]
             changes = datediffs[None,:] * model
-            ts = cp.zeros((1,cp.size(zdata,0), self.nd))
+            ts = cp.zeros((1,cp.size(idata[0], 0), self.nd))
             ts[:,:,1:] = cp.cumsum(changes, axis=1)
 
             odata[...] = ts
@@ -313,7 +312,7 @@ class AccumModelBlock(bfp.SinkBlock):
 
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
-            idata = ispan.data.as_cupy() 
+            idata = ispan.data[0].as_cupy() 
 
             ### ACCUMULATE FOR DOTS ###
             # Figure out what the G matrix should look like
@@ -330,9 +329,9 @@ class AccumModelBlock(bfp.SinkBlock):
             GTG = (ng,nd)(ng,6)(ng,6)->(nd,6,6)
             GTd = (ng,6)(ng,nd)->(nd,6)
             """
-            M = ~cp.isnan(ispan.data[0])
+            M = ~cp.isnan(idata)
             self.GTG += cp.einsum('jl,ji,jk->lik', M, G, G)
-            self.GTd += cp.nansum(cp.einsum('jk,ji->ijk', G, ispan.data[0]), axis=1)
+            self.GTd += cp.nansum(cp.einsum('jk,ji->ijk', G, idata), axis=1)
             self.niter += 1
 
 class ApplyModelBlock(bfp.TransformBlock):
