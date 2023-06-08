@@ -306,6 +306,7 @@ class AccumModelBlock(bfp.SinkBlock):
         # Set up some stuff for the accumulation (keeping all terms)
         self.GTG = cp.zeros((depth, 6, 6))
         self.GTd = cp.zeros((depth, 6))
+        self.niter = 0
 
     def on_data(self, ispan):
         in_nframe  = ispan.nframe
