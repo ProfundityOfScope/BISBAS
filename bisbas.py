@@ -134,17 +134,17 @@ def old_main(args):
 
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
-        # Do stuff blocks
+        # Read data and copy to GPU
         b_read = bisblocks.IntfReadBlock([path], args.gulp, 'f32', files, space='system')
-
-        # This on GPU?
         b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+
+        # GPU math steps then copy to host
         b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
         b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates, G)
         b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, rad2mm_conv)
         b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
-        # Sink block
+        # Write out to disk
         b_write = bisblocks.WriteAndAccumBlock(b_tsmm, args.outfile)
 
         PIPELINE1.run()
@@ -293,7 +293,7 @@ def main(args):
         # Get dates and date-matrix
         datepairs = fo['date'][:]
         dates = np.sort(np.unique(datepairs))
-        G = helpers.make_gmatrix(datepairs.astype(str))
+        G, dates_num = helpers.make_gmatrix(datepairs.astype(str))
         logger.debug(f'Used {len(dates)} dates to generate G-matrix {G.shape}')
 
     # Overwrite
@@ -312,28 +312,52 @@ def main(args):
 
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
-        # Do stuff blocks
+        # Read in data and move to GPU
         b_read = bisblocks.ReadH5Block(infile, inname, args.gulp, space='system')
-
-        # This on GPU?
         b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+
+        # Reference, generate, and convert timeseries
         b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
-        #b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates, G)
-        #b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, rad2mm_conv)
-        b_tsmm = bf.blocks.copy(b_reff_gpu, space='cuda_host')
+        b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates_num, G)
+        b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, rad2mm_conv)
+        b_accm_gpu = bisblocks.AccumModelBlock(b_tsmm_gpu)
+        b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
-        # Sink block
+        # Write out data and accumulate useful things
         b_write = bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
+        b_accum = bisblocks.AccumModelBlock(b_tsmm)
 
+        # Start the pipeline
         PIPELINE1.run()
 
         # Keep track of accumulated values
-        #GTG = b_write.GTG
-        #GTd = b_write.GTd
+        GTG = b_accum_gpu.GTG
+        GTd = b_accum_gpu.GTd
 
-    # Build model
+    print(type(GTG))
 
-    # Run pipeline2
+    """
+    # Generate model from accumulated matrices and constraints
+    model = helpers.generate_model(outfile, gps, GTG, GTd, True, 3)
+
+    # Second pipeline
+    with bf.Pipeline() as PIPELINE2:
+        # Read in data and copy to GPU
+        b_read = bisblocks.ReadH5Block(outfile, outname, args.gulp, space='system')
+        b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+
+        # Apply the model to the data, then write to disk
+        b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model)
+        b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
+        b_write2 = bisblocks.WriteH5Block(b_amod, outfile, detrendname)
+
+        # Calculate average rates, then write rate image to disk
+        b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, t_axis)
+        b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
+        b_racc = bisblocks.WriteRatesBlock(b_rate, outfile, ratename)
+
+        PIPELINE2.run()
+    """
 
     # Make plots
     if makeplots:
@@ -341,6 +365,51 @@ def main(args):
 
     total_time = time.time() - start_time
     logger.info(f'Total runtime was {total_time} seconds')
+
+def dummy():G
+
+    # Generate timeseries
+    with bf.get_default_pipeline() as PIPELINE1:
+        # Read and copy to GPU
+        b_read = bisblocks.ReadH5Block(infile, inname, args.gulp, space='system')
+        b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+
+        # GPU math then copy back to host
+        b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
+        b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates, G)
+        b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, rad2mm_conv)
+        b_tsmm = bf.blocks.copy(b_reff_gpu, space='cuda_host')
+
+        # Write timeseries and accumulate model
+        b_write = bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
+        b_accum = bisblocks.AccumModelBlock(b_tsmm, trendparams=3)
+
+        PIPELINE1.run()
+
+        # Keep track of accumulated model
+        GTG = b_accum.GTG
+        GTd = b_accum.GTd
+
+    # Generate model from accumulated matrices and constraints
+    model = helpers.generate_model(outfile, gps, GTG, GTd, True, 3)
+
+    # Second pipeline
+    with bf.Pipeline() as PIPELINE2:
+        # Read in data and copy to GPU
+        b_read = bisblocks.ReadH5Block(outfile, outname, args.gulp, space='system')
+        b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+
+        # Apply the model to the data, then write to disk
+        b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model)
+        b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
+        b_write2 = bisblocks.WriteH5Block(b_amod, outfile, detrendname)
+
+        # Calculate average rates, then write rate image to disk
+        b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, t_axis)
+        b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
+        b_racc = bisblocks.WriteRatesBlock(b_rate, outfile, ratename)
+
+        PIPELINE2.run()
 
 if __name__=='__main__':
     globalstart=time.time()

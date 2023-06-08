@@ -216,15 +216,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
     def on_sequence(self, iseq):
 
-        self.dates.tofile('tmp_t.dat')
-
         ohdr = deepcopy(iseq.header)
         ohdr['name'] += '_as_ts'
         ohdr['_tensor']['shape'][-1] = self.nd
-
-        ohdr['tfile'] = 'tmp_t.dat'
-        ohdr['tdtype'] = self.dates.dtype.name
-        ohdr['tname'] = 'time'
 
         blockslogger.debug('Started GenTimeseriesBlock')
 
@@ -405,7 +399,7 @@ class WriteAndAccumBlock(bfp.SinkBlock):
         self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
         self.niter += 1
 
-class AccumMatrixBlock(bfp.TransformBlock):
+class AccumMatrixBlock(bfp.SinkBlock):
     '''
     TBD
     '''
@@ -413,14 +407,43 @@ class AccumMatrixBlock(bfp.TransformBlock):
         super().__init__(iring, *args, **kwargs)
 
     def on_sequence(self, iseq):
-        ohdr = deepcopy(iseq.header)
-        return ohdr
 
-    def on_data(self, ispan, ospan):
-        in_nframe = ispan.in_nframe
-        out_nframe = in_nframe
+        # Grab useful things from header
+        hdr = iseq.header
+        span, self.gulp, depth = hdr['_tensor']['shape']
+        dtype_np = string2numpy(hdr['_tensor']['dtype'])
 
-        return out_nframe
+        # Grab useful things from file
+        inshape = eval(hdr['inshape'])
+        self.imshape = (inshape[1], inshape[2])
+
+        # Set up some stuff for the accumulation (keeping all terms)
+        self.GTG = np.zeros((6, 6, depth))
+        self.GTd = np.zeros((6, depth))
+
+    def on_data(self, ispan):
+
+        ### ACCUMULATE FOR DOTS ###
+        # Figure out what the G matrix should look like
+        inds = self.niter * self.gulp + np.arange(0, self.gulp)
+        yinds, xinds = np.unravel_index(inds, self.imshape)
+        ones = np.ones_like(xinds)
+        G = np.column_stack([ones, xinds, yinds, xinds**2, yinds**2, xinds*yinds])
+
+        # Accumulate dot-product
+        """
+        I know this looks complicated but I promise it's not so bad. We're
+        basically just zero-weighting all the places in the dot product where
+        we have bad data in each image. To do this for all images at once
+        we take our universal G matrix, do the first half the of dot-product
+        (ij,jk->ijk), then we multiply in a boolean weighting and perform the
+        summation (ijk,jl->ikl). The G.T*d dot can be done similarly, just with
+        a nansum instead of weighting.
+        """
+        gooddata = ~np.isnan(ispan.data[0])
+        self.GTG += np.einsum('ij,jk,jl->ikl', G.T, G, gooddata)
+        self.GTd += np.nansum(np.einsum('ij,jk->ijk', G.T, ispan.data[0]), axis=1)
+        self.niter += 1
 
 class ApplyModelBlock(bfp.TransformBlock):
 
