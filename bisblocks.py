@@ -286,7 +286,7 @@ class ConvertToMillimetersBlock(bfp.TransformBlock):
 
         return out_nframe
 
-class AccumMatrixBlock(bfp.SinkBlock):
+class AccumModelBlock(bfp.SinkBlock):
     '''
     TBD
     '''

@@ -327,7 +327,6 @@ def main(args):
 
         # Write out data and accumulate useful things
         b_write = bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
-        b_accum = bisblocks.AccumModelBlock(b_tsmm)
 
         # Start the pipeline
         PIPELINE1.run()
