@@ -177,8 +177,6 @@ class WriteH5Block(bfp.SinkBlock):
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
-        blockslogger.debug(f'Writing on line {self.linecount}')
-
 class ReferenceBlock(bfp.TransformBlock):
     def __init__(self, iring, ref_stack, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)

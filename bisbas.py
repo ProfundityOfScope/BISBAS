@@ -337,7 +337,8 @@ def main(args):
         GTd = cp.asnumpy(b_accm_gpu.GTd)
 
     ts_time = time.time()
-    logger.info(f'Finished timeseries generation in {ts_time-start_time} s')
+    ts_run = ts_time - start_time
+    logger.info(f'Finished timeseries generation in {ts_run:.4f} s')
 
     # If user requested detrend, we do it
     if detrend:
@@ -375,7 +376,8 @@ def main(args):
             PIPELINE2.run()
 
             dt_time = time.time()
-            logger.info(f'Finished timeseries generation in {dt_time-ts_time} s')
+            dt_run = dt_time - ts_time
+            logger.info(f'Finished timeseries generation in {dt_run:.2f} s')
         """
 
     # Make plots
