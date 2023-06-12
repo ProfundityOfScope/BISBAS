@@ -112,6 +112,9 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
             isgood = ~np.isnan(za)
             numgood = np.sum(isgood, axis=(0, 1))
 
+            print('isgood', isgood.shape)
+            print('xa', xa.shape)
+
             # Record it's bulk properties
             Gg[i] = np.row_stack([numgood,
                                      np.sum(xa,    axis=(1, 2), where=isgood),
