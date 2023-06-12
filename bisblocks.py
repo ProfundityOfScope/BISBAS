@@ -476,7 +476,7 @@ class WriteTempBlock(bfp.SinkBlock):
 
         r_start = self.niter * self.gulp_size
         r_end = (self.niter+1) * self.gulp_size
-        yc, xc = np.unravel_index(cp.arange(r_start, r_end), self.imshape)
+        yc, xc = np.unravel_index(np.arange(r_start, r_end), self.imshape)
 
         idata = ispan.data[0]
         self.mmap[:, yc, xc] = idata
