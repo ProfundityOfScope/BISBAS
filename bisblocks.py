@@ -340,7 +340,7 @@ class ApplyModelBlock(bfp.TransformBlock):
 
     def __init__(self, iring, models, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
-        self.models = cp.asarray(models)
+        self.models = cp.asarray(models.T)
 
         self.step = 0
         self.ntrend = models.shape[0]
@@ -369,10 +369,11 @@ class ApplyModelBlock(bfp.TransformBlock):
             r_end = (self.step+1) * gulp_size
             yc, xc = cp.unravel_index(cp.arange(r_start, r_end), self.imshape)
 
-            # d(7800) m(3,20) -> c(7800,20)
+            # d(7800,3) m(3,20) -> c(7800,20)
             ones = cp.full_like(xc, 1)
             raw = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])
-            corr = cp.dot(raw[:, :self.ntrend], self.models.T)
+            A = raw[:, :self.ntrend]
+            corr = cp.dot(A, self.models)
             corr = cp.expand_dims(corr, axis=0)
 
             self.step += 1
