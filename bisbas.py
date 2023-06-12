@@ -182,7 +182,7 @@ def main(args):
             b_rawr = bisblocks.WriteTempBlock(b_rate, f'{ratename}.dat')
 
             # Generate an interpolation
-            b_intr_gpu = bisblocks.InterpBlock(b_amod_gpu)
+            b_intr_gpu = bisblocks.InterpBlock(b_amod_gpu, dates_num)
             b_intr = bf.blocks.copy(b_intr_gpu, space='cuda_host')
             b_inwr = bisblocks.WriteTempBlock(b_intr, f'{interpname}.dat')
 
