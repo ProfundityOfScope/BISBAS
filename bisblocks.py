@@ -345,7 +345,7 @@ class ApplyModelBlock(bfp.TransformBlock):
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
-        nd,ny,nx = ohdr['inshape']
+        nd,ny,nx = eval(ohdr['inshape'])
         self.imshape = (ny, nx)
 
         blockslogger.debug('Started ApplyModelBlock')
