@@ -110,10 +110,7 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
             # Find a good chunk of data
             xa, ya, za = data_near(fo[dname], xg[i], yg[i], pg[i])
             isgood = ~np.isnan(za)
-            numgood = np.sum(isgood, axis=(0, 1))
-
-            print('isgood', isgood.shape)
-            print('xa', xa.shape)
+            numgood = np.sum(isgood, axis=(1, 2))
 
             # Record it's bulk properties
             Gg[i] = np.row_stack([numgood,
