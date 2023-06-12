@@ -179,7 +179,7 @@ def main(args):
             # Calculate average rates, then write rate image to disk
             b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, dates_num)
             b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
-            b_rawr = bisblocks.WriteRatesBlock(b_rate, f'{ratename}.dat')
+            b_rawr = bisblocks.WriteTempBlock(b_rate, f'{ratename}.dat')
 
             # Generate an interpolation
             b_intr_gpu = bisblocks.InterpBlock(b_amod_gpu)
