@@ -253,21 +253,20 @@ if __name__=='__main__':
     
     # plt.scatter(factors, total_times)
     
-    from scipy.interpolate import KroghInterpolator, CubicSpline
+    from scipy.interpolate import make_interp_spline
     
-    x = np.sort(np.random.uniform(-2, 2, 20))
-    y = 0.6*x**5 + 0.3*x**3 + 2*x**2 - 1*x + 1
-    y += np.random.normal(0, 1, y.size)
+    x = np.sort(np.random.uniform(-2, 2, 10))
+    y = x[:,None] * np.random.uniform(-1, 1, 5)
+    y += np.random.normal(0, 0.05, y.shape)
     
-    plt.scatter(x,y)
+    for i in range(5):
+        plt.scatter(x,y[:,i])
     
-    xi = np.linspace(-2, 2, 100)
-    yi0 = CubicSpline(x, y)(xi)
-    yi2 = np.interp(xi, x, y)
-    
-    plt.plot(xi, yi0)
-    plt.plot(xi, yi2)
-    plt.ylim(np.min(y)*2, np.max(y)*2)
+    xi = np.linspace(np.min(x), np.max(x), 100)
+    t = make_interp_spline(x, y, 2)
+    yi = t(xi)
+    plt.plot(xi, yi)
+    # plt.ylim(-15, 50)
     
     
     # Kh, Dh = detrend_constraints(fo['x'], fo['y'], fo['z'][10], gpsdat1)
