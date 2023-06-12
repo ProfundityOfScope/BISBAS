@@ -100,8 +100,10 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
 
     # Open file and do stuff with it
     with h5py.File(filename, 'r') as fo:
+        data = fo[dname]
+
         # Grab data around that point
-        nd = fo['t'].size
+        nd = np.size(fo, 0)
         Gg = np.zeros((ng, 6, nd))
         dg = np.zeros((ng, nd))
         for i in range(ng):
