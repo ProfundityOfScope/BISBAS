@@ -408,7 +408,7 @@ class CalcRatesBlock(bfp.TransformBlock):
             odata = ospan.data.as_cupy()
 
             fits = cp.polyfit(self.taxis, idata[0].T, 1)
-            rate = fits[0].reshape((1,-1))
+            rate = fits[0].reshape((1, -1, 1))
 
             odata[...] = rate
             ospan.data[...] = bf.ndarray(odata)
