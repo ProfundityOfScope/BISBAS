@@ -369,7 +369,7 @@ class ApplyModelBlock(bfp.TransformBlock):
             yc, xc = cp.unravel_index(cp.arange(r_start, r_end), self.imshape)
 
             # d(7800,3) m(3,20) -> c(7800,20)
-            ones = cp.full_like(xc, 1)
+            ones = cp.ones(len(xc)).astype(np.float64)
             raw = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])
             A = raw[:, :self.ntrend]
             corr = cp.dot(A, self.models)

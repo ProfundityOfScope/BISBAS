@@ -163,7 +163,7 @@ def main(args):
 
         # Generate model from accumulated matrices and constraints
         model = helpers.generate_model(outfile, outname, gps, GTG, GTd, True, 3)
-        logger.debug(f'Generated a model: {model.shape}')
+        logger.debug(f'Generated a model: {model.shape}, {model.dtype}')
         
         # Second pipeline
         with bf.Pipeline() as PIPELINE2:
