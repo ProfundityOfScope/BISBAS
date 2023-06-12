@@ -200,14 +200,14 @@ def main(args):
 
         # Copy temp files to outfile
         with h5py.File(outfile, 'a') as fo:
-            rates_mm = np.memmap(f'{ratename}.h5', mode='r', shape=rate_shape, dtype=rate_dtype)
-            inter_mm = np.memmap(f'{interpname}.h5', mode='r', shape=inter_shape, dtype=inter_dtype)
+            rates_mm = np.memmap(f'{ratename}.dat', mode='r', shape=rate_shape, dtype=rate_dtype)
+            inter_mm = np.memmap(f'{interpname}.dat', mode='r', shape=inter_shape, dtype=inter_dtype)
 
             fo[ratename] = rates_mm[:]
             fo[interpname] = inter_mm[:]
 
-            os.remove(f'{ratename}.h5')
-            os.remove(f'{interpname}.h5')
+            os.remove(f'{ratename}.dat')
+            os.remove(f'{interpname}.dat')
 
     # Make plots
     if makeplots:
