@@ -10,6 +10,7 @@ from datetime import datetime
 
 import h5py
 import cupy as cp
+import cupyx.scipy as cpx
 import numpy as np
 import bifrost as bf
 import bifrost.pipeline as bfp
@@ -417,12 +418,18 @@ class CalcRatesBlock(bfp.TransformBlock):
 
 class InterpBlock(bfp.TransformBlock):
 
-    def __init__(self, iring, points=100, *args, **kwargs):
+    def __init__(self, iring, taxis, points=100, k, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
+        self.taxis = cp.asarray(taxis)
         self.points = points
+        self.k = k
+
+        self.x_int = cp.linspace(np.min(taxis), np.max(taxis), points)
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
+        ohdr['name'] += '_as_ts'
+        ohdr['_tensor']['shape'][-1] = self.points
 
         blockslogger.debug(f'Started InterpBlock: interpolate to {self.points}')
         return ohdr
@@ -436,9 +443,11 @@ class InterpBlock(bfp.TransformBlock):
             idata = ispan.data.as_cupy() 
             odata = ospan.data.as_cupy()
 
-            # do stuff
+            # Generate splines
+            bs = cpx.interpolate.make_interp_spline(self.taxis, idata[0].T, self.k)
+            y_int = bs(self.x_int).T
 
-            odata[...] = idata
+            odata[...] = y_int
             ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
