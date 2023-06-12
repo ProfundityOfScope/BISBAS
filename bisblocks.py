@@ -114,6 +114,8 @@ class ReadH5Block(bfp.SourceBlock):
                             },
                 }
 
+        blockslogger.debug(f'Reading in data with shape {dshape}')
+
         return [ohdr]
 
     def on_data(self, reader, ospans):
@@ -370,7 +372,7 @@ class ApplyModelBlock(bfp.TransformBlock):
             # d(7800) m(3,20) -> c(7800,20)
             ones = cp.full_like(xc, 1)
             raw = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])
-            corr = cp.dot(raw[:,:self.ntrend], self.models)
+            corr = cp.dot(raw[::self.ntrend], self.models.T)
             corr = cp.expand_dims(corr, axis=0)
 
             self.step += 1
