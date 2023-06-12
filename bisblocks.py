@@ -479,7 +479,7 @@ class WriteTempBlock(bfp.SinkBlock):
 
         self.mmap = np.memmap(self.file, dtype=dtype_np, mode='w+', shape=outshape)
 
-        blockslogger.debug(f'Started WriteTempBlock to file {self.file} ({self.outshape})')
+        blockslogger.debug(f'Started WriteTempBlock to file {self.file} ({outshape})')
 
     def on_data(self, ispan):
 
