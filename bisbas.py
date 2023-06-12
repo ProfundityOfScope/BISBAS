@@ -332,8 +332,8 @@ def main(args):
         PIPELINE1.run()
 
         # Keep track of accumulated values
-        GTG = b_accum_gpu.GTG
-        GTd = b_accum_gpu.GTd
+        GTG = b_accm_gpu.GTG
+        GTd = b_accm_gpu.GTd
 
     print(type(GTG))
 
