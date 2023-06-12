@@ -106,6 +106,7 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
         nd = np.size(fo, 0)
         Gg = np.zeros((ng, 6, nd))
         dg = np.zeros((ng, nd))
+        print('ND', nd)
         for i in range(ng):
             # Find a good chunk of data
             xa, ya, za = data_near(fo[dname], xg[i], yg[i], pg[i])
