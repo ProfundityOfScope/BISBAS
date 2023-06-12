@@ -104,9 +104,8 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
 
         # Grab data around that point
         nd = np.size(fo[dname], 0)
-        Gg = np.zeros((ng, 6, nd))
-        dg = np.zeros((ng, nd))
-        print('ND', nd)
+        Gg = np.zeros((nd, 6, ng))
+        dg = np.zeros((nd, ng))
         for i in range(ng):
             # Find a good chunk of data
             xa, ya, za = data_near(fo[dname], xg[i], yg[i], pg[i])
@@ -114,13 +113,13 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
             numgood = np.sum(isgood, axis=(1, 2))
 
             # Record it's bulk properties
-            Gg[i] = np.row_stack([numgood,
-                                     np.sum(xa,    axis=(1, 2), where=isgood),
-                                     np.sum(ya,    axis=(1, 2), where=isgood),
-                                     np.sum(xa**2, axis=(1, 2), where=isgood),
-                                     np.sum(ya**2, axis=(1, 2), where=isgood),
-                                     np.sum(xa*ya, axis=(1, 2), where=isgood)])
-            dg[i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
+            Gg[:,:,i] = np.row_stack([numgood,
+                                      np.sum(xa,    axis=(1, 2), where=isgood),
+                                      np.sum(ya,    axis=(1, 2), where=isgood),
+                                      np.sum(xa**2, axis=(1, 2), where=isgood),
+                                      np.sum(ya**2, axis=(1, 2), where=isgood),
+                                      np.sum(xa*ya, axis=(1, 2), where=isgood)])
+            dg[:,i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
 
     helperslogger.debug(f'GPS Matrix:  {Gg.shape} and {dg.shape}')
     helperslogger.debug(f'Data Matrix: {GTG.shape} and {GTd.shape}')
@@ -128,13 +127,13 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
     if constrained:
 
         # Assemble K matrix
-        K = np.zeros((nt+ng, nt+ng, nd))
-        K[:nt, :nt] = 2 * GTG[:nt, :nt]
-        K[:nt, nt:] = np.transpose(Gg[:,:nt], (1,0,2))
-        K[nt:, :nt] = Gg[:,:nt]
+        K = np.zeros((nd, nt+ng, nt+ng))
+        K[:, :nt, :nt] = 2 * GTG[:, :nt, :nt]
+        K[:, :nt, nt:] = np.transpose(Gg[:,:nt], (0,2,1))
+        K[:, nt:, :nt] = Gg[:,:nt]
 
         # Assemble D matrix
-        D = np.zeros((ng+nt, nd))
+        D = np.zeros((nd, ng+nt))
         D[:nt] = 2 * GTd[:nt]
         D[nt:] = dg
     else:
