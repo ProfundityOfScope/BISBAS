@@ -388,7 +388,8 @@ class CalcRatesBlock(bfp.TransformBlock):
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
-        blockslogger.debug(f'=============={ohdr['inshape']}')
+        shape = ohdr['inshape']
+        blockslogger.debug(f'=============={shape}')
         ohdr['_tensor']['shape'] = iseq.header['_tensor']['shape'][:-1]
 
         blockslogger.debug('Started CalcRatesBlock')
