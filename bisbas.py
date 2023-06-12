@@ -341,7 +341,7 @@ def main(args):
 
     # Generate model from accumulated matrices and constraints
     model = helpers.generate_model(outfile, outname, gps, GTG, GTd, True, 3)
-
+    """
     # Second pipeline
     with bf.Pipeline() as PIPELINE2:
         # Read in data and copy to GPU
