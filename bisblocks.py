@@ -413,7 +413,7 @@ class CalcRatesBlock(bfp.TransformBlock):
 
 class WriteRatesBlock(bfp.SinkBlock):
 
-    def __init__(self, iring, *args, **kwargs):
+    def __init__(self, iring, outfile, outname, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
 
         # Set up accumulation
@@ -423,17 +423,8 @@ class WriteRatesBlock(bfp.SinkBlock):
 
         # Grab useful things from header
         hdr = iseq.header
-        self.imshape = eval(hdr['imshape'])
-        self.rates = np.zeros(self.imshape)
 
         blockslogger.debug('Started AccumRatesBlock')
 
     def on_data(self, ispan):
-
-        s,gulp = ispan.data.shape
-
-        inds = gulp*self.niter + np.arange(0, gulp)
-        yinds, xinds = np.unravel_index(inds, self.imshape)
-
-        self.rates[yinds,xinds] = ispan.data[0]
-        self.niter += 1
+        pass
