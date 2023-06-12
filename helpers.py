@@ -108,7 +108,7 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
         dg = np.zeros((ng, nd))
         for i in range(ng):
             # Find a good chunk of data
-            xa, ya, za = get_data_near(fo[dname], xg[i], yg[i], pg[i])
+            xa, ya, za = data_near(fo[dname], xg[i], yg[i], pg[i])
             isgood = ~np.isnan(za)
             numgood = np.sum(isgood, axis=(0, 1))
 

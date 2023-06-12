@@ -336,8 +336,8 @@ def main(args):
         GTG = cp.asnumpy(b_accm_gpu.GTG)
         GTd = cp.asnumpy(b_accm_gpu.GTd)
 
-    ts_time = time.time() - start_time
-    logger.info(f'Finished timeseries generation in {ts_time} s')
+    ts_time = time.time()
+    logger.info(f'Finished timeseries generation in {ts_time-start_time} s')
 
     # If user requested detrend, we do it
     if detrend:
@@ -373,6 +373,9 @@ def main(args):
             b_racc = bisblocks.WriteRatesBlock(b_rate, outfile, ratename)
 
             PIPELINE2.run()
+
+            dt_time = time.time()
+            logger.info(f'Finished timeseries generation in {dt_time-ts_time} s')
         """
 
     # Make plots
