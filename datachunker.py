@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 import os
 
-with h5py.File('ifgramStack.h5', 'r') as fp:
+with h5py.File('ifgramStack.h5', 'r') as fo:
 
 	t0,y0,x0 = fo['coherence'].shape
 	attrs = dict(fo.attrs)
@@ -12,5 +12,6 @@ with h5py.File('ifgramStack.h5', 'r') as fp:
 		tn = int(t0/2**n)
 		yn = int(y0/2**n)
 		xn = int(x0/2**n)
+		name = f'ifgs_{n:02d}.h5'
 
-		print(tn, yn, xn)
+		print(tn, yn, xn, name)
