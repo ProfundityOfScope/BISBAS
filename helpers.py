@@ -123,28 +123,28 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
 
     helperslogger.debug(f'GPS Matrix:  {Gg.shape} and {dg.shape}')
     helperslogger.debug(f'Data Matrix: {GTG.shape} and {GTd.shape}')
-    m = np.zeros((nt, nd))
     if constrained:
 
         # Assemble K matrix
         K = np.zeros((nd, nt+ng, nt+ng))
         K[:, :nt, :nt] = 2 * GTG[:, :nt, :nt]
-        K[:, :nt, nt:] = np.transpose(Gg[:,:nt], (0,2,1))
-        K[:, nt:, :nt] = Gg[:,:nt]
+        K[:, :nt, nt:] = Gg[:,:nt]
+        K[:, nt:, :nt] = np.transpose(Gg[:,:nt], (0,2,1))
 
         # Assemble D matrix
         D = np.zeros((nd, ng+nt))
-        D[:nt] = 2 * GTd[:nt]
-        D[nt:] = dg
+        D[:, :nt] = 2 * GTd[:, :nt]
+        D[:, nt:] = dg
     else:
         # If not constrain just use data
-        K = Gg[:,:nt]
+        K = Gg[:, :nt]
         D = dg
 
     # Solve for model params
+    m = np.zeros((nd, nt))
     for i in range(nd):
-        md, res, rank, sng = np.linalg.lstsq(K[:,:,i], D[:,i], None)
-        m[:,i] = md[:nt]
+        md, res, rank, sng = np.linalg.lstsq(K[i], D[i], None)
+        m[i] = md[:nt]
     
     return m
 
