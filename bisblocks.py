@@ -343,8 +343,7 @@ class ApplyModelBlock(bfp.TransformBlock):
         self.models = cp.asarray(models.T)
 
         self.step = 0
-        self.ntrend = models.shape[0]
-        blockslogger.debug(f'=========={self.ntrend} is our number of trends')
+        self.ntrend = self.models.shape[0]
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
@@ -374,10 +373,8 @@ class ApplyModelBlock(bfp.TransformBlock):
             ones = cp.full_like(xc, 1)
             raw = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])
             A = raw[:, :self.ntrend]
-            blockslogger.debug(f'========{A.shape} {self.models.shape}')
-            #corr = cp.dot(A, self.models)
-            #corr = cp.expand_dims(corr, axis=0)
-            corr = cp.zeros((1, gulp_size, self.models.shape[-1]))
+            corr = cp.dot(A, self.models)
+            corr = cp.expand_dims(corr, axis=0)
 
             self.step += 1
 
