@@ -61,11 +61,11 @@ def data_near(data, x0, y0, min_points=10, max_size=20):
         # Check if the position is outside of image
         if any([x0 <= chunk_size, x0 >= xs-chunk_size,
                 y0 <= chunk_size, y0 >= ys-chunk_size]):
-            raise ValueError('This position too close to edge of image')
+            raise ValueError('This position too close to image edge')
     
         # Find corners
-        xmin = np.ceil( x0 - chunk_size/2 ).astype(int)
-        ymin = np.ceil( y0 - chunk_size/2 ).astype(int)
+        xmin = np.ceil(x0 - chunk_size/2).astype(int)
+        ymin = np.ceil(y0 - chunk_size/2).astype(int)
         xmax = xmin + chunk_size
         ymax = ymin + chunk_size
 
@@ -85,7 +85,7 @@ def data_near(data, x0, y0, min_points=10, max_size=20):
     ymb = np.broadcast_to(ym, zarr.shape)
     return xmb, ymb, zarr
 
-def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
+def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
 
     # Warnings
     ng = len(gps)
@@ -106,18 +106,18 @@ def generate_model(filename, gps, GTG, GTd, constrained=True, nt=3):
         dg = np.zeros((ng, nd))
         for i in range(ng):
             # Find a good chunk of data
-            xa, ya, za = get_data_near(fo, xg[i], yg[i], pg[i])
+            xa, ya, za = get_data_near(fo[dname], xg[i], yg[i], pg[i])
             isgood = ~np.isnan(za)
             numgood = np.sum(isgood, axis=(0, 1))
 
             # Record it's bulk properties
             Gg[i] = np.row_stack([numgood,
-                                     np.sum(xa,    axis=(0, 1), where=isgood),
-                                     np.sum(ya,    axis=(0, 1), where=isgood),
-                                     np.sum(xa**2, axis=(0, 1), where=isgood),
-                                     np.sum(ya**2, axis=(0, 1), where=isgood),
-                                     np.sum(xa*ya, axis=(0, 1), where=isgood)])
-            dg[i] = (np.nanmean(za, axis=(0, 1)) - zg[i]) * numgood
+                                     np.sum(xa,    axis=(1, 2), where=isgood),
+                                     np.sum(ya,    axis=(1, 2), where=isgood),
+                                     np.sum(xa**2, axis=(1, 2), where=isgood),
+                                     np.sum(ya**2, axis=(1, 2), where=isgood),
+                                     np.sum(xa*ya, axis=(1, 2), where=isgood)])
+            dg[i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
 
     helperslogger.debug(f'GPS Matrix:  {Gg.shape} and {dg.shape}')
     helperslogger.debug(f'Data Matrix: {GTG.shape} and {GTd.shape}')

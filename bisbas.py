@@ -221,9 +221,6 @@ def old_main(args):
     logger.info(f'Total runtime was {total_time} seconds')
 
 def main(args):
-
-    # Timekeeping
-    start_time = time.time()
     
     ##### Setup a logger #####
     logger = logging.getLogger(__name__)
@@ -313,6 +310,9 @@ def main(args):
         # Remember dates and their order
         fo['dates'] = dates
 
+    # Timekeeping on pipeline
+    start_time = time.time()
+
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Read in data and move to GPU
@@ -339,9 +339,8 @@ def main(args):
     print(type(GTG), GTG.shape)
     print(type(GTd), GTd.shape)
 
-    """
     # Generate model from accumulated matrices and constraints
-    model = helpers.generate_model(outfile, gps, GTG, GTd, True, 3)
+    model = helpers.generate_model(outfile, outname, gps, GTG, GTd, True, 3)
 
     # Second pipeline
     with bf.Pipeline() as PIPELINE2:
