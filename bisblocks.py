@@ -137,7 +137,7 @@ class WriteH5Block(bfp.SinkBlock):
 
         # Grab useful things from header
         hdr = iseq.header
-        span, self.gulp, depth = hdr['_tensor']['shape']
+        span, self.gulp_size, depth = hdr['_tensor']['shape']
         dtype_np = string2numpy(hdr['_tensor']['dtype'])
 
         # Grab useful things from file
@@ -157,7 +157,7 @@ class WriteH5Block(bfp.SinkBlock):
 
         # Record gulp, set up buffer
         self.linelen = outshape[2]
-        self.buffer = np.empty((2*max([self.gulp, self.linelen]), depth), 
+        self.buffer = np.empty((2*max([self.gulp_size, self.linelen]), depth), 
                                dtype=dtype_np)
         blockslogger.debug(f'Created write buffer with shape {self.buffer.shape}')
         self.head = 0
@@ -166,8 +166,8 @@ class WriteH5Block(bfp.SinkBlock):
     def on_data(self, ispan):
 
         # Put data into the file
-        self.buffer[self.head:self.head+self.gulp] = ispan.data[0]
-        self.head += self.gulp
+        self.buffer[self.head:self.head+self.gulp_size] = ispan.data[0]
+        self.head += self.gulp_size
 
         # Write out as many times as needed
         while self.head > self.linelen:
@@ -296,7 +296,7 @@ class AccumModelBlock(bfp.SinkBlock):
 
         # Grab useful things from header
         hdr = iseq.header
-        span, self.gulp, depth = hdr['_tensor']['shape']
+        span, self.gulp_size, depth = hdr['_tensor']['shape']
 
         # Grab useful things from file
         inshape = eval(hdr['inshape'])
@@ -316,7 +316,7 @@ class AccumModelBlock(bfp.SinkBlock):
 
             ### ACCUMULATE FOR DOTS ###
             # Figure out what the G matrix should look like
-            inds = self.niter * self.gulp + cp.arange(0, self.gulp)
+            inds = self.niter * self.gulp_size + cp.arange(0, self.gulp_size)
             yinds, xinds = cp.unravel_index(inds, self.imshape)
             ones = cp.ones_like(xinds)
             G = cp.column_stack([ones, xinds, yinds, xinds**2, yinds**2, xinds*yinds])
@@ -459,14 +459,26 @@ class WriteTempBlock(bfp.SinkBlock):
 
         # Grab useful things from header
         hdr = iseq.header
-        span, self.gulp, depth = hdr['_tensor']['shape']
+        span, self.gulp_size, depth = hdr['_tensor']['shape']
         dtype_np = string2numpy(hdr['_tensor']['dtype'])
 
         # Grab useful things from file
         inshape = eval(hdr['inshape'])
         outshape = (depth, inshape[1], inshape[2])
+        self.imshape = (inshape[1], inshape[2])
+
+        self.mmap = np.memmap(self.file, dtype=dtype_np, mode='w', shape=outshape)
 
         blockslogger.debug(f'Started WriteTempBlock to file {self.file}')
 
     def on_data(self, ispan):
-        pass
+
+
+        r_start = self.niter * self.gulp_size
+        r_end = (self.niter+1) * self.gulp_size
+        yc, xc = cp.unravel_index(cp.arange(r_start, r_end), self.imshape)
+
+        idata = ispan.data[0]
+        self.mmap[:, yc, xc] = idata
+
+        self.niter += 1
