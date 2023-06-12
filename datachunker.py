@@ -7,7 +7,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
 	t0,y0,x0 = fo['coherence'].shape
 	attrs = dict(fo.attrs)
 
-	for n in range(4):
+	for n in range(1,5):
 
 		tn = int(t0/2**n)
 		yn = int(y0/2**n)
