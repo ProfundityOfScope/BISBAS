@@ -336,30 +336,44 @@ def main(args):
         GTG = cp.asnumpy(b_accm_gpu.GTG)
         GTd = cp.asnumpy(b_accm_gpu.GTd)
 
-    print(type(GTG), GTG.shape)
-    print(type(GTd), GTd.shape)
+    ts_time = time.time() - start_time
+    logger.info(f'Finished timeseries generation in {ts_time} s')
 
-    # Generate model from accumulated matrices and constraints
-    model = helpers.generate_model(outfile, outname, gps, GTG, GTd, True, 3)
-    """
-    # Second pipeline
-    with bf.Pipeline() as PIPELINE2:
-        # Read in data and copy to GPU
-        b_read = bisblocks.ReadH5Block(outfile, outname, args.gulp, space='system')
-        b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+    # If user requested detrend, we do it
+    if detrend:
+        logger.info('Detrend requested.')
 
-        # Apply the model to the data, then write to disk
-        b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model)
-        b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
-        b_write2 = bisblocks.WriteH5Block(b_amod, outfile, detrendname)
+        # Figure out GPS
+        if os.path.exists(gpsfile):
+            logger.info('Loading GPS file.')
+            gps = np.loadtxt(gpsfile)
+        else:
+            logger.info('No GPS, zeroing at reference point.')
+            gps = np.array([[reflon, reflat, refnum, 0]])
 
-        # Calculate average rates, then write rate image to disk
-        b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, t_axis)
-        b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
-        b_racc = bisblocks.WriteRatesBlock(b_rate, outfile, ratename)
+        # Generate model from accumulated matrices and constraints
+        model = helpers.generate_model(outfile, outname, gps, GTG, GTd, True, 3)
+        logger.debug(f'Generated a model: {model.shape}')
+        
+        """
+        # Second pipeline
+        with bf.Pipeline() as PIPELINE2:
+            # Read in data and copy to GPU
+            b_read = bisblocks.ReadH5Block(outfile, outname, args.gulp, space='system')
+            b_read_gpu = bf.blocks.copy(b_read, space='cuda')
 
-        PIPELINE2.run()
-    """
+            # Apply the model to the data, then write to disk
+            b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model)
+            b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
+            b_write2 = bisblocks.WriteH5Block(b_amod, outfile, detrendname)
+
+            # Calculate average rates, then write rate image to disk
+            b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, t_axis)
+            b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
+            b_racc = bisblocks.WriteRatesBlock(b_rate, outfile, ratename)
+
+            PIPELINE2.run()
+        """
 
     # Make plots
     if makeplots:
