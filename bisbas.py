@@ -13,6 +13,7 @@ import configparser
 import multiprocessing as mp
 
 import h5py
+import cupy as cp
 import numpy as np
 import bifrost as bf
 
@@ -332,10 +333,11 @@ def main(args):
         PIPELINE1.run()
 
         # Keep track of accumulated values
-        GTG = b_accm_gpu.GTG
-        GTd = b_accm_gpu.GTd
+        GTG = cp.asnumpy(b_accm_gpu.GTG)
+        GTd = cp.asnumpy(b_accm_gpu.GTd)
 
-    print(type(GTG))
+    print(type(GTG), GTG.shape)
+    print(type(GTd), GTd.shape)
 
     """
     # Generate model from accumulated matrices and constraints
