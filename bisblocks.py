@@ -344,6 +344,7 @@ class ApplyModelBlock(bfp.TransformBlock):
 
         self.step = 0
         self.ntrend = models.shape[0]
+        blockslogger.debug(f'=========={self.ntrend} is our number of trends')
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
