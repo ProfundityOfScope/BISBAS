@@ -336,15 +336,12 @@ class AccumModelBlock(bfp.SinkBlock):
 
 class ApplyModelBlock(bfp.TransformBlock):
 
-    def __init__(self, iring, models, xaxis, yaxis, *args, **kwargs):
+    def __init__(self, iring, models, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.models = cp.asarray(models)
-        self.xaxis = cp.asarray(xaxis)
-        self.yaxis = cp.asarray(yaxis)
 
         self.step = 0
         self.ntrend = models.shape[0]
-        self.imshape = (yaxis.size, xaxis.size)
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
@@ -366,16 +363,12 @@ class ApplyModelBlock(bfp.TransformBlock):
             gulp_size = cp.size(idata[0],0)
             r_start = self.step * gulp_size
             r_end = (self.step+1) * gulp_size
-            yind, xind = cp.unravel_index(cp.arange(r_start, r_end), self.imshape)
-
-            xc = self.xaxis[xind]
-            yc = self.yaxis[yind]
+            yc, xc = cp.unravel_index(cp.arange(r_start, r_end), self.imshape)
 
             # d(7800) m(3,20) -> c(7800,20)
             ones = cp.full_like(xc, 1)
             raw = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])
             corr = cp.dot(raw[:,:self.ntrend], self.models)
-            #blockslogger.debug(f'On step: {self.step} \n{corr}')
             corr = cp.expand_dims(corr, axis=0)
 
             self.step += 1
@@ -418,7 +411,7 @@ class CalcRatesBlock(bfp.TransformBlock):
 
         return out_nframe
 
-class AccumRatesBlock(bfp.SinkBlock):
+class WriteRatesBlock(bfp.SinkBlock):
 
     def __init__(self, iring, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)

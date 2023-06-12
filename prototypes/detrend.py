@@ -238,20 +238,36 @@ if __name__=='__main__':
     reflon = 255.30833
     refnum = 20
     
-    tgt = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_nodetrend/'
+    # tgt = '/Users/bruzewskis/Downloads/isbas_ground_truth/timeseries_nodetrend/'
     
-    fo = h5py.File(os.path.join(tgt, 'nodetrend.h5'), 'r')
-    refx = np.interp(reflon, fo['x'], np.arange(fo['x'].size))
-    refy = np.interp(reflat, fo['y'], np.arange(fo['y'].size))
-    gpsdat1 = np.array([[reflon, reflat, refnum, 0]])
-    gpsdat2 = np.array([[refx, refy, refnum, 0]])
+    # fo = h5py.File(os.path.join(tgt, 'nodetrend.h5'), 'r')
+    # refx = np.interp(reflon, fo['x'], np.arange(fo['x'].size))
+    # refy = np.interp(reflat, fo['y'], np.arange(fo['y'].size))
+    # gpsdat1 = np.array([[reflon, reflat, refnum, 0]])
+    # gpsdat2 = np.array([[refx, refy, refnum, 0]])
     
-    factors = np.array([300,600,1000,1800])
-    times = np.array([1.5,3,5,9])
+    # factors = np.array([300,600,1000,1800])
+    # times = np.array([1.5,3,5,9])
     
-    total_times = 3500*3900/factors * times / 3600
+    # total_times = 3500*3900/factors * times / 3600
     
-    plt.scatter(factors, total_times)
+    # plt.scatter(factors, total_times)
+    
+    from scipy.interpolate import KroghInterpolator, CubicSpline
+    
+    x = np.sort(np.random.uniform(-2, 2, 20))
+    y = 0.6*x**5 + 0.3*x**3 + 2*x**2 - 1*x + 1
+    y += np.random.normal(0, 1, y.size)
+    
+    plt.scatter(x,y)
+    
+    xi = np.linspace(-2, 2, 100)
+    yi0 = CubicSpline(x, y)(xi)
+    yi2 = np.interp(xi, x, y)
+    
+    plt.plot(xi, yi0)
+    plt.plot(xi, yi2)
+    plt.ylim(np.min(y)*2, np.max(y)*2)
     
     
     # Kh, Dh = detrend_constraints(fo['x'], fo['y'], fo['z'][10], gpsdat1)
