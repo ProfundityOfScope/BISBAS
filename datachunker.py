@@ -18,7 +18,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
 			with h5py.File(name, 'w') as fo2:
 
 				for a in attrs:
-					fo2[a] = attrs[a]
+					fo2.attrs[a] = attrs[a]
 
 				fo2.attrs['REF_X'] = 70
 				fo2.attrs['REF_Y'] = 60
