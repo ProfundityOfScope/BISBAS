@@ -103,7 +103,7 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
         data = fo[dname]
 
         # Grab data around that point
-        nd = np.size(fo, 0)
+        nd = np.size(fo[dname], 0)
         Gg = np.zeros((ng, 6, nd))
         dg = np.zeros((ng, nd))
         print('ND', nd)
