@@ -376,7 +376,7 @@ class ApplyModelBlock(bfp.TransformBlock):
             blockslogger.debug(f'========{A.shape} {self.models.shape}')
             #corr = cp.dot(A, self.models)
             #corr = cp.expand_dims(corr, axis=0)
-            corr = np.zeros((1, gulp_size, self.models.shape[-1]))
+            corr = cp.zeros((1, gulp_size, self.models.shape[-1]))
 
             self.step += 1
 
