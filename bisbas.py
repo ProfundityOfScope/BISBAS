@@ -201,7 +201,7 @@ def main(args):
         # Copy temp files to outfile
         with h5py.File(outfile, 'a') as fo:
             rates_mm = np.memmap(f'{ratename}.dat', mode='r', shape=rate_shape, dtype=rate_dtype)
-            inter_mm = np.memmap(f'{interpname}.dat', mode='r', shape=inter_shape, dtype=inter_dtype)
+            inter_mm = np.memmap(f'{interpname}.dat', mode='r', shape=intr_shape, dtype=intr_dtype)
 
             fo[ratename] = rates_mm[:]
             fo[interpname] = inter_mm[:]
