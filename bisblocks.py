@@ -418,7 +418,7 @@ class CalcRatesBlock(bfp.TransformBlock):
 
 class InterpBlock(bfp.TransformBlock):
 
-    def __init__(self, iring, taxis, points=100, k, *args, **kwargs):
+    def __init__(self, iring, taxis, points=100, k=1, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.taxis = cp.asarray(taxis)
         self.points = points
