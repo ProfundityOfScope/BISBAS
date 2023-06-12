@@ -188,9 +188,26 @@ def main(args):
 
             PIPELINE2.run()
 
-            dt_time = time.time()
-            dt_run = dt_time - ts_time
-            logger.info(f'Finished detrending in {dt_run:.2f} s')
+            # Grab useful info
+            rate_shape = b_rawr.outshape
+            rate_dtype = b_rawr.dtype
+            intr_shape = b_inwr.outshape
+            intr_dtype = b_inwr.dtype
+
+        dt_time = time.time()
+        dt_run = dt_time - ts_time
+        logger.info(f'Finished detrending in {dt_run:.2f} s')
+
+        # Copy temp files to outfile
+        with h5py.File(outfile, 'w') as fo:
+            rates_mm = np.memmap(f'{ratename}.h5', mode='r', shape=rate_shape, dtype=rate_dtype)
+            inter_mm = np.memmap(f'{interpname}.h5', mode='r', shape=inter_shape, dtype=inter_dtype)
+
+            fo[ratename] = rates_mm[:]
+            fo[interpname] = inter_mm[:]
+
+            os.remove(f'{ratename}.h5')
+            os.remove(f'{interpname}.h5')
 
     # Make plots
     if makeplots:

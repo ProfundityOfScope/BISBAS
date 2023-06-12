@@ -470,14 +470,14 @@ class WriteTempBlock(bfp.SinkBlock):
         # Grab useful things from header
         hdr = iseq.header
         span, self.gulp_size, depth = hdr['_tensor']['shape']
-        dtype_np = string2numpy(hdr['_tensor']['dtype'])
+        self.dtype = string2numpy(hdr['_tensor']['dtype'])
 
         # Grab useful things from file
         inshape = eval(hdr['inshape'])
-        outshape = (depth, inshape[1], inshape[2])
+        self.outshape = (depth, inshape[1], inshape[2])
         self.imshape = (inshape[1], inshape[2])
 
-        self.mmap = np.memmap(self.file, dtype=dtype_np, mode='w+', shape=outshape)
+        self.mmap = np.memmap(self.file, dtype=self.dtype, mode='w+', shape=self.outshape)
 
         blockslogger.debug(f'Started WriteTempBlock to file {self.file}')
         blockslogger.debug(f'Writing shape={outshape}, dtype={dtype_np}')
