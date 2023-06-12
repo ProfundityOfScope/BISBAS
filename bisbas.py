@@ -349,12 +349,12 @@ def main(args):
             gps = np.loadtxt(gpsfile)
         else:
             logger.info('No GPS, zeroing at reference point.')
-            gps = np.array([[reflon, reflat, refnum, 0]])
+            gps = np.array([[ref_x, ref_y, refnum, 0]])
 
         # Generate model from accumulated matrices and constraints
         model = helpers.generate_model(outfile, outname, gps, GTG, GTd, True, 3)
         logger.debug(f'Generated a model: {model.shape}')
-        
+
         """
         # Second pipeline
         with bf.Pipeline() as PIPELINE2:
