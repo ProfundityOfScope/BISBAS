@@ -246,56 +246,12 @@ if __name__=='__main__':
     gpsdat1 = np.array([[reflon, reflat, refnum, 0]])
     gpsdat2 = np.array([[refx, refy, refnum, 0]])
     
-    nds = np.arange(3, 10)
-    times = np.zeros((3,nds.size,10))
-    for i,nd in enumerate(nds):
-        print(nd)
-        ni = 4*nd
-        ng = 1_000
-        K = np.empty((nd, ni, nd))
-        
-        for j in range(times.shape[-1]):
-            G = np.random.random((ni, nd))
-            zdata = np.random.random((ng, ni))
-            M = ~np.isnan(zdata)
-            
-            start = time()
-            A1 = np.matmul(G.T[None, :, :], M[:, :, None] * G[None, :, :]).astype(zdata.dtype)
-            B1 = np.nansum(G.T[:, :, None] * (M*zdata).T[None, :, :], axis=1).T
-            times[0,i,j] = time() - start
-            
-            start = time()
-            A3 = np.einsum('ji,jk,lj->lik', G, G, M, optimize=True)
-            B3 = np.nansum(np.einsum('ji,kj->kji', G, zdata, optimize=True), axis=1)
-            times[1,i,j] = time() - start
-            
-            start = time()
-            K = np.einsum('jk,ji->ijk', G, G)
-            A4 = np.einsum('ijk,lj->lik', K, M)
-            B4 = np.nansum(np.einsum('kj,ji->kji', zdata, G), axis=1)
-            times[2,i,j] = time() - start
-
-    labels = ['Broadcast', 'Ein Opt', 'Man Opt']
-    for i in range(times.shape[0]):
-        plt.errorbar(nds, np.mean(times[i], axis=-1), 
-                     np.std(times[i], axis=-1), label=labels[i])
-    plt.legend()
-    # plt.semilogy()
+    factors = np.array([300,600,1000,1800])
+    times = np.array([1.5,3,5,9])
     
-    ng = 1000
-    nd = 30
-    G = np.random.random((ng, 6))
-    Z = np.random.random((ng, nd))
-    M = ~np.isnan(Z)
+    total_times = 3500*3900/factors * times / 3600
     
-    epath, estr = np.einsum_path('jl,ji,jk->lik', M,G,G, optimize='optimal')
-    
-    start = time()
-    test = np.einsum('jl,ji,jk->lik', M, G, G, optimize=epath)
-    print(time()-start)
-    start = time()
-    test = np.einsum('jl,ji,jk->lik', M, G, G)
-    print(time()-start)
+    plt.scatter(factors, total_times)
     
     
     # Kh, Dh = detrend_constraints(fo['x'], fo['y'], fo['z'][10], gpsdat1)

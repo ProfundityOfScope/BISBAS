@@ -13,12 +13,15 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
 			tn = int(t0/2**n)
 			yn = int(y0/2**m)
 			xn = int(x0/2**m)
-			name = f'ifgs_t{2**n:02d}_p{2**m:02d}.h5'
+			name = f'smallifgs/ifgs_t{2**n:02d}_p{2**m:02d}.h5'
 
 			with h5py.File(name, 'w') as fo2:
 
 				for a in attrs:
 					fo2[a] = attrs[a]
+
+				fo2.attrs['REF_X'] = 70
+				fo2.attrs['REF_Y'] = 60
 
 				fo2['coherence'] = fo['coherence'][:tn, :yn, :xn]
 				fo2['date'] = fo['date'][:tn]
