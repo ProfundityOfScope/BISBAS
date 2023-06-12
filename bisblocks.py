@@ -114,8 +114,6 @@ class ReadH5Block(bfp.SourceBlock):
                             },
                 }
 
-        blockslogger.debug(f'Reading in data with shape {dshape}')
-
         return [ohdr]
 
     def on_data(self, reader, ospans):
@@ -394,7 +392,7 @@ class CalcRatesBlock(bfp.TransformBlock):
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
 
-        ohdr['_tensor']['shape'] = iseq.header['_tensor']['shape'][:-1]
+        ohdr['_tensor']['shape'][2] = 1
 
         blockslogger.debug('Started CalcRatesBlock')
 
@@ -417,10 +415,42 @@ class CalcRatesBlock(bfp.TransformBlock):
 
         return out_nframe
 
-class WriteRatesBlock(bfp.SinkBlock):
+class InterpBlock(bfp.TransformBlock):
 
-    def __init__(self, iring, outfile, outname, *args, **kwargs):
+    def __init__(self, iring, points=100, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
+        self.points = points
+
+    def on_sequence(self, iseq):
+        ohdr = deepcopy(iseq.header)
+
+        blockslogger.debug(f'Started InterpBlock: interpolate to {self.points}')
+        return ohdr
+
+    def on_data(self, ispan, ospan):
+        in_nframe  = ispan.nframe
+        out_nframe = in_nframe
+
+        stream = bf.device.get_stream()
+        with cp.cuda.ExternalStream(stream):
+            idata = ispan.data.as_cupy() 
+            odata = ospan.data.as_cupy()
+
+            # do stuff
+
+            odata[...] = idata
+            ospan.data[...] = bf.ndarray(odata)
+
+        return out_nframe
+
+
+class WriteTempBlock(bfp.SinkBlock):
+
+    def __init__(self, iring, outfile, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+
+        # name?
+        self.file = outfile
 
         # Set up accumulation
         self.niter = 0
@@ -429,8 +459,14 @@ class WriteRatesBlock(bfp.SinkBlock):
 
         # Grab useful things from header
         hdr = iseq.header
+        span, self.gulp, depth = hdr['_tensor']['shape']
+        dtype_np = string2numpy(hdr['_tensor']['dtype'])
 
-        blockslogger.debug('Started AccumRatesBlock')
+        # Grab useful things from file
+        inshape = eval(hdr['inshape'])
+        outshape = (depth, inshape[1], inshape[2])
+
+        blockslogger.debug(f'Started WriteTempBlock to file {self.file}')
 
     def on_data(self, ispan):
         pass

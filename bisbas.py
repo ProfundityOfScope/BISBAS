@@ -69,6 +69,7 @@ def main(args):
     unw_thresh  = config.getfloat('timeseries-config', 'unw_check_threshold')
     calcrate    = config.getboolean('timeseries-config', 'calcrate')
     ratename    = config.get('timeseries-config', 'ratename')
+    interpname  = config.get('timeseries-config', 'interpname')
     detrend     = config.getboolean('timeseries-config', 'detrend')
     trendparams = config.getint('timeseries-config', 'trendparams')
     detrendname = config.get('timeseries-config', 'detrendname')
@@ -178,10 +179,12 @@ def main(args):
             # Calculate average rates, then write rate image to disk
             b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, dates_num)
             b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
-            b_racc = bisblocks.WriteRatesBlock(b_rate, outfile, ratename)
+            b_rawr = bisblocks.WriteRatesBlock(b_rate, f'{ratename}.dat')
 
             # Generate an interpolation
-            pass
+            b_intr_gpu = bisblocks.InterpBlock(b_amod_gpu)
+            b_intr = bf.blocks.copy(b_intr_gpu, space='cuda_host')
+            b_inwr = bisblocks.WriteTempBlock(b_intr, f'{interpname}.dat')
 
             PIPELINE2.run()
 
