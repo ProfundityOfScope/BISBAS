@@ -199,7 +199,7 @@ def main(args):
         logger.info(f'Finished detrending in {dt_run:.2f} s')
 
         # Copy temp files to outfile
-        with h5py.File(outfile, 'w') as fo:
+        with h5py.File(outfile, 'a') as fo:
             rates_mm = np.memmap(f'{ratename}.h5', mode='r', shape=rate_shape, dtype=rate_dtype)
             inter_mm = np.memmap(f'{interpname}.h5', mode='r', shape=inter_shape, dtype=inter_dtype)
 
