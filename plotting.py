@@ -27,13 +27,13 @@ __status__ = "development"
 
 plotslogger = logging.getLogger('__main__')
 
-def make_video(data, dates, outfile, fps=10, interpolate=False, nframes=100):
+def make_video(data, dates, outfile, fps=10, nframes=-1):
 
     # Set up the figure and axis
     fig, ax = plt.subplots(figsize=(5, 5), dpi=1080/5)
 
     # Might need this
-    if interpolate:
+    if nframes > 0:
         tinterp = np.linspace(dates.min(), dates.max(),
                               nframes, endpoint=False)
     else:
@@ -45,7 +45,7 @@ def make_video(data, dates, outfile, fps=10, interpolate=False, nframes=100):
     def update(frame):
         ax.clear()
 
-        if interpolate:
+        if nframes > 0:
             # Figure out where to put data
             ti = tinterp[frame]
             right = np.argmax(dates > ti)
