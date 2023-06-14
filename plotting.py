@@ -48,7 +48,7 @@ def make_video(data, dates, outfile, fps=10):
     plt.close(fig)
 
 
-def interp_video(data, dates, outfile, fps, nframes=None):
+def interp_video(data, dates, outfile, fps=10, nframes=None):
 
     # Set up the figure and axis
     aspect = data.shape[2]/data.shape[1]
