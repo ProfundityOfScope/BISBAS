@@ -76,11 +76,9 @@ def main(args):
 
 
     calcrate    = config.getboolean('timeseries-config', 'calcrate')
-    makeplots   = config.getboolean('timeseries-config', 'makeplots')
-    plotfile    = config.get('timeseries-config', 'plotfile')
-    ninterp     = config.getint('timeseries-config', 'ninterp')
-    interpname  = config.get('timeseries-config', 'interpname')
     ratename    = config.get('timeseries-config', 'ratename')
+    makeplots   = config.getboolean('timeseries-config', 'makeplots')
+    ninterp     = config.getint('timeseries-config', 'ninterp')
 
     # Extract things from data
     with h5py.File(args.infile, 'r') as fo:
@@ -180,11 +178,6 @@ def main(args):
             b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model)
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
             b_write2 = bisblocks.WriteH5Block(b_amod, outfile, detrendname)
-
-            # Generate an interpolation
-            b_intr_gpu = bisblocks.InterpBlock(b_amod_gpu, dates_num)
-            b_intr = bf.blocks.copy(b_intr_gpu, space='cuda_host')
-            b_intr = bisblocks.WriteH5Block(b_intr, plotfile, interpname)
 
             # Calculate average rates, then write rate image to disk
             b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, dates_num)
