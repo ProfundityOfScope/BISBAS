@@ -44,7 +44,7 @@ def make_video(data, dates, outfile, fps=10):
         return (im,)
 
     ani = FuncAnimation(fig, update, frames=len(data), blit=True)
-    ani.save(outfile, writer='ffmpeg', fps=fps, bbox_inches='tight')
+    ani.save(outfile, writer='ffmpeg', fps=fps)
     plt.close(fig)
 
 
@@ -76,5 +76,5 @@ def interp_video(data, dates, outfile, fps, nframes=None):
         return (im,)
 
     ani = FuncAnimation(fig, update, frames=nframes, blit=True)
-    ani.save(outfile, writer='ffmpeg', fps=fps, bbox_inches='tight')
+    ani.save(outfile, writer='ffmpeg', fps=fps)
     plt.close(fig)
