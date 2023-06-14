@@ -443,14 +443,12 @@ class InterpBlock(bfp.TransformBlock):
             idata = ispan.data.as_cupy() 
             odata = ospan.data.as_cupy()
 
-            gulp = idata.shape[1]
-
             # Generate splines
-            y_int = cp.zeros((1,gulp, self.points))
             spl = cinterps(self.taxis, idata[0].T, self.k)
             y_int = spl(self.x_int)
 
-            odata[...] = y_int
+            # 
+            odata[...] = np.expand_dims(y_int.T, 0)
             ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe

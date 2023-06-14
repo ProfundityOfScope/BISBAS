@@ -64,18 +64,20 @@ def main(args):
     inname      = config.get('timeseries-config', 'inname')
     outfile     = config.get('timeseries-config', 'outfile')
     outname     = config.get('timeseries-config', 'outname')
-    mingood     = config.getint('timeseries-config', 'nsbas_min_intfs')
+
     refnum      = config.getint('timeseries-config', 'refnum')
-    unw_thresh  = config.getfloat('timeseries-config', 'unw_check_threshold')
-    calcrate    = config.getboolean('timeseries-config', 'calcrate')
-    ratename    = config.get('timeseries-config', 'ratename')
-    interpname  = config.get('timeseries-config', 'interpname')
+
     detrend     = config.getboolean('timeseries-config', 'detrend')
     trendparams = config.getint('timeseries-config', 'trendparams')
-    detrendname = config.get('timeseries-config', 'detrendname')
+    constrained = config.getboolean('timeseries-config', 'constrained')
     gpsfile     = config.get('timeseries-config', 'gps_file')
-    constrained = config.getboolean('timeseries-config', 'constrainedtrend')
+    detrendname = config.get('timeseries-config', 'detrendname')
+
+    calcrate    = config.getboolean('timeseries-config', 'calcrate')
+    ratename    = config.get('timeseries-config', 'ratename')
+
     makeplots   = config.getboolean('timeseries-config', 'makeplots')
+    interpname  = config.get('timeseries-config', 'interpname')
 
     # Extract things from data
     with h5py.File(args.infile, 'r') as fo:
@@ -199,6 +201,7 @@ def main(args):
         logger.info(f'Finished detrending in {dt_run:.2f} s')
 
         # Copy temp files to outfile
+        logger.debug(f'Copying temp files into {outfile}')
         with h5py.File(outfile, 'a') as fo:
             rates_mm = np.memmap(f'{ratename}.dat', mode='r', shape=rate_shape, dtype=rate_dtype)
             inter_mm = np.memmap(f'{interpname}.dat', mode='r', shape=intr_shape, dtype=intr_dtype)
