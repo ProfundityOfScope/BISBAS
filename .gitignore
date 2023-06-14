@@ -135,3 +135,4 @@ prototypes/pickled/*
 *.h5
 *.hdf5
 *.csv
+*.mp4

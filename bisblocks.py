@@ -10,7 +10,7 @@ from datetime import datetime
 
 import h5py
 import cupy as cp
-import cupyx.scipy as cpx
+from cupyx.scipy.interpolate import make_interp_spline as cinterps
 import numpy as np
 import bifrost as bf
 import bifrost.pipeline as bfp
@@ -447,6 +447,8 @@ class InterpBlock(bfp.TransformBlock):
 
             # Generate splines
             y_int = cp.zeros((1,gulp, self.points))
+            spl = cinterps(self.taxis, idata[0].T, self.k)
+            y_int = spl(self.x_int)
 
             odata[...] = y_int
             ospan.data[...] = bf.ndarray(odata)
