@@ -73,11 +73,13 @@ def main(args):
     gpsfile     = config.get('timeseries-config', 'gps_file')
     detrendname = config.get('timeseries-config', 'detrendname')
 
-    calcrate    = config.getboolean('timeseries-config', 'calcrate')
-    ratename    = config.get('timeseries-config', 'ratename')
 
+    calcrate    = config.getboolean('timeseries-config', 'calcrate')
     makeplots   = config.getboolean('timeseries-config', 'makeplots')
+    plotfile    = config.get('timeseries-config', 'plotfile')
+    ninterp     = config.getint('timeseries-config', 'ninterp')
     interpname  = config.get('timeseries-config', 'interpname')
+    ratename    = config.get('timeseries-config', 'ratename')
 
     # Extract things from data
     with h5py.File(args.infile, 'r') as fo:
@@ -178,23 +180,21 @@ def main(args):
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
             b_write2 = bisblocks.WriteH5Block(b_amod, outfile, detrendname)
 
+            # Generate an interpolation
+            b_intr_gpu = bisblocks.InterpBlock(b_amod_gpu, dates_num)
+            b_intr = bf.blocks.copy(b_intr_gpu, space='cuda_host')
+            b_intr = bisblocks.WriteH5Block(b_intr, plotfile, interpname)
+
             # Calculate average rates, then write rate image to disk
             b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, dates_num)
             b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
             b_rawr = bisblocks.WriteTempBlock(b_rate, f'{ratename}.dat')
-
-            # Generate an interpolation
-            b_intr_gpu = bisblocks.InterpBlock(b_amod_gpu, dates_num)
-            b_intr = bf.blocks.copy(b_intr_gpu, space='cuda_host')
-            b_inwr = bisblocks.WriteTempBlock(b_intr, f'{interpname}.dat')
 
             PIPELINE2.run()
 
             # Grab useful info
             rate_shape = b_rawr.outshape
             rate_dtype = b_rawr.dtype
-            intr_shape = b_inwr.outshape
-            intr_dtype = b_inwr.dtype
 
         dt_time = time.time()
         dt_run = dt_time - ts_time
@@ -204,13 +204,8 @@ def main(args):
         logger.debug(f'Copying temp files into {outfile}')
         with h5py.File(outfile, 'a') as fo:
             rates_mm = np.memmap(f'{ratename}.dat', mode='r', shape=rate_shape, dtype=rate_dtype)
-            inter_mm = np.memmap(f'{interpname}.dat', mode='r', shape=intr_shape, dtype=intr_dtype)
-
             fo[ratename] = rates_mm[:]
-            fo[interpname] = inter_mm[:]
-
             os.remove(f'{ratename}.dat')
-            os.remove(f'{interpname}.dat')
 
     # Make plots
     if makeplots:
