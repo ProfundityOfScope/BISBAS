@@ -12,9 +12,9 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
 	for n in range(2,6):
 		for m in range(2,6):
 
-			tn = int(t0/2**n)
-			yn = int(y0/2**m)
-			xn = int(x0/2**m)
+			tn = int(t0/2**n)//2
+			yn = int(y0/2**m)//2
+			xn = int(x0/2**m)//2
 			name = f'smallifgs/ifgs_t{2**n:02d}_p{2**m:02d}.h5'
 
 			with h5py.File(name, 'w') as fo2:
