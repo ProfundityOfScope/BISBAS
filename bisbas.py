@@ -205,8 +205,8 @@ def main(args):
     if makeplots:
         logger.info('Plots requested')
         with h5py.File(outfile, 'r') as fo:
-            plotting.make_video(fo['detrended'], dates_num, 'rawdata.mp4', 15/25)
-            plotting.interp_video(fo['detrended'], dates_num, 'intdata.mp4', 15/100)
+            plotting.make_video(fo['detrended'], dates_num, 'rawdata.mp4', 3)
+            plotting.interp_video(fo['detrended'], dates_num, 'intdata.mp4', 16)
 
     total_time = time.time() - start_time
     logger.info(f'Total runtime was {total_time} seconds')
