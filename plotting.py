@@ -29,31 +29,39 @@ plotslogger = logging.getLogger('__main__')
 
 def make_video(data, dates, outfile, fps=10, interpolate=False, nframes=100):
 
-	# Set up the figure and axis
-	fig, ax = plt.subplots(figsize=(5,5), dpi=1080/5)
+    # Set up the figure and axis
+    fig, ax = plt.subplots(figsize=(5, 5), dpi=1080/5)
 
-	# Might need this
-	if interpolate:
-		tinterp = np.linspace(t.min(), t.max(), nframes, endpoint=False)
-	else:
-		nframes = len(data)
+    # Might need this
+    if interpolate:
+        tinterp = np.linspace(dates.min(), dates.max(),
+                              nframes, endpoint=False)
+    else:
+        nframes = len(data)
 
-	imkwargs = {'vmin': 0, 'vmax': 6000, 'interpolation': 'nearest', 
-				'origin': 'lower', 'rasterized': True}
+    imkwargs = {'vmin': 0, 'vmax': 6000, 'interpolation': 'nearest',
+                'origin': 'lower', 'rasterized': True}
 
-	def update(frame):
-	    ax.clear()
-	    
-	    if interpolate:
-		    ti = tinterp[frame]
-		    right = np.argmax(t>ti)
-		    left = right - 1
-		    im_int = (data[right]-data[left])/(dates[right]-dates[left]) * (ti-dates[left]) + data[left]
-		    im = ax.imshow(im_int, **imkwargs)
-		else:
-			im = ax.imshow(data[frame], **imkwargs)
-	    return (im,)
-	    
-	ani = animation.FuncAnimation(fig, update, frames=nframes, blit=True)
-	ani.save(outfile, writer='ffmpeg', fps=fps)
-	plt.close(fig)
+    def update(frame):
+        ax.clear()
+
+        if interpolate:
+            # Figure out where to put data
+            ti = tinterp[frame]
+            right = np.argmax(dates > ti)
+            left = right - 1
+
+            # Interpolate
+            dL = data[left]
+            dR = data[right]
+            im_int = (dR-dL)/(dates[right]-dates[left]) * (ti-dates[left]) + dL
+
+            im = ax.imshow(im_int, **imkwargs)
+        else:
+            im = ax.imshow(data[frame], **imkwargs)
+
+        return (im,)
+
+    ani = FuncAnimation(fig, update, frames=nframes, blit=True)
+    ani.save(outfile, writer='ffmpeg', fps=fps)
+    plt.close(fig)
