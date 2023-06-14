@@ -27,17 +27,10 @@ __status__ = "development"
 
 plotslogger = logging.getLogger('__main__')
 
-def make_video(data, dates, outfile, fps=10, nframes=-1):
+def make_video(data, dates, outfile, fps=10):
 
     # Set up the figure and axis
     fig, ax = plt.subplots(figsize=(5, 5), dpi=1080/5)
-
-    # Might need this
-    if nframes > 0:
-        tinterp = np.linspace(dates.min(), dates.max(),
-                              nframes, endpoint=False)
-    else:
-        nframes = len(data)
 
     imkwargs = {'vmin': 0, 'vmax': 6000, 'interpolation': 'nearest',
                 'origin': 'lower', 'rasterized': True}
@@ -45,21 +38,39 @@ def make_video(data, dates, outfile, fps=10, nframes=-1):
     def update(frame):
         ax.clear()
 
-        if nframes > 0:
-            # Figure out where to put data
-            ti = tinterp[frame]
-            right = np.argmax(dates > ti)
-            left = right - 1
+        im = ax.imshow(data[frame], **imkwargs)
 
-            # Interpolate
-            dL = data[left]
-            dR = data[right]
-            im_int = (dR-dL)/(dates[right]-dates[left]) * (ti-dates[left]) + dL
+        return (im,)
 
-            im = ax.imshow(im_int, **imkwargs)
-        else:
-            im = ax.imshow(data[frame], **imkwargs)
+    ani = FuncAnimation(fig, update, frames=len(data), blit=True)
+    ani.save(outfile, writer='ffmpeg', fps=fps)
+    plt.close(fig)
 
+
+def interp_video(data, dates, outfile, fps, nframes=None):
+
+    # Set up the figure and axis
+    fig, ax = plt.subplots(figsize=(5, 5), dpi=1080/5)
+
+    nframes = len(data) if nframes is None else nframes
+    tinterp = np.linspace(dates.min(), dates.max(), nframes, endpoint=False)
+
+    imkwargs = {'vmin': 0, 'vmax': 6000, 'interpolation': 'nearest',
+                'origin': 'lower', 'rasterized': True}
+
+    def update(frame):
+        ax.clear()
+
+        ti = tinterp[frame]
+        right = np.argmax(dates > ti)
+        left = right - 1
+
+        # Interpolate
+        dL = data[left]
+        dR = data[right]
+        im_int = (dR-dL)/(dates[right]-dates[left]) * (ti-dates[left]) + dL
+
+        im = ax.imshow(im_int, **imkwargs)
         return (im,)
 
     ani = FuncAnimation(fig, update, frames=nframes, blit=True)
