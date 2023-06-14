@@ -16,7 +16,7 @@ __author__ = "Seth Bruzewski"
 __credits__ = ["Seth Bruzewski", "Jayce Dowell", "Gregory Taylor"]
 
 __license__ = "MIT"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __maintainer__ = "Seth Bruzewski"
 __email__ = "bruzewskis@unm.edu"
 __status__ = "development"

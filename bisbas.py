@@ -19,12 +19,13 @@ import bifrost as bf
 
 import bisblocks
 import helpers
+import plotting
 
 __author__ = "Seth Bruzewski"
 __credits__ = ["Seth Bruzewski", "Jayce Dowell", "Gregory Taylor"]
 
 __license__ = "MIT"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __maintainer__ = "Seth Bruzewski"
 __email__ = "bruzewskis@unm.edu"
 __status__ = "development"
@@ -210,6 +211,8 @@ def main(args):
     # Make plots
     if makeplots:
         logger.info('Plots requested')
+        with h5py.File(outfile, 'r') as fo:
+            plotting.make_video(fo['detrended'], dates_num, 'rawdata.mp4')
 
     total_time = time.time() - start_time
     logger.info(f'Total runtime was {total_time} seconds')

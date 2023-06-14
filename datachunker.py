@@ -7,6 +7,8 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
 	t0,y0,x0 = fo['coherence'].shape
 	attrs = dict(fo.attrs)
 
+	tm,ym,xm = np.array([t0, y0, x0])//2
+
 	for n in range(2,6):
 		for m in range(2,6):
 
@@ -20,9 +22,9 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
 				for a in attrs:
 					fo2.attrs[a] = attrs[a]
 
-				fo2.attrs['REF_X'] = 70
-				fo2.attrs['REF_Y'] = 60
+				fo2.attrs['REF_X'] = xm
+				fo2.attrs['REF_Y'] = ym
 
-				fo2['coherence'] = fo['coherence'][:tn, :yn, :xn]
-				fo2['date'] = fo['date'][:tn]
+				fo2['coherence'] = fo['coherence'][tm-tn:tm+tn, ym-yn:ym+yn, xm-xn:xm+xn]
+				fo2['date'] = fo['date'][tm-tn:tm+tn]
 			print(tn, yn, xn, name)
