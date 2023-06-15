@@ -90,8 +90,8 @@ def make_video(fobj: h5py.File, outfile: str, fps: int = 10,
     data = fobj[name]
 
     # Extract some data info
-    dates = fo['datenum']
-    date0 = fo['datestr'][0].decode()
+    dates = fobj['datenum']
+    date0 = fobj['datestr'][0].decode()
     date0 = f'{date0[:4]}-{date0[4:6]}-{date0[6:]}'
 
     scale = np.nanstd(data)
@@ -146,8 +146,7 @@ def make_video(fobj: h5py.File, outfile: str, fps: int = 10,
     plt.close(fig)
 
 
-if __name__=='__main__':
-
+if __name__ == '__main__':
     tgt = 'ts.h5'
     with h5py.File(tgt, 'r') as fo:
         # make_video(fo, 'test.mp4', 5)
