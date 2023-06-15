@@ -94,11 +94,12 @@ class ReadH5Block(bfp.SourceBlock):
     we want to keep first dimension, the there are two more we want to ravel, basically.
     """
 
-    def __init__(self, filename, dataname, gulp_pixels, *args, **kwargs):
+    def __init__(self, filename, dataname, gulp_pixels, mask=None, *args, **kwargs):
         super().__init__([filename], 1, *args, **kwargs)
         self.filename = filename
         self.dataname = dataname
         self.gulp_pixels = gulp_pixels
+        self.mask = mask
 
     def create_reader(self, filename):
 
@@ -119,6 +120,8 @@ class ReadH5Block(bfp.SourceBlock):
 
     def on_data(self, reader, ospans):
         indata = reader.read()
+        if self.mask is not None:
+            indata[indata==self.mask] = np.nan
 
         if indata.shape[0] == self.gulp_pixels:
             ospans[0].data[...] = indata

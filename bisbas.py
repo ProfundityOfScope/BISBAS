@@ -129,7 +129,7 @@ def main(args):
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Read in data and move to GPU
-        b_read = bisblocks.ReadH5Block(args.infile, inname, args.gulp, space='system')
+        b_read = bisblocks.ReadH5Block(args.infile, inname, args.gulp, mask=0.0, space='system')
         b_read_gpu = bf.blocks.copy(b_read, space='cuda')
 
         # Reference, generate, and convert timeseries
