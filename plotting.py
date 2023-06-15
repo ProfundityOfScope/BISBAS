@@ -87,7 +87,7 @@ def make_video(fobj: h5py.File, outfile: str, fps: int = 10,
     for name in ['detrended', 'timeseries', 'coherence']:
         if name in fobj:
             break
-    data = fo[name]
+    data = fobj[name]
 
     # Extract some data info
     dates = fo['datenum']
