@@ -120,7 +120,8 @@ def main(args):
             fo.attrs[key] = attrs[key]
 
         # Remember dates and their order
-        fo['dates'] = dates
+        fo['datestr'] = dates
+        fo['datenum'] = dates_num
 
     # Timekeeping on pipeline
     start_time = time.time()
