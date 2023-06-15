@@ -29,9 +29,8 @@ blockslogger = logging.getLogger('__main__')
 
 
 class H5Reader(object):
-    '''
-    File read object
-    '''
+    """File read object."""
+
     def __init__(self, filename, dataname, gulp_size):
 
         # Initialize our reader object
@@ -43,7 +42,7 @@ class H5Reader(object):
         self.shape = self.data.shape
         self.size = np.product(self.shape)
         self.imsize = np.product(self.shape[-2:])
-        if self.imsize%gulp_size==0:
+        if self.imsize % gulp_size == 0:
             self.gulp_size = gulp_size
         else:
             raise ValueError('Gulp must evenly divide image size')
@@ -55,7 +54,7 @@ class H5Reader(object):
         self.linelen = np.size(self, 2)
         bsize = 2*max(self.gulp_size, self.linelen)
         self.buffer = np.zeros((bsize, np.size(self, 0)), dtype=self.dtype)
-        blockslogger.debug(f'Created read buffer with shape {self.buffer.shape}')
+        blockslogger.debug(f'Created read buffer of shape {self.buffer.shape}')
         self.head = 0
         self.linecount = 0
 
@@ -88,13 +87,18 @@ class H5Reader(object):
     def __exit__(self, type, value, tb):
         self.fo.close()
 
+
 class ReadH5Block(bfp.SourceBlock):
-    """ 
-    Meant for reading our data, could be generalized, but difficult. Currently assumes
-    we want to keep first dimension, the there are two more we want to ravel, basically.
+    """
+    Block for reading.
+
+    Meant for reading our data, could be generalized, but difficult. Currently
+    assumes we want to keep first dimension, the there are two more we want to
+    ravel, basically.
     """
 
-    def __init__(self, filename, dataname, gulp_pixels, mask=None, *args, **kwargs):
+    def __init__(self, filename, dataname, gulp_pixels, mask=None, *args,
+                 **kwargs):
         super().__init__([filename], 1, *args, **kwargs)
         self.filename = filename
         self.dataname = dataname
@@ -102,7 +106,6 @@ class ReadH5Block(bfp.SourceBlock):
         self.mask = mask
 
     def create_reader(self, filename):
-
         return H5Reader(filename, self.dataname, self.gulp_pixels)
 
     def on_sequence(self, ireader, filename):
@@ -113,7 +116,7 @@ class ReadH5Block(bfp.SourceBlock):
                 'inshape':  str(dshape),
                 '_tensor':  {'dtype':  dtype_str,
                              'shape':  [-1, self.gulp_pixels, dshape[0]],
-                            },
+                             },
                 }
 
         return [ohdr]
@@ -121,13 +124,14 @@ class ReadH5Block(bfp.SourceBlock):
     def on_data(self, reader, ospans):
         indata = reader.read()
         if self.mask is not None:
-            indata[indata==self.mask] = np.nan
+            indata[indata == self.mask] = np.nan
 
         if indata.shape[0] == self.gulp_pixels:
             ospans[0].data[...] = indata
             return [1]
         else:
             return [0]
+
 
 class WriteH5Block(bfp.SinkBlock):
 
@@ -155,13 +159,13 @@ class WriteH5Block(bfp.SinkBlock):
             # should probably verify this is good
             self.data = self.fo[self.dataname]
         else:
-            self.data = self.fo.create_dataset(self.dataname, 
-                                          data=np.empty(outshape, 
-                                                        dtype=dtype_np))
+            self.data = self.fo.create_dataset(self.dataname,
+                                               data=np.empty(outshape,
+                                                             dtype=dtype_np))
 
         # Record gulp, set up buffer
         self.linelen = outshape[2]
-        self.buffer = np.empty((2*max([self.gulp_size, self.linelen]), depth), 
+        self.buffer = np.empty((2*max([self.gulp_size, self.linelen]), depth),
                                dtype=dtype_np)
         blockslogger.debug(f'Created write buffer with shape {self.buffer.shape}')
         self.head = 0
@@ -181,7 +185,10 @@ class WriteH5Block(bfp.SinkBlock):
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
+
 class ReferenceBlock(bfp.TransformBlock):
+    """Reference the data to a particular coordinate."""
+
     def __init__(self, iring, ref_stack, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.ref_stack = cp.asarray(ref_stack)
@@ -195,7 +202,7 @@ class ReferenceBlock(bfp.TransformBlock):
         return ohdr
 
     def on_data(self, ispan, ospan):
-        in_nframe  = ispan.nframe
+        in_nframe = ispan.nframe
         out_nframe = in_nframe
 
         stream = bf.device.get_stream()
@@ -209,14 +216,15 @@ class ReferenceBlock(bfp.TransformBlock):
 
         return out_nframe
 
+
 class GenTimeseriesBlock(bfp.TransformBlock):
-    ''' (1,npix,nintf) -> (1,npix,ndates) '''
+    """Do the math to convert the interferograms to a timeseries."""
 
     def __init__(self, iring, dates, G, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.dates = cp.asarray(dates)
-        self.nd = len(dates) #cp
-        self.G = cp.asarray(G) #cp
+        self.nd = len(dates)
+        self.G = cp.asarray(G)
 
     def on_sequence(self, iseq):
 
@@ -229,12 +237,12 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         return ohdr
 
     def on_data(self, ispan, ospan):
-        in_nframe  = ispan.nframe
+        in_nframe = ispan.nframe
         out_nframe = in_nframe
 
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
-            idata = ispan.data.as_cupy() 
+            idata = ispan.data.as_cupy()
             odata = ospan.data.as_cupy()
 
             # Set up matrices to solve
@@ -252,16 +260,18 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
             # Turn it into a cumulative timeseries
             datediffs = (self.dates - cp.roll(self.dates, 1))[1:]
-            changes = datediffs[None,:] * model
-            ts = cp.zeros((1,cp.size(idata[0], 0), self.nd))
-            ts[:,:,1:] = cp.cumsum(changes, axis=1)
+            changes = datediffs[None, :] * model
+            ts = cp.zeros((1, cp.size(idata[0], 0), self.nd))
+            ts[:, :, 1:] = cp.cumsum(changes, axis=1)
 
             odata[...] = ts
             ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
 
+
 class ConvertToMillimetersBlock(bfp.TransformBlock):
+    """Convert the units from radians to millimeters."""
 
     def __init__(self, iring, conv, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -275,24 +285,24 @@ class ConvertToMillimetersBlock(bfp.TransformBlock):
         return ohdr
 
     def on_data(self, ispan, ospan):
-        in_nframe  = ispan.nframe
+        in_nframe = ispan.nframe
         out_nframe = in_nframe
 
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
-            idata = ispan.data.as_cupy() 
+            idata = ispan.data.as_cupy()
             odata = ospan.data.as_cupy()
 
             odata[...] = idata
             odata *= self.conv
-            ospan.data[...] = bf.ndarray(odata)# may be unneeded?
+            ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
 
+
 class AccumModelBlock(bfp.SinkBlock):
-    '''
-    TBD
-    '''
+    """Accumate matrix for future dot product."""
+
     def __init__(self, iring, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
 
@@ -312,18 +322,17 @@ class AccumModelBlock(bfp.SinkBlock):
         self.niter = 0
 
     def on_data(self, ispan):
-        in_nframe  = ispan.nframe
 
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
-            idata = ispan.data[0].as_cupy() 
+            idata = ispan.data[0].as_cupy()
 
-            ### ACCUMULATE FOR DOTS ###
             # Figure out what the G matrix should look like
             inds = self.niter * self.gulp_size + cp.arange(0, self.gulp_size)
             yinds, xinds = cp.unravel_index(inds, self.imshape)
             ones = cp.ones_like(xinds)
-            G = cp.column_stack([ones, xinds, yinds, xinds**2, yinds**2, xinds*yinds])
+            G = cp.column_stack([ones, xinds, yinds,
+                                 xinds**2, yinds**2, xinds*yinds])
 
             # Accumulate dot-product
             """
@@ -338,7 +347,9 @@ class AccumModelBlock(bfp.SinkBlock):
             self.GTd += cp.nansum(cp.einsum('jk,ji->ijk', G, idata), axis=1)
             self.niter += 1
 
+
 class ApplyModelBlock(bfp.TransformBlock):
+    """Applies the model we built with the previous block."""
 
     def __init__(self, iring, models, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -349,7 +360,7 @@ class ApplyModelBlock(bfp.TransformBlock):
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
-        nd,ny,nx = eval(ohdr['inshape'])
+        nd, ny, nx = eval(ohdr['inshape'])
         self.imshape = (ny, nx)
 
         blockslogger.debug('Started ApplyModelBlock')
@@ -357,16 +368,16 @@ class ApplyModelBlock(bfp.TransformBlock):
         return ohdr
 
     def on_data(self, ispan, ospan):
-        in_nframe  = ispan.nframe
+        in_nframe = ispan.nframe
         out_nframe = in_nframe
 
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
-            idata = ispan.data.as_cupy() 
+            idata = ispan.data.as_cupy()
             odata = ospan.data.as_cupy()
 
             # Do some stuff with idata
-            gulp_size = cp.size(idata[0],0)
+            gulp_size = cp.size(idata[0], 0)
             r_start = self.step * gulp_size
             r_end = (self.step+1) * gulp_size
             yc, xc = cp.unravel_index(cp.arange(r_start, r_end), self.imshape)
@@ -387,6 +398,7 @@ class ApplyModelBlock(bfp.TransformBlock):
         return out_nframe
 
 class CalcRatesBlock(bfp.TransformBlock):
+    """Calculate the rates for each pixel."""
 
     def __init__(self, iring, taxis, deg=1, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -403,12 +415,12 @@ class CalcRatesBlock(bfp.TransformBlock):
         return ohdr
 
     def on_data(self, ispan, ospan):
-        in_nframe  = ispan.nframe
+        in_nframe = ispan.nframe
         out_nframe = in_nframe
 
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
-            idata = ispan.data.as_cupy() 
+            idata = ispan.data.as_cupy()
             odata = ospan.data.as_cupy()
 
             fits = cp.polyfit(self.taxis, idata[0].T, 1)
@@ -419,45 +431,9 @@ class CalcRatesBlock(bfp.TransformBlock):
 
         return out_nframe
 
-class InterpBlock(bfp.TransformBlock):
-
-    def __init__(self, iring, taxis, points=100, k=1, *args, **kwargs):
-        super().__init__(iring, *args, **kwargs)
-        self.taxis = cp.asarray(taxis)
-        self.points = points
-        self.k = k
-
-        self.x_int = cp.linspace(np.min(taxis), np.max(taxis), points)
-
-    def on_sequence(self, iseq):
-        ohdr = deepcopy(iseq.header)
-        ohdr['name'] += '_as_ts'
-        ohdr['_tensor']['shape'][-1] = self.points
-
-        blockslogger.debug(f'Started InterpBlock: interpolate to {self.points}')
-        return ohdr
-
-    def on_data(self, ispan, ospan):
-        in_nframe  = ispan.nframe
-        out_nframe = in_nframe
-
-        stream = bf.device.get_stream()
-        with cp.cuda.ExternalStream(stream):
-            idata = ispan.data.as_cupy() 
-            odata = ospan.data.as_cupy()
-
-            # Generate splines
-            spl = cinterps(self.taxis, idata[0].T, self.k)
-            y_int = spl(self.x_int)
-
-            # 
-            odata[...] = np.expand_dims(y_int.T, 0)
-            ospan.data[...] = bf.ndarray(odata)
-
-        return out_nframe
-
 
 class WriteTempBlock(bfp.SinkBlock):
+    """Write out a temparary file, since we can't parallel write to HDF5."""
 
     def __init__(self, iring, outfile, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -480,13 +456,13 @@ class WriteTempBlock(bfp.SinkBlock):
         self.outshape = (depth, inshape[1], inshape[2])
         self.imshape = (inshape[1], inshape[2])
 
-        self.mmap = np.memmap(self.file, dtype=self.dtype, mode='w+', shape=self.outshape)
+        self.mmap = np.memmap(self.file, dtype=self.dtype, mode='w+',
+                              shape=self.outshape)
 
         blockslogger.debug(f'Started WriteTempBlock to file {self.file}')
         blockslogger.debug(f'Writing shape={self.outshape}, dtype={self.dtype}')
 
     def on_data(self, ispan):
-
 
         r_start = self.niter * self.gulp_size
         r_end = (self.niter+1) * self.gulp_size

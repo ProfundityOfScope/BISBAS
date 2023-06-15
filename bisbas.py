@@ -6,11 +6,9 @@ Bifrost implementation of ISBAS algorithms
 import os
 import sys
 import time
-import pickle
 import logging
 import argparse
 import configparser
-import multiprocessing as mp
 
 import h5py
 import cupy as cp
@@ -30,14 +28,15 @@ __maintainer__ = "Seth Bruzewski"
 __email__ = "bruzewskis@unm.edu"
 __status__ = "development"
 
+
 def main(args):
-    
-    ##### Setup a logger #####
+
+    # Setup a logger
     logger = logging.getLogger(__name__)
-    logFormat = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s', 
+    logFormat = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
     logFormat.converter = time.gmtime
-    
+
     # Decide to write to file or stdout
     if args.log is None:
         logHandler = logging.StreamHandler(sys.stdout)
@@ -45,36 +44,32 @@ def main(args):
         logHandler = logging.FileHandler(args.log)
     logHandler.setFormatter(logFormat)
     logger.addHandler(logHandler)
-    
+
     # Decide what level to report
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
-    
+
     # Useful info
     logger.info(f'Starting bisbas.py with PID {os.getpid()}')
     logger.info(f'Version: {__version__}')
-        
-    ##### Read in the config file #####
+
+    # Read in the config file
     logger.info(f'Attempting to use {args.config} as config file')
     if not os.path.exists(args.config):
         logger.error('Could not find provided')
     config = configparser.ConfigParser()
-    config.optionxform = str #make the config file case-sensitive
+    config.optionxform = str  # make the config file case-sensitive
     config.read(args.config)
-    
+
     # Get configuration file paramters
     inname      = config.get('timeseries-config', 'inname')
     outfile     = config.get('timeseries-config', 'outfile')
     outname     = config.get('timeseries-config', 'outname')
-
     refnum      = config.getint('timeseries-config', 'refnum')
-
     detrend     = config.getboolean('timeseries-config', 'detrend')
     trendparams = config.getint('timeseries-config', 'trendparams')
     constrained = config.getboolean('timeseries-config', 'constrained')
     gpsfile     = config.get('timeseries-config', 'gps_file')
     detrendname = config.get('timeseries-config', 'detrendname')
-
-
     calcrate    = config.getboolean('timeseries-config', 'calcrate')
     ratename    = config.get('timeseries-config', 'ratename')
     makeplots   = config.getboolean('timeseries-config', 'makeplots')
@@ -99,7 +94,7 @@ def main(args):
 
         # Get nearby data median
         _, _, ref_stack = helpers.data_near(fo[inname], ref_x, ref_y, refnum)
-        median_stack = np.median(ref_stack, axis=(1,2))
+        median_stack = np.median(ref_stack, axis=(1, 2))
         logger.debug(f'Found {len(median_stack)} median values')
 
         # Get dates and date-matrix
@@ -129,7 +124,8 @@ def main(args):
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Read in data and move to GPU
-        b_read = bisblocks.ReadH5Block(args.infile, inname, args.gulp, mask=0.0, space='system')
+        b_read = bisblocks.ReadH5Block(args.infile, inname, args.gulp,
+                                       mask=0.0, space='system')
         b_read_gpu = bf.blocks.copy(b_read, space='cuda')
 
         # Reference, generate, and convert timeseries
@@ -166,13 +162,15 @@ def main(args):
             gps = np.array([[ref_x, ref_y, refnum, 0]])
 
         # Generate model from accumulated matrices and constraints
-        model = helpers.generate_model(outfile, outname, gps, GTG, GTd, True, 3)
+        model = helpers.generate_model(outfile, outname, gps, GTG, GTd, True,
+                                       trendparams)
         logger.debug(f'Generated a model: {model.shape}, {model.dtype}')
-        
+
         # Second pipeline
         with bf.Pipeline() as PIPELINE2:
             # Read in data and copy to GPU
-            b_read = bisblocks.ReadH5Block(outfile, outname, args.gulp, space='system')
+            b_read = bisblocks.ReadH5Block(outfile, outname, args.gulp,
+                                           space='system')
             b_read_gpu = bf.blocks.copy(b_read, space='cuda')
 
             # Apply the model to the data, then write to disk
@@ -198,7 +196,8 @@ def main(args):
         # Copy temp files to outfile
         logger.debug(f'Copying temp files into {outfile}')
         with h5py.File(outfile, 'a') as fo:
-            rates_mm = np.memmap(f'{ratename}.dat', mode='r', shape=rate_shape, dtype=rate_dtype)
+            rates_mm = np.memmap(f'{ratename}.dat', mode='r', shape=rate_shape,
+                                 dtype=rate_dtype)
             fo[ratename] = rates_mm[:]
             os.remove(f'{ratename}.dat')
 
@@ -206,25 +205,25 @@ def main(args):
     if makeplots:
         logger.info('Plots requested')
         with h5py.File(outfile, 'r') as fo:
-            plotting.make_video(fo['detrended'], dates_num, 'rawdata.mp4', 3)
-            plotting.interp_video(fo['detrended'], dates_num, 'intdata.mp4', 16, 100)
+            plotting.make_video(fo, 'rawdata.mp4', 5)
+            plotting.make_video(fo, 'intdata.mp4', 24, 30*24)
 
     total_time = time.time() - start_time
     logger.info(f'Total runtime was {total_time} seconds')
 
+
 if __name__=='__main__':
-    globalstart=time.time()
-    parser = argparse.ArgumentParser(description='Run ISBAS/SBAS on a GMTSAR-formatted dataset')
+    parser = argparse.ArgumentParser(description='Run BISBAS')
     parser.add_argument('-i', '--infile', type=str, default='ifgramStack.h5',
                         help='name of file to read in and use.')
-    parser.add_argument('-c', '--config', type=str, default='./isbas.config', 
-                        help='supply name of config file to setup processing options.')
-    parser.add_argument('-l', '--log', type=str, 
+    parser.add_argument('-c', '--config', type=str, default='./isbas.config',
+                        help='supply name of config file.')
+    parser.add_argument('-l', '--log', type=str,
                         help='name of logfile to write information to')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='print debug messages as well as info and higher')
     parser.add_argument('-g', '--gulp', type=int, default=1000,
                         help='size of gulps to intake data with')
     args = parser.parse_args()
-    
+
     main(args)
