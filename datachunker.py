@@ -22,8 +22,8 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
 				for a in attrs:
 					fo2.attrs[a] = attrs[a]
 
-				fo2.attrs['REF_X'] = xn
-				fo2.attrs['REF_Y'] = yn
+				fo2.attrs['REF_X'] = xn//2
+				fo2.attrs['REF_Y'] = yn//2
 
 				fo2['coherence'] = fo['coherence'][:tn, :yn, :xn]
 				fo2['date'] = fo['date'][:tn]
