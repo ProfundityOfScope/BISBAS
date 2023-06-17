@@ -205,8 +205,8 @@ def main(args):
     if makeplots:
         logger.info('Plots requested')
         with h5py.File(outfile, 'r') as fo:
-            plotting.make_video(fo, 'rawdata.mp4', 5)
-            plotting.make_video(fo, 'intdata.mp4', 24, 30*24)
+            plotting.make_video(fo, 'rawdata.mp4', 1) #5
+            plotting.make_video(fo, 'intdata.mp4', 3, 30*3) #24 30*24
 
     total_time = time.time() - start_time
     logger.info(f'Total runtime was {total_time} seconds')

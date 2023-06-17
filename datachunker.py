@@ -28,5 +28,6 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
 				fo2.attrs['LENGTH'] = yn
 
 				fo2['coherence'] = fo['coherence'][:tn, :yn, :xn]
+				fo2['unwrapPhase'] = fo['unwrapPhase'][:tn, :yn, :xn]
 				fo2['date'] = fo['date'][:tn]
 			print(tn, yn, xn, name)
