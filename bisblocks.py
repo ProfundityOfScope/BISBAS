@@ -182,6 +182,17 @@ class WriteH5Block(bfp.SinkBlock):
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
+class MaskBlock(bfp.MultiTransformBlock):
+    def __init__(self, iring1, iring2, cutoff=0.3, *args, **kwargs):
+        super().__init__(iring1, iring2, *args, **kwargs)
+        self.cutoff = cutoff
+
+    def on_sequence(self, iseq1, iseq2):
+        ohdr = deepcopy(iseq1)
+        return ohdr
+
+    def on_data(self, ispan1, ispan2, ospan):
+        return ispan1.nframe
 
 class ReferenceBlock(bfp.TransformBlock):
     """Reference the data to a particular coordinate."""

@@ -126,9 +126,13 @@ def main(args):
         # Read in data and move to GPU
         b_read = bisblocks.ReadH5Block(args.infile, args.gulp, inname,
                                        space='system')
+        b_mask = bisblocks.ReadH5Block(args.infile, args.gulp, 'coherence',
+                                       space='system')
         b_read_gpu = bf.blocks.copy(b_read, space='cuda')
+        b_mask_gpu = bf.blocks.copy(b_mask, space='cuda')
 
         # Reference, generate, and convert timeseries
+        #b_mskd_gpu = bisblocks.MaskBlock(b_read_gpu, b_mask_gpu)
         b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
         b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates_num, G)
         b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, conv)
