@@ -136,3 +136,4 @@ prototypes/pickled/*
 *.hdf5
 *.csv
 *.mp4
+*.npy

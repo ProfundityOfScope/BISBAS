@@ -94,8 +94,9 @@ def make_video(fobj: h5py.File, outfile: str, fps: int = 10,
     date0 = fobj['datestr'][0].decode()
     date0 = f'{date0[:4]}-{date0[4:6]}-{date0[6:]}'
 
-    scale = np.nanstd(data)
-    imkwargs = {'vmin': -scale, 'vmax': scale, 'interpolation': 'nearest',
+    med = np.nanmedian(data)
+    scale = np.nanstd(data)*2
+    imkwargs = {'vmin': med-scale, 'vmax': med+scale, 'interpolation': 'nearest',
                 'origin': 'lower', 'rasterized': True, 'cmap': 'Spectral_r'}
 
     # Set up the figure and axis

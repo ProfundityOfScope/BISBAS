@@ -97,13 +97,12 @@ class ReadH5Block(bfp.SourceBlock):
     ravel, basically.
     """
 
-    def __init__(self, filename, dataname, gulp_pixels, mask=None, *args,
+    def __init__(self, filename, gulp_pixels, dataname, *args,
                  **kwargs):
         super().__init__([filename], 1, *args, **kwargs)
         self.filename = filename
         self.dataname = dataname
         self.gulp_pixels = gulp_pixels
-        self.mask = mask
 
     def create_reader(self, filename):
         return H5Reader(filename, self.dataname, self.gulp_pixels)
@@ -123,8 +122,6 @@ class ReadH5Block(bfp.SourceBlock):
 
     def on_data(self, reader, ospans):
         indata = reader.read()
-        if self.mask is not None:
-            indata[indata == self.mask] = np.nan
 
         if indata.shape[0] == self.gulp_pixels:
             ospans[0].data[...] = indata
@@ -226,6 +223,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         self.nd = len(dates)
         self.G = cp.asarray(G)
 
+        # This will be useful
+        self.datediffs = (self.dates - cp.roll(self.dates, 1))[None, 1:]
+
     def on_sequence(self, iseq):
 
         ohdr = deepcopy(iseq.header)
@@ -251,7 +251,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             B = cp.nansum(self.G.T[:, :, None] * (M*idata[0]).T[None, :, :], axis=1).T
 
             # Mask out low-rank values
-            lowrank = cp.linalg.matrix_rank(A) != self.nd - 1
+            # note: det(symmetric matrix)==0 iff it's singular
+            lowrank = cp.linalg.det(A) == 0
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
 
@@ -259,8 +260,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             model = cp.linalg.solve(A, B)
 
             # Turn it into a cumulative timeseries
-            datediffs = (self.dates - cp.roll(self.dates, 1))[1:]
-            changes = datediffs[None, :] * model
+            changes = self.datediffs * model
             ts = cp.zeros((1, cp.size(idata[0], 0), self.nd))
             ts[:, :, 1:] = cp.cumsum(changes, axis=1)
 
