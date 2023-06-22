@@ -143,7 +143,6 @@ def main(args):
 
         # Start the pipeline
         PIPELINE1.run()
-        print(PIPELINE1.dot_graph())
 
         # Keep track of accumulated values
         GTG = cp.asnumpy(b_accm_gpu.GTG)
@@ -154,7 +153,7 @@ def main(args):
     logger.info(f'Finished timeseries generation in {ts_run:.4f} s')
 
     # If user requested detrend, we do it
-    if False:#detrend:
+    if detrend:
         logger.info('Detrend requested.')
 
         # Figure out GPS
@@ -206,7 +205,7 @@ def main(args):
             os.remove(f'{ratename}.dat')
 
     # Make plots
-    if False:#makeplots:
+    if makeplots:
         logger.info('Plots requested')
         with h5py.File(outfile, 'r') as fo:
             plotting.make_video(fo, 'rawdata.mp4', 1) #5

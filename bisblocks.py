@@ -409,8 +409,7 @@ class ApplyModelBlock(bfp.TransformBlock):
 
             # d(7800,3) m(3,20) -> c(7800,20)
             ones = cp.ones(len(xc)).astype(np.float64)
-            raw = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])
-            A = raw[:, :self.ntrend]
+            A = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])[:, :self.ntrend]
             corr = cp.dot(A, self.models)
             corr = cp.expand_dims(corr, axis=0)
 
@@ -449,9 +448,8 @@ class CalcRatesBlock(bfp.TransformBlock):
             odata = ospan.data.as_cupy()
 
             fits = cp.polyfit(self.taxis, idata[0].T, 1)
-            rate = fits[0].reshape((1, -1, 1))
 
-            odata[...] = rate
+            odata[...] = fits[0].reshape((1, -1, 1))
             ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
