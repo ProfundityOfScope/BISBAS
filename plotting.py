@@ -119,41 +119,6 @@ def make_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
         DESCRIPTION.
 
     """
-
-    """
-    # Infer the name of the data
-    data = fobj[dname]
-
-    # Extract some data info
-    dates = fobj['datenum']
-    date0 = fobj['datestr'][0].decode()
-    date0 = f'{date0[:4]}-{date0[4:6]}-{date0[6:]}'
-
-    med = np.nanmedian(data)
-    scale = np.nanstd(data)*2
-    imkwargs = {'vmin': med-scale, 'vmax': med+scale, 'interpolation': 'nearest',
-                'origin': 'lower', 'rasterized': True, 'cmap': 'Spectral_r'}
-
-    # Set up the figure and axis
-    aspect = data.shape[1]/data.shape[2]*0.8
-    fig, ax = plt.subplots(figsize=(10, 10*aspect), dpi=1080/10)
-
-    # Get the Affine transform
-    M = findAffineMeta(fobj.attrs)
-    trA = transforms.Affine2D(M)
-    tr = trA + ax.transData
-
-    # Find corners
-    corners = np.array([[0, data.shape[2], 0, data.shape[2]],
-                        [0, 0, data.shape[1], data.shape[1]]]).T
-    tcorn = trA.transform(corners)
-
-    # Plot initial image with limits
-    im = ax.imshow(data[0], transform=tr, **imkwargs)
-    fig.colorbar(im, extend='both')
-    ax.set_xlim(np.min(tcorn[:, 0]), np.max(tcorn[:, 0]))
-    ax.set_ylim(np.min(tcorn[:, 1]), np.max(tcorn[:, 1]))
-    """
     # Shortcut name the data
     data = fobj[dname]
 

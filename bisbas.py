@@ -209,8 +209,11 @@ def main(args):
         logger.info('Plots requested')
         with h5py.File(outfile, 'r') as fo:
             plotting.make_image(fo, ratename, 'rates.png')
+            logger.info('Generated a rate map')
             plotting.make_video(fo, detrendname, 'rawdata.mp4', 5) #5
+            logger.info('Generated a data video')
             plotting.make_video(fo, detrendname, 'intdata.mp4', 24, 30*24) #24 30*24
+            logger.info('Generated an interpolated data video')
 
     total_time = time.time() - start_time
     logger.info(f'Total runtime was {total_time} seconds')
