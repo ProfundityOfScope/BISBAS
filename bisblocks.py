@@ -195,7 +195,7 @@ class MaskBlock(bfp.MultiTransformBlock):
 
     def on_data(self, ispanl, ospanl):
         blockslogger.debug(f'Type in sequence {type(ispanl)}')
-        in_nframe = ispan.nframe
+        in_nframe = ispanl[0].nframe
         out_nframe = in_nframe
 
         return out_nframe
