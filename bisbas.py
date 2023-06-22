@@ -143,6 +143,7 @@ def main(args):
 
         # Start the pipeline
         PIPELINE1.run()
+        print(PIPELINE1.dot_graph())
 
         # Keep track of accumulated values
         GTG = cp.asnumpy(b_accm_gpu.GTG)
