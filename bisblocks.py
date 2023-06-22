@@ -198,7 +198,7 @@ class MaskBlock(bfp.MultiTransformBlock):
         in_nframe = ispanl[0].nframe
         out_nframe = in_nframe
 
-        return out_nframe
+        return [out_nframe]
 
 
 class PrintOut(bfp.SinkBlock):
