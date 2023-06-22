@@ -45,7 +45,7 @@ class H5Reader(object):
         if self.imsize % gulp_size == 0:
             self.gulp_size = gulp_size
         else:
-            raise ValueError('Gulp must evenly divide image size')
+            raise ValueError(f'Gulp {gulp_size} must evenly divide imsize {self.imsize}')
 
         # log
         blockslogger.debug(f'Reading {dataname} {self.shape} from {filename}')
