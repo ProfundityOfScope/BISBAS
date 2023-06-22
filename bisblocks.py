@@ -184,11 +184,14 @@ class WriteH5Block(bfp.SinkBlock):
 
 class MaskBlock(bfp.MultiTransformBlock):
     def __init__(self, iring1, iring2, min_coherence=0.3, *args, **kwargs):
-        super().__init__([iring1, iring2])
+        super().__init__([iring1, iring2], *args, **kwargs)
         self.cutoff = min_coherence
 
     def on_sequence(self, iseql):
         blockslogger.debug(f'Type in sequence {type(iseql)}')
+
+        hdrs = [ seq.header for seq in iseql ]
+        return hdrs
 
     def on_data(self, ispanl, ospanl):
         blockslogger.debug(f'Type in sequence {type(iseql)}')
