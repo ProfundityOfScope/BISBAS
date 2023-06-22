@@ -183,16 +183,44 @@ class WriteH5Block(bfp.SinkBlock):
             self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
 class MaskBlock(bfp.MultiTransformBlock):
-    def __init__(self, iring1, iring2, cutoff=0.3, *args, **kwargs):
-        super().__init__(iring1, iring2, *args, **kwargs)
-        self.cutoff = cutoff
+    def __init__(self, iring1, iring2, min_coherence=0.3, *args, **kwargs):
+        super().__init__()
+        self.cutoff = min_coherence
 
-    def on_sequence(self, iseq1, iseq2):
-        ohdr = deepcopy(iseq1)
-        return ohdr
+    def on_sequence(self, iseql):
+        blockslogger.debug(f'Type in sequence {type(iseql)}')
 
-    def on_data(self, ispan1, ispan2, ospan):
-        return ispan1.nframe
+    def on_data(self, ispanl, ospanl):
+        blockslogger.debug(f'Type in sequence {type(iseql)}')
+        in_nframe = ispan.nframe
+        out_nframe = in_nframe
+
+        return out_nframe
+
+
+class PrintOut(bfp.SinkBlock):
+    """Accumate matrix for future dot product."""
+
+    def __init__(self, iring, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+
+    def on_sequence(self, iseq):
+
+        # Grab useful things from header
+        hdr = iseq.header
+        span, self.gulp_size, depth = hdr['_tensor']['shape']
+
+        # Grab useful things from file
+        inshape = eval(hdr['inshape'])
+        self.imshape = (inshape[1], inshape[2])
+        self.niter = 0
+
+    def on_data(self, ispan):
+
+        idata = ispan.data[0]
+        print(self.niter, '=', idata)
+        self.niter += 1
+
 
 class ReferenceBlock(bfp.TransformBlock):
     """Reference the data to a particular coordinate."""

@@ -128,12 +128,13 @@ def main(args):
                                        space='system')
         b_mask = bisblocks.ReadH5Block(args.infile, args.gulp, 'coherence',
                                        space='system')
-        b_read_gpu = bf.blocks.copy(b_read, space='cuda')
-        b_mask_gpu = bf.blocks.copy(b_mask, space='cuda')
+        b_mskd = bisblocks.MaskBlock(b_read, b_mask, 0.2)
+        b_ssss = bisblocks.PrintOut(b_mskd)
+        """
+        b_mskd_gpu = bf.blocks.copy(b_mskd, space='cuda')
 
         # Reference, generate, and convert timeseries
-        #b_mskd_gpu = bisblocks.MaskBlock(b_read_gpu, b_mask_gpu)
-        b_reff_gpu = bisblocks.ReferenceBlock(b_read_gpu, median_stack)
+        b_reff_gpu = bisblocks.ReferenceBlock(b_mskd_gpu, median_stack)
         b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates_num, G)
         b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, conv)
         b_accm_gpu = bisblocks.AccumModelBlock(b_tsmm_gpu)
@@ -141,18 +142,18 @@ def main(args):
 
         # Write out data and accumulate useful things
         b_write = bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
-
+        """
         # Start the pipeline
         PIPELINE1.run()
 
         # Keep track of accumulated values
-        GTG = cp.asnumpy(b_accm_gpu.GTG)
-        GTd = cp.asnumpy(b_accm_gpu.GTd)
+        #GTG = cp.asnumpy(b_accm_gpu.GTG)
+        #GTd = cp.asnumpy(b_accm_gpu.GTd)
 
     ts_time = time.time()
     ts_run = ts_time - start_time
     logger.info(f'Finished timeseries generation in {ts_run:.4f} s')
-
+    """
     # If user requested detrend, we do it
     if detrend:
         logger.info('Detrend requested.')
@@ -211,7 +212,7 @@ def main(args):
         with h5py.File(outfile, 'r') as fo:
             plotting.make_video(fo, 'rawdata.mp4', 1) #5
             plotting.make_video(fo, 'intdata.mp4', 3, 30*3) #24 30*24
-
+    """
     total_time = time.time() - start_time
     logger.info(f'Total runtime was {total_time} seconds')
 

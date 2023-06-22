@@ -59,7 +59,7 @@ if True:
         nd = len(dates)
         lowrank = np.linalg.matrix_rank(A) !=  nd-1
         ranktime = time()-start
-        print('Masking:', ranktime)
+        print('Rank Check:', ranktime)
         
         start = time()
         lowrank = np.linalg.det(A)==0
