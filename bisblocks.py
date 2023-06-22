@@ -188,13 +188,10 @@ class MaskBlock(bfp.MultiTransformBlock):
         self.cutoff = min_coherence
 
     def on_sequence(self, iseql):
-        blockslogger.debug(f'Type in sequence {type(iseql)}')
-
         hdrs = [ iseql[0].header ]
         return hdrs
 
     def on_data(self, ispanl, ospanl):
-        blockslogger.debug(f'Type in sequence {type(ispanl)}')
         in_nframe1 = ispanl[0].nframe
         in_nframe2 = ispanl[1].nframe
         out_nframe = in_nframe1
