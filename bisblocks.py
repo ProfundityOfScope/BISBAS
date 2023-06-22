@@ -199,14 +199,11 @@ class MaskBlock(bfp.MultiTransformBlock):
         in_nframe2 = ispanl[1].nframe
         out_nframe = in_nframe1
 
-        idata1 = ispanl[0].data
-        idata2 = ispanl[1].data
+        idata = ispanl[0].data
+        imask = ispanl[1].data
         odata = ospanl[0].data
 
-        blockslogger.debug(f'MASKBLOCK INPUT1: {idata1.shape}')
-        blockslogger.debug(f'MASKBLOCK INPUT2: {idata2.shape}')
-        blockslogger.debug(f'MASKBLOCK OUTPUT: {odata.shape}')
-        odata[...] = idata1
+        odata[...] = np.where(imask > self.cutoff, idata, np.nan)
 
         return [out_nframe]
 
@@ -231,7 +228,7 @@ class PrintOut(bfp.SinkBlock):
     def on_data(self, ispan):
 
         idata = ispan.data[0]
-        print(self.niter, '=', np.shape(idata), np.nanmean(idata))
+        print(self.niter, '=', np.shape(idata), np.nanmean(idata), np.sum(np.isnan(idata))/idata.size)
         self.niter += 1
 
 
