@@ -159,6 +159,7 @@ def make_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
     ax.set_xlim(np.min(tcorn[:, 0]), np.max(tcorn[:, 0]))
     ax.set_ylim(np.min(tcorn[:, 1]), np.max(tcorn[:, 1]))
     """
+    data = fobj[dname]
     fig, ax, im = make_image(fobj, dname, outfile=None)
 
     # Need these if we interpolate
