@@ -129,8 +129,6 @@ def main(args):
         b_mask = bisblocks.ReadH5Block(args.infile, args.gulp, 'coherence',
                                        space='system')
         b_mskd = bisblocks.MaskBlock(b_read, b_mask, 0.2)
-        b_ssss = bisblocks.PrintOut(b_mskd)
-        """
         b_mskd_gpu = bf.blocks.copy(b_mskd, space='cuda')
 
         # Reference, generate, and convert timeseries
@@ -142,20 +140,20 @@ def main(args):
 
         # Write out data and accumulate useful things
         b_write = bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
-        """
+
         # Start the pipeline
         PIPELINE1.run()
 
         # Keep track of accumulated values
-        #GTG = cp.asnumpy(b_accm_gpu.GTG)
-        #GTd = cp.asnumpy(b_accm_gpu.GTd)
+        GTG = cp.asnumpy(b_accm_gpu.GTG)
+        GTd = cp.asnumpy(b_accm_gpu.GTd)
 
     ts_time = time.time()
     ts_run = ts_time - start_time
     logger.info(f'Finished timeseries generation in {ts_run:.4f} s')
-    """
+
     # If user requested detrend, we do it
-    if detrend:
+    if False:#detrend:
         logger.info('Detrend requested.')
 
         # Figure out GPS
@@ -212,7 +210,7 @@ def main(args):
         with h5py.File(outfile, 'r') as fo:
             plotting.make_video(fo, 'rawdata.mp4', 1) #5
             plotting.make_video(fo, 'intdata.mp4', 3, 30*3) #24 30*24
-    """
+
     total_time = time.time() - start_time
     logger.info(f'Total runtime was {total_time} seconds')
 
