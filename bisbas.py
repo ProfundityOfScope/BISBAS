@@ -205,7 +205,7 @@ def main(args):
             os.remove(f'{ratename}.dat')
 
     # Make plots
-    if makeplots:
+    if False:#makeplots:
         logger.info('Plots requested')
         with h5py.File(outfile, 'r') as fo:
             plotting.make_video(fo, 'rawdata.mp4', 1) #5

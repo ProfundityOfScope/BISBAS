@@ -208,30 +208,6 @@ class MaskBlock(bfp.MultiTransformBlock):
         return [out_nframe]
 
 
-class PrintOut(bfp.SinkBlock):
-    """Accumate matrix for future dot product."""
-
-    def __init__(self, iring, *args, **kwargs):
-        super().__init__(iring, *args, **kwargs)
-
-    def on_sequence(self, iseq):
-
-        # Grab useful things from header
-        hdr = iseq.header
-        span, self.gulp_size, depth = hdr['_tensor']['shape']
-
-        # Grab useful things from file
-        inshape = eval(hdr['inshape'])
-        self.imshape = (inshape[1], inshape[2])
-        self.niter = 0
-
-    def on_data(self, ispan):
-
-        idata = ispan.data[0]
-        print(self.niter, '=', np.shape(idata), np.nanmean(idata), np.sum(np.isnan(idata))/idata.size)
-        self.niter += 1
-
-
 class ReferenceBlock(bfp.TransformBlock):
     """Reference the data to a particular coordinate."""
 
@@ -302,6 +278,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
             lowrank = cp.linalg.det(A) == 0
+            # lowrank = np.linalg.matrix_rank(A) != self.nd - 1
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
 
