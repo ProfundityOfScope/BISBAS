@@ -183,6 +183,8 @@ class WriteH5Block(bfp.SinkBlock):
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
+            blockslogger.debug(f'Wrote out line {self.linecount-1}')
+
 class MaskBlock(bfp.MultiTransformBlock):
     def __init__(self, iring1, iring2, min_coherence=0.3, *args, **kwargs):
         super().__init__([iring1, iring2], *args, **kwargs)
