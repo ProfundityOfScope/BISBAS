@@ -62,11 +62,6 @@ def make_image(fobj: h5py.File, dname: str, outfile: str = 'image.png', ind: int
     # Infer the name of the data
     data = fobj[dname]
 
-    # Extract some data info
-    dates = fobj['datenum']
-    date0 = fobj['datestr'][0].decode()
-    date0 = f'{date0[:4]}-{date0[4:6]}-{date0[6:]}'
-
     med = np.nanmedian(data)
     scale = np.nanstd(data)*2
     imkwargs = {'vmin': med-scale, 'vmax': med+scale, 'interpolation': 'nearest',
@@ -159,8 +154,15 @@ def make_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
     ax.set_xlim(np.min(tcorn[:, 0]), np.max(tcorn[:, 0]))
     ax.set_ylim(np.min(tcorn[:, 1]), np.max(tcorn[:, 1]))
     """
+    # Shortcut name the data
     data = fobj[dname]
+
+    # Extract some data info
     dates = fobj['datenum']
+    date0 = fobj['datestr'][0].decode()
+    date0 = f'{date0[:4]}-{date0[4:6]}-{date0[6:]}'
+
+    # Render figure
     fig, ax, im = make_image(fobj, dname, outfile=None)
 
     # Need these if we interpolate
