@@ -194,7 +194,7 @@ class MaskBlock(bfp.MultiTransformBlock):
         return hdrs
 
     def on_data(self, ispanl, ospanl):
-        blockslogger.debug(f'Type in sequence {type(iseql)}')
+        blockslogger.debug(f'Type in sequence {type(ispanl)}')
         in_nframe = ispan.nframe
         out_nframe = in_nframe
 
