@@ -190,13 +190,23 @@ class MaskBlock(bfp.MultiTransformBlock):
     def on_sequence(self, iseql):
         blockslogger.debug(f'Type in sequence {type(iseql)}')
 
-        hdrs = [ seq.header for seq in iseql ]
+        hdrs = [ iseql[0].header ]
         return hdrs
 
     def on_data(self, ispanl, ospanl):
         blockslogger.debug(f'Type in sequence {type(ispanl)}')
-        in_nframe = ispanl[0].nframe
-        out_nframe = in_nframe
+        in_nframe1 = ispanl[0].nframe
+        in_nframe2 = ispanl[1].nframe
+        out_nframe = in_nframe1
+
+        idata1 = ispanl[0].data
+        idata2 = ispanl[1].data
+        odata = ospanl[0].data
+
+        blockslogger.debug(f'MASKBLOCK INPUT1: {idata1.shape}')
+        blockslogger.debug(f'MASKBLOCK INPUT2: {idata2.shape}')
+        blockslogger.debug(f'MASKBLOCK OUTPUT: {odata.shape}')
+        odata[...] = idata1
 
         return [out_nframe]
 
@@ -221,7 +231,7 @@ class PrintOut(bfp.SinkBlock):
     def on_data(self, ispan):
 
         idata = ispan.data[0]
-        print(self.niter, '=', idata)
+        print(self.niter, '=', np.shape(idata), np.nanmean(idata))
         self.niter += 1
 
 
