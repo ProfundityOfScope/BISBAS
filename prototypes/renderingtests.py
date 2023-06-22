@@ -35,6 +35,7 @@ if True:
     with h5py.File(tgt, 'r') as fo:
         G, dates = makeg(fo['date'][:].astype(str))
         
+        print(fo['coherence'].shape)
         coherence = fo['coherence'][:, 250:350,250:350]
         phase = fo['unwrapPhase'][:, 250:350, 250:350]
         phase[coherence < 0.2] = np.nan
