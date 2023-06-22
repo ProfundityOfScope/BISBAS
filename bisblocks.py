@@ -274,8 +274,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
-            lowrank = cp.linalg.det(A) == 0
-            # lowrank = np.linalg.matrix_rank(A) != self.nd - 1
+            #lowrank = cp.linalg.det(A) == 0
+            lowrank = np.linalg.matrix_rank(A) != self.nd - 1
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
 
