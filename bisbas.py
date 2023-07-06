@@ -74,6 +74,7 @@ def main(args):
     ratename    = config.get('timeseries-config', 'ratename')
     makeplots   = config.getboolean('timeseries-config', 'makeplots')
     ninterp     = config.getint('timeseries-config', 'ninterp')
+    mincoher    = 0.4 # TODO: add me to thing
 
     # Extract things from data
     with h5py.File(args.infile, 'r') as fo:
@@ -103,6 +104,16 @@ def main(args):
         G, dates_num = helpers.make_gmatrix(datepairs.astype(str))
         logger.debug(f'Used {len(dates)} dates to generate G-matrix {G.shape}')
 
+        # Find best gulp size
+        if args.gulp is None:
+            imsize = fo[inname][0].size
+            ni = len(datepairs)
+            nd = len(dates)
+            gulp_size = helpers.auto_best_gulp(ni, nd, imsize, 7)
+        else:
+            gulp_size = args.gulp
+
+
     # Overwrite
     logger.debug(f'Generating output file {outfile}')
     if os.path.exists(outfile):
@@ -124,11 +135,11 @@ def main(args):
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
         # Read in data and move to GPU
-        b_read = bisblocks.ReadH5Block(args.infile, args.gulp, inname,
+        b_read = bisblocks.ReadH5Block(args.infile, gulp_size, inname,
                                        space='system')
-        b_mask = bisblocks.ReadH5Block(args.infile, args.gulp, 'coherence',
+        b_mask = bisblocks.ReadH5Block(args.infile, gulp_size, 'coherence',
                                        space='system')
-        b_mskd = bisblocks.MaskBlock(b_read, b_mask, 0.2)
+        b_mskd = bisblocks.MaskBlock(b_read, b_mask, mincoher)
         b_mskd_gpu = bf.blocks.copy(b_mskd, space='cuda')
 
         # Reference, generate, and convert timeseries
@@ -172,7 +183,7 @@ def main(args):
         # Second pipeline
         with bf.Pipeline() as PIPELINE2:
             # Read in data and copy to GPU
-            b_read = bisblocks.ReadH5Block(outfile, args.gulp, outname,
+            b_read = bisblocks.ReadH5Block(outfile, gulp_size, outname,
                                            space='system')
             b_read_gpu = bf.blocks.copy(b_read, space='cuda')
 
@@ -229,7 +240,7 @@ if __name__=='__main__':
                         help='name of logfile to write information to')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='print debug messages as well as info and higher')
-    parser.add_argument('-g', '--gulp', type=int, default=1000,
+    parser.add_argument('-g', '--gulp', type=int, default=None,
                         help='size of gulps to intake data with')
     args = parser.parse_args()
 
