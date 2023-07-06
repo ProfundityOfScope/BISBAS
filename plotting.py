@@ -175,6 +175,6 @@ def make_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
 if __name__ == '__main__':
     outfile = 'timeseries.h5'
     with h5py.File(outfile, 'r') as fo:
-        plotting.make_image(fo, 'rates', outfile='rates.png')
-        plotting.make_video(fo, 'detrended', 'rawdata.mp4', 5) #5
-        plotting.make_video(fo, 'detrended', 'intdata.mp4', 24, 30*24) #24 30*24
+        make_image(fo, 'rates', outfile='rates.png')
+        make_video(fo, 'detrended', 'rawdata.mp4', 5) #5
+        make_video(fo, 'detrended', 'intdata.mp4', 10, 30*10) #24 30*24
