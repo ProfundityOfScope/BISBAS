@@ -129,7 +129,7 @@ def make_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
     """
     # Shortcut name the data
     data = fobj[dname]
-    header = dict{fobj.attrs}
+    header = dict(fobj.attrs)
 
     # Extract some data info
     dates = fobj['datenum']
