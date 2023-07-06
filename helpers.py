@@ -20,6 +20,23 @@ __status__ = "development"
 
 helperslogger = logging.getLogger('__main__')
 
+def auto_best_gulp(ni, nd, gpu_mem, imsize):
+    # Calculates approximate best gulp_size based on inputs
+
+    # Calculate memory usage by biggest block
+    mem_const = 2*nd + ni*nd
+    mem_gulp = 2*ni + nd*nd + 1 + 4*nd + 2*ni*nd
+
+    # This is our biggest gulp
+    gulp = int((memtot*8e9/32 - mem_const)/mem_gulp)
+
+    for test_gulp in range(gulp, 0, -1):
+        if imsize%test_gulp == 0:
+            return test_gulp
+    else:
+        raise ValueError('Couldn\'t find a good gulp')
+
+
 
 def make_gmatrix(datepairs: np.array):
     """
