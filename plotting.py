@@ -177,4 +177,3 @@ if __name__ == '__main__':
     with h5py.File(outfile, 'r') as fo:
         make_image(fo['rates'][0], outfile='rates.png')
         make_video(fo, 'detrended', 'rawdata.mp4', 5) #5
-        make_video(fo, 'detrended', 'intdata.mp4', 10, 30*10) #24 30*24
