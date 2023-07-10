@@ -295,9 +295,10 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             ts[:, :, 1:] = cp.cumsum(changes, axis=1)
 
             if cp.any(cp.abs(ts)>1e10):
+                _,loc,_ = cp.where(cp.abs(ts)>1e10)
                 blockslogger.error('BIG BOI')
-                print(sign, logdet, lowrank)
-                print(model)
+                print(sign[loc], logdet[loc] lowrank[loc])
+                print(model[loc])
                 sys.exit(1)
 
             odata[...] = ts
