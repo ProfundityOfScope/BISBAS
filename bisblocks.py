@@ -281,14 +281,13 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
             # matrices are large-ish, so we use slogdet
-            with cpx.errstate(linalg='raise'):
-                sign, logdet = cp.linalg.slogdet(A)
-                lowrank = sign == 0
-                A[lowrank] = cp.eye(self.nd-1)
-                B[lowrank] = cp.full(self.nd-1, np.nan)
+            sign, logdet = cp.linalg.slogdet(A)
+            lowrank = sign == 0
+            A[lowrank] = cp.eye(self.nd-1)
+            B[lowrank] = cp.full(self.nd-1, np.nan)
 
-                # Solve
-                model = cp.linalg.solve(A, B)
+            # Solve
+            model = cp.linalg.solve(A, B)
 
             # Turn it into a cumulative timeseries
             changes = self.datediffs * model
@@ -298,6 +297,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             if cp.any(cp.abs(ts)>1e10):
                 _,loc,_ = cp.where(cp.abs(ts)>1e10)
                 blockslogger.error('BIG BOI')
+
+                print(logdet[np.isfinite(logdet)])
                 print(sign[loc], logdet[loc], lowrank[loc])
                 sys.exit(1)
 
