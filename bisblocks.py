@@ -297,7 +297,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             if cp.any(cp.abs(ts)>1e10):
                 _,loc,_ = cp.where(cp.abs(ts)>1e10)
                 blockslogger.error('BIG BOI')
-                print(sign[loc], logdet[loc] lowrank[loc])
+                print(sign[loc], logdet[loc], lowrank[loc])
                 print(model[loc])
                 sys.exit(1)
 
