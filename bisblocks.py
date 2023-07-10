@@ -280,7 +280,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
             # cupy will sometimes throw an inf instead
-            sign, logdet = np.linalg.slogdet(A)
+            sign, logdet = cp.linalg.slogdet(A)
             lowrank = sign == 0
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
