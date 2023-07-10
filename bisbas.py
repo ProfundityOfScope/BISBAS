@@ -131,8 +131,6 @@ def main(args):
 
     # Timekeeping on pipeline
     start_time = time.time()
-    np.save('test_med.npy', median_stack)
-    return None
 
     # Generates the timeseries
     with bf.get_default_pipeline() as PIPELINE1:
