@@ -285,7 +285,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
             if cp.any(lowrank):
-                blockslogger.warning('Found a singular matrix')
+                blockslogger.warning(f'Found a {cp.sum(lowrank)} singular matrices')
 
             # Solve
             model = cp.linalg.solve(A, B)
