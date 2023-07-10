@@ -270,7 +270,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
             idata = ispan.data.as_cupy()
-            odata = ospan.data.as_cupy()
+            odata = ospan.data.as_cupyl()
 
             # Set up matrices to solve
             M = ~cp.isnan(idata[0])
@@ -282,6 +282,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             lowrank = cp.linalg.det(A) == 0
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
+            if cp.any(lowrank):
+                blockslogger.warning('Found a singular matrix')
 
             # Solve
             model = cp.linalg.solve(A, B)
