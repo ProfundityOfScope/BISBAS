@@ -12,7 +12,7 @@ from time import time
 
 import h5py
 import cupy as cp
-from cupyx.scipy.interpolate import make_interp_spline as cinterps
+import cupyx as cpx
 import numpy as np
 import bifrost as bf
 import bifrost.pipeline as bfp
@@ -281,13 +281,14 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
             # matrices are large-ish, so we use slogdet
-            sign, logdet = cp.linalg.slogdet(A)
-            lowrank = sign == 0
-            A[lowrank] = cp.eye(self.nd-1)
-            B[lowrank] = cp.full(self.nd-1, np.nan)
+            with cpx.errstate(linalg='raise'):
+                sign, logdet = cp.linalg.slogdet(A)
+                lowrank = sign == 0
+                A[lowrank] = cp.eye(self.nd-1)
+                B[lowrank] = cp.full(self.nd-1, np.nan)
 
-            # Solve
-            model = cp.linalg.solve(A, B)
+                # Solve
+                model = cp.linalg.solve(A, B)
 
             # Turn it into a cumulative timeseries
             changes = self.datediffs * model
