@@ -279,13 +279,11 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
-            # cupy will sometimes throw an inf instead
+            # matrices are large-ish, so we use slogdet
             sign, logdet = cp.linalg.slogdet(A)
             lowrank = sign == 0
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
-            if cp.any(lowrank):
-                blockslogger.warning(f'Found a {cp.sum(lowrank)} singular matrices')
 
             # Solve
             model = cp.linalg.solve(A, B)
