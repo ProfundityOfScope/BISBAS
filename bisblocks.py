@@ -4,6 +4,7 @@ This file contains various blocks for the Bifrost-ISBAS pipeline
 """
 
 import os
+import sys
 import logging
 from copy import deepcopy
 from datetime import datetime
@@ -292,6 +293,10 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             changes = self.datediffs * model
             ts = cp.zeros((1, cp.size(idata[0], 0), self.nd))
             ts[:, :, 1:] = cp.cumsum(changes, axis=1)
+
+            if cp.any(cp.abs(ts)>1e10):
+                blockslogger.error('BIG BOI')
+                sys.exit(1)
 
             odata[...] = ts
             ospan.data[...] = bf.ndarray(odata)
