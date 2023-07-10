@@ -296,6 +296,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
             if cp.any(cp.abs(ts)>1e10):
                 blockslogger.error('BIG BOI')
+                print(sign, logdet, lowrank)
+                print(model)
                 sys.exit(1)
 
             odata[...] = ts
