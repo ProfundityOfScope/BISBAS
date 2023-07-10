@@ -270,7 +270,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
             idata = ispan.data.as_cupy()
-            odata = ospan.data.as_cupyl()
+            odata = ospan.data.as_cupy()
 
             # Set up matrices to solve
             M = ~cp.isnan(idata[0])
