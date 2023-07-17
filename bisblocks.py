@@ -283,7 +283,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # note: det(symmetric matrix)==0 iff it's singular
             # matrices are large-ish, so we use slogdet
             sign, logdet = cp.linalg.slogdet(A)
-            lowrank = np.isinf(sign)
+            lowrank = cp.logical_or(np.isinf(sign), logdet > 21.48) # TODO: hardcoded for 32bit
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
 
