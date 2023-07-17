@@ -298,8 +298,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             blockslogger.debug(f'INTF NONNAN: {cp.sum(cp.any(M, axis=1))}')
             blockslogger.debug(f'DET ZEROS: {cp.sum(det==0)}')
             blockslogger.debug(f'DET INF: {cp.sum(cp.isinf(det))}')
+            blockslogger.debug(f'DOABLE: {cp.sum(~lowrank)}')
             blockslogger.debug(f'LOWRANK: {cp.sum(lowrank)}')
-            blockslogger.debug(f'MODEL: {model}')
+            blockslogger.debug(f'MODEL10: {model[10]}')
 
             odata[...] = ts
             ospan.data[...] = bf.ndarray(odata)
