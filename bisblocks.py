@@ -296,8 +296,12 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             ts[:, :, 1:] = cp.cumsum(changes, axis=1)
 
             blockslogger.debug(f'INTF NONNAN: {cp.sum(cp.any(M, axis=1))}')
+            blockslogger.debug(f'{logdet[:100]}')
             blockslogger.debug(f'DOABLE: {cp.sum(~lowrank)}')
             blockslogger.debug(f'LOWRANK: {cp.sum(lowrank)}')
+            blockslogger.debug(f'SIGNZERO: {cp.sum(sign==0)}')
+            blockslogger.debug(f'LOGDETBIG: {cp.sum(logdet>24)}')
+            blockslogger.debug(f'LOGDETINF: {cp.sum(np.isinf(logdet))}')
             blockslogger.debug(f'MODEL10: {model[10]}')
 
             odata[...] = ts
