@@ -274,13 +274,16 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             idata = ispan.data.as_cupy()
             odata = ospan.data.as_cupy()
 
-            # Set up matrices to solvey
+            # Set up matrices to solve
+            M = ~cp.isnan(idata[0])
+            A = cp.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :]).astype(idata.dtype)
+            B = cp.nansum(self.G.T[:, :, None] * (M*idata[0]).T[None, :, :], axis=1).T
 
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
             # matrices are large-ish, so we use slogdet
             sign, logdet = cp.linalg.slogdet(A)
-            lowrank = cp.logical_or(np.isinf(logdet), sign==0)
+            lowrank = cp.logical_or(cp.isinf(logdet), sign==0)
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
 
@@ -295,7 +298,6 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             blockslogger.debug(f'GOODRANK: {cp.sum(~lowrank)}')
             blockslogger.debug(f'LOWRANK: {cp.sum(lowrank)}')
             blockslogger.debug(f'SIGNZERO: {cp.sum(sign==0)}')
-            blockslogger.debug(f'LOGDETBIG: {cp.sum(logdet>24)}')
             blockslogger.debug(f'LOGDETINF: {cp.sum(np.isinf(logdet))}')
 
             odata[...] = ts
