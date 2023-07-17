@@ -28,6 +28,7 @@ __email__ = "bruzewskis@unm.edu"
 __status__ = "development"
 
 blockslogger = logging.getLogger('__main__')
+cpx.seterr(linalg='raise')
 
 
 class H5Reader(object):
@@ -269,7 +270,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         tstart = time()
 
         stream = bf.device.get_stream()
-        with cp.cuda.ExternalStream(stream), cpx.errstate(linalg='raise'):
+        with cp.cuda.ExternalStream(stream):
             idata = ispan.data.as_cupy()
             odata = ospan.data.as_cupy()
 
