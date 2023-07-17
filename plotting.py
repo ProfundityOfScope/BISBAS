@@ -91,7 +91,7 @@ def make_image(image, header: dict = None, outfile: str = None,
 
     # Plot initial image with limits
     im = ax.imshow(image, transform=tr, cmap=cmap, interpolation=interpolation, 
-                   origin=origin, rasterized=rasterized, *args, **kwargs)
+                   origin=origin, rasterized=rasterized, vmin=vmin, vmax=vmax, *args, **kwargs)
     fig.colorbar(im, extend='both')
 
     if outfile is None:
