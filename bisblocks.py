@@ -282,8 +282,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
             # matrices are large-ish, so we use slogdet
-            det = cp.linalg.det(A)
-            lowrank = cp.logical_or(cp.isinf(det), det==0)
+            sign, logdet = cp.linalg.slogdet(A)
+            lowrank = cp.logical_or(cp.abs(logdet)>24, sign==0) #24 is hardcode for 32bit
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
 
@@ -296,9 +296,6 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             ts[:, :, 1:] = cp.cumsum(changes, axis=1)
 
             blockslogger.debug(f'INTF NONNAN: {cp.sum(cp.any(M, axis=1))}')
-            blockslogger.debug(f'DET: {det}')
-            blockslogger.debug(f'DET ZEROS: {cp.sum(det==0)}')
-            blockslogger.debug(f'DET INF: {cp.sum(cp.isinf(det))}')
             blockslogger.debug(f'DOABLE: {cp.sum(~lowrank)}')
             blockslogger.debug(f'LOWRANK: {cp.sum(lowrank)}')
             blockslogger.debug(f'MODEL10: {model[10]}')
