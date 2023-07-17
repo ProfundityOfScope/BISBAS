@@ -281,7 +281,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
             # matrices are large-ish, so we use slogdet
-            with cpx.seterr('raise'):
+            with cpx.errstate(linalg='raise'):
                 sign, logdet = cp.linalg.slogdet(A)
             lowrank = cp.logical_or(np.isinf(logdet), logdet > 21.48756) # TODO: hardcoded for 32-bit
             lowrank = sign==0
