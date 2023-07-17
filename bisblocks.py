@@ -301,7 +301,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
                 print(logdet)
                 print(sign[loc], logdet[loc], lowrank[loc])
-                sys.exit(1)
+                raise ValueError('way too big')
 
             odata[...] = ts
             ospan.data[...] = bf.ndarray(odata)
