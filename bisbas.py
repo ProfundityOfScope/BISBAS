@@ -219,7 +219,8 @@ def main(args):
     if makeplots:
         logger.info('Plots requested')
         with h5py.File(outfile, 'r') as fo:
-            plotting.make_image(fo, ratename, 'rates.png')
+            rates = fo[ratename][0]
+            plotting.make_image(rates, outfile='rates.png')
             logger.info('Generated a rate map')
             plotting.make_video(fo, detrendname, 'rawdata.mp4', 5) #5
             logger.info('Generated a data video')
