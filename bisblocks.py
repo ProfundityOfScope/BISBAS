@@ -295,8 +295,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             ts = cp.zeros((1, cp.size(idata[0], 0), self.nd))
             ts[:, :, 1:] = cp.cumsum(changes, axis=1)
 
-            blockslogger.debug(f'DET: {det}')
-            blockslogger.debug(f'LOWRANK: {lowrank}')
+            blockslogger.debug(f'DET ZEROS: {np.sum(det==0)}')
+            blockslogger.debug(f'DET ZEROS: {np.sum(np.isinf(det))}')
+            blockslogger.debug(f'LOWRANK: {np.sum(lowrank)}')
             blockslogger.debug(f'MODEL: {model}')
 
             odata[...] = ts
