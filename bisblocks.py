@@ -28,7 +28,7 @@ __email__ = "bruzewskis@unm.edu"
 __status__ = "development"
 
 blockslogger = logging.getLogger('__main__')
-cpx.seterr(linalg='raise')
+#cpx.seterr(linalg='raise')
 
 
 class H5Reader(object):
