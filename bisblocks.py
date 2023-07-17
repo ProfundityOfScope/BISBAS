@@ -269,7 +269,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         tstart = time()
 
         stream = bf.device.get_stream()
-        with cp.cuda.ExternalStream(stream):
+        with cp.cuda.ExternalStream(stream), cpx.errstate(linalg='raise'):
             idata = ispan.data.as_cupy()
             odata = ospan.data.as_cupy()
 
@@ -281,10 +281,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Mask out low-rank values
             # note: det(symmetric matrix)==0 iff it's singular
             # matrices are large-ish, so we use slogdet
-            with cpx.errstate(linalg='raise'):
-                sign, logdet = cp.linalg.slogdet(A)
-            lowrank = cp.logical_or(np.isinf(logdet), logdet > 21.48756) # TODO: hardcoded for 32-bit
-            lowrank = sign==0
+            sign, logdet = cp.linalg.slogdet(A)
+            lowrank = np.isinf(sign)
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
 
