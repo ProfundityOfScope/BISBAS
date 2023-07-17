@@ -295,10 +295,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             ts = cp.zeros((1, cp.size(idata[0], 0), self.nd))
             ts[:, :, 1:] = cp.cumsum(changes, axis=1)
 
-            blockslogger.debug(f'GOODRANK: {cp.sum(~lowrank)}')
-            blockslogger.debug(f'LOWRANK: {cp.sum(lowrank)}')
-            blockslogger.debug(f'SIGNZERO: {cp.sum(sign==0)}')
-            blockslogger.debug(f'LOGDETINF: {cp.sum(np.isinf(logdet))}')
+            if cp.any(cp.abs(ts)>1e10):
+                blockslogger.warning('Encountered a huge value')
 
             odata[...] = ts
             ospan.data[...] = bf.ndarray(odata)
