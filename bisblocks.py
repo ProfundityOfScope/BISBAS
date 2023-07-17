@@ -296,6 +296,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             ts[:, :, 1:] = cp.cumsum(changes, axis=1)
 
             blockslogger.debug(f'INTF NONNAN: {cp.sum(cp.any(M, axis=1))}')
+            blockslogger.debug(f'DET: {det}')
             blockslogger.debug(f'DET ZEROS: {cp.sum(det==0)}')
             blockslogger.debug(f'DET INF: {cp.sum(cp.isinf(det))}')
             blockslogger.debug(f'DOABLE: {cp.sum(~lowrank)}')
