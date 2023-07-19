@@ -32,13 +32,14 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         phases *= conv
         
         print(f'Coordinate: ({ci}, {cj}) with notes: "{notes[i]}"')
+        linestr = '\t{0:20s}: det={1:>20f} logdet={2:>20f}'
         
         # pure numpy
         M = np.diag(~np.isnan(phases))
         A = np.linalg.multi_dot([G.T, M, G]).astype('float32')
         det = np.linalg.det(A)
         sign, logdet = np.linalg.slogdet(A)
-        print('\tPure numpy(32):', det, logdet)
+        print(linestr.format('Pure numpy(32)', det, logdet))
         
         # pure numpy
         M = np.diag(~np.isnan(phases))
