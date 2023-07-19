@@ -30,7 +30,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         phases -= med
         
         print(f'Coordinate: ({ci}, {cj}) with notes: "{notes[i]}"')
-        mask = (coherence<0.4).astype(int)
+        mask = (cohers<0.4).astype(int)
         print(mask)
         
         # pure numpy
