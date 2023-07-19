@@ -35,48 +35,27 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         # pure numpy
         M = np.diag(~np.isnan(phases))
         A = np.linalg.multi_dot([G.T, M, G])
-        B = np.dot(G.T, M) * phases
-        
         det = np.linalg.det(A)
         sign, logdet = np.linalg.slogdet(A)
         rank = np.linalg.matrix_rank(A, hermitian=True)
-        try:
-            model = np.linalg.solve(A, B)
-            bad = np.sum(np.abs(model)>1e10)
-            print('\tPure numpy(64?):', det, sign, logdet, rank, bad)
-        except Exception as e:
-            print(e)
+        print('\tPure numpy(64?):', det, sign, logdet, rank)
     
         # pure cupy 64
         Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
         Gc = cp.asarray(G)
         Ac = cp.dot(Gc.T, Mc).dot(Gc)
-        Bc = cp.dot(Gc.T, Mc) * cp.asarray(phases)
-        
         det = cp.linalg.det(Ac)
         sign, logdet = cp.linalg.slogdet(Ac)
         rank = cp.linalg.matrix_rank(Ac)
-        try:
-            modelc = cp.linalg.solve(Ac, Bc)
-            badc = cp.sum(cp.abs(modelc)>1e10)
-            print('\tPure Cupy(64?):', det, sign, logdet, rank, badc)
-        except Exception as e:
-            print(e)
+        print('\tPure Cupy(64?):', det, sign, logdet, rank)
         
         # cupy with errstate 64
         with cpx.errstate(linalg='raise'):
             Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
             Gc = cp.asarray(G)
             Ac = cp.dot(Gc.T, Mc).dot(Gc)
-            Bc = cp.dot(Gc.T, Mc) * cp.asarray(phases)
-            
             det = cp.linalg.det(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
             rank = cp.linalg.matrix_rank(Ac)
-            try:
-                modelc = cp.linalg.solve(Ac, Bc)
-                badc = cp.sum(cp.abs(modelc)>1e10)
-                print('\tErrstate Cupy(64):', det, sign, logdet, rank, badc)
-            except Exception as e:
-                print(e)
+            print('\tErrstate Cupy(64):', det, sign, logdet, rank)
             
