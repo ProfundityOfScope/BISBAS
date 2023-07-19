@@ -35,7 +35,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         # pure numpy
         M = np.diag(~np.isnan(phases))
         A = np.linalg.multi_dot([G.T, M, G])
-        A /= np.max(A)
+        A = A/np.max(A)
         det = np.linalg.det(A)
         sign, logdet = np.linalg.slogdet(A)
         rank = np.linalg.matrix_rank(A, hermitian=True)
@@ -45,7 +45,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
         Gc = cp.asarray(G)
         Ac = cp.dot(Gc.T, Mc).dot(Gc)
-        A /= cp.max(Ac)
+        Ac = Ac/cp.max(Ac)
         det = cp.linalg.det(Ac)
         sign, logdet = cp.linalg.slogdet(Ac)
         rank = cp.linalg.matrix_rank(Ac)
@@ -56,7 +56,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
             Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
             Gc = cp.asarray(G)
             Ac = cp.dot(Gc.T, Mc).dot(Gc)/10
-            Ac /= cp.max(Ac)
+            Ac = Ac/cp.max(Ac)
             det = cp.linalg.det(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
             rank = cp.linalg.matrix_rank(Ac)
