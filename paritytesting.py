@@ -38,14 +38,16 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         A = np.linalg.multi_dot([G.T, M, G]).astype('float32')
         det = np.linalg.det(A)
         sign, logdet = np.linalg.slogdet(A)
-        print('\tPure numpy(32):', det, logdet)
+        rank = np.linalg.matrix_rank(A, hermitian=True)
+        print('\tPure numpy(32):', det, logdet, rank)
         
         # pure numpy
         M = np.diag(~np.isnan(phases))
         A = np.linalg.multi_dot([G.T, M, G])
         det = np.linalg.det(A)
         sign, logdet = np.linalg.slogdet(A)
-        print('\tPure numpy(64?):', det, logdet)
+        rank = np.linalg.matrix_rank(A, hermitian=True)
+        print('\tPure numpy(64?):', det, logdet, rank)
         
         # pure cupy
         Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
@@ -53,7 +55,8 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         Ac = cp.dot(Gc.T, Mc).dot(Gc).astype('float32')
         det = cp.linalg.det(Ac)
         sign, logdet = cp.linalg.slogdet(Ac)
-        print('\tPure Cupy(32):', det, logdet)
+        rank = cp.linalg.matrix_rank(Ac)
+        print('\tPure Cupy(32):', det, logdet, rank)
     
         # pure cupy 64
         Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
@@ -61,7 +64,8 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         Ac = cp.dot(Gc.T, Mc).dot(Gc)
         det = cp.linalg.det(Ac)
         sign, logdet = cp.linalg.slogdet(Ac)
-        print('\tPure Cupy(64?):', det, logdet)
+        rank = cp.linalg.matrix_rank(Ac)
+        print('\tPure Cupy(64?):', det, logdet, rank)
         
         # cupy with errstate
         with cpx.errstate(linalg='raise'):
@@ -70,7 +74,8 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
             Ac = cp.dot(Gc.T, Mc).dot(Gc).astype('float32')
             det = cp.linalg.det(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
-            print('\tErrstate Cupy(32):', det, logdet)
+            rank = cp.linalg.matrix_rank(Ac)
+            print('\tErrstate Cupy(32):', det, logdet, rak)
         
         # cupy with errstate 64
         with cpx.errstate(linalg='raise'):
@@ -79,5 +84,6 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
             Ac = cp.dot(Gc.T, Mc).dot(Gc)
             det = cp.linalg.det(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
-            print('\tErrstate Cupy(64):', det, logdet)
+            rank = cp.linalg.matrix_rank(Ac)
+            print('\tErrstate Cupy(64):', det, logdet, rank)
             
