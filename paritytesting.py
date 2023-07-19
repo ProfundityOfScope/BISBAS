@@ -31,4 +31,26 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         phases -= med
         phases *= conv
         
-        print(f'Coordinate: ({ci, cj}) with notes: "{notes[i]}"')
+        print(f'Coordinate: ({ci}, {cj}) with notes: "{notes[i]}"')
+        
+        # pure numpy
+        M = ~np.isnan(phases)
+        A = np.linalg.multi_dot([G.T, M, G])
+        sign, logdet = np.linalg.slogdet(A)
+        print('\tPure numpy:', logdet)
+        
+        # pure cupy
+        Mc = ~cp.isnan(cp.asarray(phases))
+        Gc = cp.asarray(G)
+        Ac = cp.dot(Gc.T, M).dot(Gc)
+        sign, logdet = cp.linalg.slogdet(Ac)
+        print('\tPure Cupy:', logdet)
+        
+        # cupy with errstate
+        with cpx.errstate(linalg='raise'):
+            Mc = ~cp.isnan(cp.asarray(phases))
+            Gc = cp.asarray(G)
+            Ac = cp.dot(Gc.T, M).dot(Gc)
+            sign, logdet = cp.linalg.slogdet(Ac)
+            print('\tErrstate Cupy:', logdet)
+            
