@@ -36,36 +36,48 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         # pure numpy
         M = np.diag(~np.isnan(phases))
         A = np.linalg.multi_dot([G.T, M, G]).astype('float32')
+        det = np.linalg.det(A)
         sign, logdet = np.linalg.slogdet(A)
-        print('\tPure numpy:', logdet)
+        print('\tPure numpy(32):', det, logdet)
+        
+        # pure numpy
+        M = np.diag(~np.isnan(phases))
+        A = np.linalg.multi_dot([G.T, M, G])
+        det = np.linalg.det(A)
+        sign, logdet = np.linalg.slogdet(A)
+        print('\tPure numpy(64?):', det, logdet)
         
         # pure cupy
         Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
         Gc = cp.asarray(G)
         Ac = cp.dot(Gc.T, Mc).dot(Gc).astype('float32')
+        det = cp.linalg.det(Ac)
         sign, logdet = cp.linalg.slogdet(Ac)
-        print('\tPure Cupy(32):', logdet)
+        print('\tPure Cupy(32):', det, logdet)
         
         # cupy with errstate
         with cpx.errstate(linalg='raise'):
             Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
             Gc = cp.asarray(G)
             Ac = cp.dot(Gc.T, Mc).dot(Gc).astype('float32')
+            det = cp.linalg.slogdet(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
-            print('\tErrstate Cupy(32):', logdet)
-            
-        # pure cupy
+            print('\tErrstate Cupy(32):', det, logdet)
+        
+        # pure cupy 64
         Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
         Gc = cp.asarray(G)
         Ac = cp.dot(Gc.T, Mc).dot(Gc)
+        det = cp.linalg.det(Ac)
         sign, logdet = cp.linalg.slogdet(Ac)
-        print('\tPure Cupy(64?):', logdet)
+        print('\tPure Cupy(64?):', det, logdet)
         
-        # cupy with errstate
+        # cupy with errstate 64
         with cpx.errstate(linalg='raise'):
             Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
             Gc = cp.asarray(G)
             Ac = cp.dot(Gc.T, Mc).dot(Gc)
+            det = cp.linalg.slogdet(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
-            print('\tErrstate Cupy(64?):', logdet)
+            print('\tErrstate Cupy(64):', det, logdet)
             
