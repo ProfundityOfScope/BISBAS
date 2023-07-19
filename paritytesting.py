@@ -34,13 +34,13 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         print(f'Coordinate: ({ci}, {cj}) with notes: "{notes[i]}"')
         
         # pure numpy
-        M = ~np.isnan(phases)
+        M = np.diag(~np.isnan(phases))
         A = np.linalg.multi_dot([G.T, M, G])
         sign, logdet = np.linalg.slogdet(A)
         print('\tPure numpy:', logdet)
         
         # pure cupy
-        Mc = ~cp.isnan(cp.asarray(phases))
+        Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
         Gc = cp.asarray(G)
         Ac = cp.dot(Gc.T, M).dot(Gc)
         sign, logdet = cp.linalg.slogdet(Ac)
@@ -48,7 +48,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         
         # cupy with errstate
         with cpx.errstate(linalg='raise'):
-            Mc = ~cp.isnan(cp.asarray(phases))
+            Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
             Gc = cp.asarray(G)
             Ac = cp.dot(Gc.T, M).dot(Gc)
             sign, logdet = cp.linalg.slogdet(Ac)
