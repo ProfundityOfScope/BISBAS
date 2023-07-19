@@ -11,8 +11,8 @@ import cupyx as cpx
 import numpy as np
 import h5py
 
-coi = [ (2291, 2270), (2291, 2271), (2291, 2273) ]
-notes = ['normal', 'det0, tsbig', 'det0, tsnormal']
+coi = [ (2291, 2270), (2291, 2271), (2291, 2273), (2285, 2274)]
+notes = ['normal', 'det0, tsbig', 'det0, tsnormal', 'det0, tsflagged']
 
 G = np.load('test_gmat.npy')
 med = np.load('test_med.npy')
@@ -54,6 +54,14 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         det = cp.linalg.det(Ac)
         sign, logdet = cp.linalg.slogdet(Ac)
         print('\tPure Cupy(32):', det, logdet)
+    
+        # pure cupy 64
+        Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
+        Gc = cp.asarray(G)
+        Ac = cp.dot(Gc.T, Mc).dot(Gc)
+        det = cp.linalg.det(Ac)
+        sign, logdet = cp.linalg.slogdet(Ac)
+        print('\tPure Cupy(64?):', det, logdet)
         
         # cupy with errstate
         with cpx.errstate(linalg='raise'):
@@ -63,14 +71,6 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
             det = cp.linalg.slogdet(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
             print('\tErrstate Cupy(32):', det, logdet)
-        
-        # pure cupy 64
-        Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
-        Gc = cp.asarray(G)
-        Ac = cp.dot(Gc.T, Mc).dot(Gc)
-        det = cp.linalg.det(Ac)
-        sign, logdet = cp.linalg.slogdet(Ac)
-        print('\tPure Cupy(64?):', det, logdet)
         
         # cupy with errstate 64
         with cpx.errstate(linalg='raise'):
