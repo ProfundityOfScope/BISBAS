@@ -68,7 +68,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
             Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
             Gc = cp.asarray(G)
             Ac = cp.dot(Gc.T, Mc).dot(Gc).astype('float32')
-            det = cp.linalg.slogdet(Ac)
+            det = cp.linalg.det(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
             print('\tErrstate Cupy(32):', det, logdet)
         
@@ -77,7 +77,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
             Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
             Gc = cp.asarray(G)
             Ac = cp.dot(Gc.T, Mc).dot(Gc)
-            det = cp.linalg.slogdet(Ac)
+            det = cp.linalg.det(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
             print('\tErrstate Cupy(64):', det, logdet)
             
