@@ -39,7 +39,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         det = np.linalg.det(A)
         sign, logdet = np.linalg.slogdet(A)
         rank = np.linalg.matrix_rank(A, hermitian=True)
-        print('\tPure numpy(64?):', det, logdet, rank)
+        print('\tPure numpy(64?):', det, sign, logdet, rank)
     
         # pure cupy 64
         Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
@@ -48,7 +48,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         det = cp.linalg.det(Ac)
         sign, logdet = cp.linalg.slogdet(Ac)
         rank = cp.linalg.matrix_rank(Ac)
-        print('\tPure Cupy(64?):', det, logdet, rank)
+        print('\tPure Cupy(64?):', det, sign, logdet, rank)
         
         # cupy with errstate 64
         with cpx.errstate(linalg='raise'):
@@ -58,5 +58,5 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
             det = cp.linalg.det(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
             rank = cp.linalg.matrix_rank(Ac)
-            print('\tErrstate Cupy(64):', det, logdet, rank)
+            print('\tErrstate Cupy(64):', det, sign, logdet, rank)
             
