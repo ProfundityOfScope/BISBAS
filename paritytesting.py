@@ -35,22 +35,37 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         
         # pure numpy
         M = np.diag(~np.isnan(phases))
-        A = np.linalg.multi_dot([G.T, M, G])
+        A = np.linalg.multi_dot([G.T, M, G]).astype('float32')
         sign, logdet = np.linalg.slogdet(A)
         print('\tPure numpy:', logdet)
         
         # pure cupy
         Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
         Gc = cp.asarray(G)
-        Ac = cp.dot(Gc.T, M).dot(Gc)
+        Ac = cp.dot(Gc.T, Mc).dot(Gc).astype('float32')
         sign, logdet = cp.linalg.slogdet(Ac)
-        print('\tPure Cupy:', logdet)
+        print('\tPure Cupy(32):', logdet)
         
         # cupy with errstate
         with cpx.errstate(linalg='raise'):
             Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
             Gc = cp.asarray(G)
-            Ac = cp.dot(Gc.T, M).dot(Gc)
+            Ac = cp.dot(Gc.T, Mc).dot(Gc).astype('float32')
             sign, logdet = cp.linalg.slogdet(Ac)
-            print('\tErrstate Cupy:', logdet)
+            print('\tErrstate Cupy(32):', logdet)
+            
+        # pure cupy
+        Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
+        Gc = cp.asarray(G)
+        Ac = cp.dot(Gc.T, Mc).dot(Gc)
+        sign, logdet = cp.linalg.slogdet(Ac)
+        print('\tPure Cupy(64?):', logdet)
+        
+        # cupy with errstate
+        with cpx.errstate(linalg='raise'):
+            Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
+            Gc = cp.asarray(G)
+            Ac = cp.dot(Gc.T, Mc).dot(Gc)
+            sign, logdet = cp.linalg.slogdet(Ac)
+            print('\tErrstate Cupy(64?):', logdet)
             
