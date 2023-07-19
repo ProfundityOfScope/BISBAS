@@ -75,7 +75,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
             det = cp.linalg.det(Ac)
             sign, logdet = cp.linalg.slogdet(Ac)
             rank = cp.linalg.matrix_rank(Ac)
-            print('\tErrstate Cupy(32):', det, logdet, rak)
+            print('\tErrstate Cupy(32):', det, logdet, rank)
         
         # cupy with errstate 64
         with cpx.errstate(linalg='raise'):
