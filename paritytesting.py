@@ -61,7 +61,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         dettimec = time() - start
         start = time()
         lu,piv = lu_factor(Ac)
-        lutestc = cp.any(cp.diag(cp.triu(lu))<1e-10)
+        lutestc = cp.isclose(cp.diag(cp.triu(lu)), 0)
         lutimec = time() - start
         print('\tPure Cupy(64?):', dettestc, dettimec, lutestc, lutimec)
             
