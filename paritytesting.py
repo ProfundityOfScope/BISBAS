@@ -54,7 +54,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         # pure cupy 64
         Mc = cp.asarray(M)
         Gc = cp.asarray(G)
-        Ac = cp.asarray(A)
+        Ac = cp.asarray(A).astype('float64')
         
         start = time()
         dettestc = cp.isinf(cp.linalg.slogdet(Ac)[1])
