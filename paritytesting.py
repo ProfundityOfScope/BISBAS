@@ -46,7 +46,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         dettime = time() - start
         start = time()
         lu,piv = sp.linalg.lu_factor(A)
-        lutest = np.any(np.diag(np.triu(lu))<1e-10)
+        lutest = np.any(np.isclose(np.diag(np.triu(lu)), 0))
         lutime = time() - start
         
         print('\tPure numpy(64?):', dettest, dettime, lutest, lutime)
