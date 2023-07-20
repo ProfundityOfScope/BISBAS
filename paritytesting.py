@@ -19,6 +19,8 @@ med = np.load('test_med.npy')
 
 with h5py.File('ifgramStack.h5', 'r') as fo:
     
+    nd = np.size(G, 1)
+    out = np.zeros((len(coi), nd, nd))
     for i in range(len(coi)):
         ci,cj = coi[i]
         
@@ -35,30 +37,33 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         # pure numpy
         M = np.diag(~np.isnan(phases))
         A = np.linalg.multi_dot([G.T, M, G])
-        A = A/np.max(A)
-        det = np.linalg.det(A)
-        sign, logdet = np.linalg.slogdet(A)
-        rank = np.linalg.matrix_rank(A, hermitian=True)
-        print('\tPure numpy(64?):', det, sign, logdet, rank)
-    
-        # pure cupy 64
-        Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
-        Gc = cp.asarray(G)
-        Ac = cp.dot(Gc.T, Mc).dot(Gc)
-        Ac = Ac/cp.max(Ac)
-        det = cp.linalg.det(Ac)
-        sign, logdet = cp.linalg.slogdet(Ac)
-        rank = cp.linalg.matrix_rank(Ac)
-        print('\tPure Cupy(64?):', det, sign, logdet, rank)
+        out[i] = A
         
-        # cupy with errstate 64
-        with cpx.errstate(linalg='raise'):
-            Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
-            Gc = cp.asarray(G)
-            Ac = cp.dot(Gc.T, Mc).dot(Gc)/10
-            Ac = Ac/cp.max(Ac)
-            det = cp.linalg.det(Ac)
-            sign, logdet = cp.linalg.slogdet(Ac)
-            rank = cp.linalg.matrix_rank(Ac)
-            print('\tErrstate Cupy(64):', det, sign, logdet, rank)
+        
+        # det = np.linalg.det(A)
+        # sign, logdet = np.linalg.slogdet(A)
+        # rank = np.linalg.matrix_rank(A, hermitian=True)
+        # print('\tPure numpy(64?):', det, sign, logdet, rank)
+    
+        # # pure cupy 64
+        # Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
+        # Gc = cp.asarray(G)
+        # Ac = cp.dot(Gc.T, Mc).dot(Gc)
+        
+        # det = cp.linalg.det(Ac)
+        # sign, logdet = cp.linalg.slogdet(Ac)
+        # rank = cp.linalg.matrix_rank(Ac)
+        # print('\tPure Cupy(64?):', det, sign, logdet, rank)
+        
+        # # cupy with errstate 64
+        # with cpx.errstate(linalg='raise'):
+        #     Mc = cp.diag(~cp.isnan(cp.asarray(phases)))
+        #     Gc = cp.asarray(G)
+        #     Ac = cp.dot(Gc.T, Mc).dot(Gc)
             
+        #     det = cp.linalg.det(Ac)
+        #     sign, logdet = cp.linalg.slogdet(Ac)
+        #     rank = cp.linalg.matrix_rank(Ac)
+        #     print('\tErrstate Cupy(64):', det, sign, logdet, rank)
+            
+np.save('parityMatrices.npy', out)
