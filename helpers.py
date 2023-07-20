@@ -13,7 +13,7 @@ __author__ = "Seth Bruzewski"
 __credits__ = ["Seth Bruzewski", "Jayce Dowell", "Gregory Taylor"]
 
 __license__ = "MIT"
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __maintainer__ = "Seth Bruzewski"
 __email__ = "bruzewskis@unm.edu"
 __status__ = "development"
@@ -35,7 +35,6 @@ def auto_best_gulp(ni, nd, imsize, mem_gpu=4):
             return test_gulp
     else:
         raise ValueError('Couldn\'t find a good gulp')
-
 
 
 def make_gmatrix(datepairs: np.array):

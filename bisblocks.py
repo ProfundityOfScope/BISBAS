@@ -22,7 +22,7 @@ __author__ = "Seth Bruzewski"
 __credits__ = ["Seth Bruzewski", "Jayce Dowell", "Gregory Taylor"]
 
 __license__ = "MIT"
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __maintainer__ = "Seth Bruzewski"
 __email__ = "bruzewskis@unm.edu"
 __status__ = "development"
@@ -283,7 +283,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # note: det(symmetric matrix)==0 iff it's singular
             # matrices are large-ish, so we use slogdet
             sign, logdet = cp.linalg.slogdet(A)
-            lowrank = cp.logical_or(cp.isinf(logdet), sign==0) # just check finiteness?
+            lowrank = cp.isinf(logdet) # just check finiteness?
+
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
 
@@ -329,6 +330,34 @@ class ConvertToMillimetersBlock(bfp.TransformBlock):
 
             odata[...] = idata
             odata *= self.conv
+            ospan.data[...] = bf.ndarray(odata)
+
+        return out_nframe
+
+class FilterBlock(bfp.TransformBlock):
+    """Convert the units from radians to millimeters."""
+
+    def __init__(self, iring, filter_value, *args, **kwargs):
+        super().__init__(iring, *args, **kwargs)
+        self.filter = filter_value
+
+    def on_sequence(self, iseq):
+        ohdr = deepcopy(iseq.header)
+        ohdr['filter_value'] = f'{self.filter}'
+
+        blockslogger.debug('Started ConvertToMillimetersBlock')
+        return ohdr
+
+    def on_data(self, ispan, ospan):
+        in_nframe = ispan.nframe
+        out_nframe = in_nframe
+
+        stream = bf.device.get_stream()
+        with cp.cuda.ExternalStream(stream):
+            idata = ispan.data.as_cupy()
+            odata = ospan.data.as_cupy()
+
+            odata[...] = cp.where(idata>self.filter, np.nan, idata)
             ospan.data[...] = bf.ndarray(odata)
 
         return out_nframe
