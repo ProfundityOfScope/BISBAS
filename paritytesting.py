@@ -41,6 +41,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         A = np.linalg.multi_dot([G.T, M, G])
         out[i] = A
         
+        np.errstate('ignore')
         start = time()
         dettest = np.isinf(np.linalg.slogdet(A)[1])
         dettime = time() - start
