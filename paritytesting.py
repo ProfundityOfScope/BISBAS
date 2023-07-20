@@ -7,7 +7,7 @@ Created on Wed Jul 19 14:51:05 2023
 """
 
 import cupy as cp
-import cupyx as cpx
+from cupyx.scipy.linalg import lu_factor
 import numpy as np
 import scipy as sp
 import h5py
@@ -60,7 +60,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         dettestc = cp.isinf(cp.linalg.slogdet(Ac)[1])
         dettimec = time() - start
         start = time()
-        lu,piv = cpx.scipy.linalg.lu_factor(Ac)
+        lu,piv = lu_factor(Ac)
         lutestc = cp.any(cp.diag(cp.triu(lu))<1e-10)
         lutimec = time() - start
         print('\tPure Cupy(64?):', dettestc, dettimec, lutestc, lutimec)
