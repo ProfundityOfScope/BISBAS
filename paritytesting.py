@@ -41,7 +41,6 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         A = np.linalg.multi_dot([G.T, M, G])
         out[i] = A
         
-        np.errstate(linalg='ignore')
         start = time()
         dettest = np.isinf(np.linalg.slogdet(A)[1])
         dettime = time() - start
@@ -50,7 +49,7 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         lutest = np.any(np.isclose(np.diag(np.triu(lu)), 0))
         lutime = time() - start
         
-        print('\tPure numpy(64?):', dettest, dettime, lutest, lutime)
+        print(f'\tnumpy/scipy: det: {dettest:5s} ({dettime:.2e}) | lu: {lutest:5s} ({lutime:.2e})')
     
         # pure cupy 64
         Mc = cp.asarray(M)
@@ -64,6 +63,6 @@ with h5py.File('ifgramStack.h5', 'r') as fo:
         lu,piv = lu_factor(Ac)
         lutestc = cp.any(cp.isclose(cp.diag(cp.triu(lu)), 0))
         lutimec = time() - start
-        print('\tPure Cupy(64?):', dettestc, dettimec, lutestc, lutimec)
+        print(f'\tcupy/cupyx : det: {dettestc:5s} ({dettimec:.2e}) | lu: {lutestc:5s} ({lutimec:.2e})')
             
 np.save('parityMatrices.npy', out)
