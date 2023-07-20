@@ -146,9 +146,8 @@ def main(args):
         b_reff_gpu = bisblocks.ReferenceBlock(b_mskd_gpu, median_stack)
         b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates_num, G)
         b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, conv)
-        b_filt_gpu = bisblocks.FilterBlock(b_tsmm_gpu, 1e10)
-        b_accm_gpu = bisblocks.AccumModelBlock(b_filt_gpu)
-        b_tsmm = bf.blocks.copy(b_filt_gpu, space='cuda_host')
+        b_accm_gpu = bisblocks.AccumModelBlock(b_tsmm_gpu)
+        b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
         # Write out data and accumulate useful things
         b_write = bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
