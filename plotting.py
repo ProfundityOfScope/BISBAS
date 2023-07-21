@@ -175,4 +175,6 @@ if __name__ == '__main__':
     outfile = 'timeseries.h5'
     with h5py.File(outfile, 'r') as fo:
         make_image(fo['rates'][0], outfile='rates.png', vmin=-80, vmax=40)
+
+        make_video(fo, 'timeseries', 'testing.mp4', 24, 30*24)
         print('Made rates image')
