@@ -288,8 +288,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             #lowrank = cp.isinf(logdet)
 
             # singular matrix will have an eigenvalue of zero
-            eigvals = cp.linalg.eigvalsh(A)[:,0]
-            lowrank = cp.isclose(eigvals, 0)
+            smat = cp.linalg.svd(A, compute_uv=False)
+            lowrank = cp.any(cp.isclose(smat, 0), axis=1)
 
             # Mask low rank
             A[lowrank] = cp.eye(self.nd-1)
