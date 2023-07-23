@@ -290,7 +290,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             means we probably hit numerical instability.
             """
             sign, logdet = cp.linalg.slogdet(A)
-            lowrank = cp.not_equal(sign, 1)
+            lowrank = cp.less(sign, 1)
 
             # Mask low rank
             A[lowrank] = cp.eye(self.nd-1)
