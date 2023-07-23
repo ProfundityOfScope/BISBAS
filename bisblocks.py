@@ -281,10 +281,17 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             B = cp.nansum(self.G.T[:, :, None] * (M*idata[0]).T[None, :, :], axis=1).T
 
             # Mask out low-rank values
-            # note: det(symmetric matrix)==0 iff it's singular
+            # note: A matrix is real, positive, symmetric, and sparse
+            # det(symmetric matrix)==0 iff it's singular
             # matrices are large-ish, so we use slogdet
-            sign, logdet = cp.linalg.slogdet(A)
-            lowrank = cp.isinf(logdet)
+            #sign, logdet = cp.linalg.slogdet(A)
+            #lowrank = cp.isinf(logdet)
+
+            # singular matrix will have an eigenvalue of zero
+            eigvals = cp.linalg.eigvalsh(A)[:,0]
+            lowrank = cp.isclose(eigvals, 0)
+
+            # Mask low rank
             A[lowrank] = cp.eye(self.nd-1)
             B[lowrank] = cp.full(self.nd-1, np.nan)
 
