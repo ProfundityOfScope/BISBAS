@@ -281,15 +281,16 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             B = cp.nansum(self.G.T[:, :, None] * (M*idata[0]).T[None, :, :], axis=1).T
 
             # Mask out low-rank values
-            # note: A matrix is real, positive, symmetric, and sparse
-            # det(symmetric matrix)==0 iff it's singular
-            # matrices are large-ish, so we use slogdet
-            #sign, logdet = cp.linalg.slogdet(A)
-            #lowrank = cp.isinf(logdet)
-
-            # singular matrix will have an eigenvalue of zero
-            smat = cp.linalg.svd(A, compute_uv=False)
-            lowrank = cp.any(cp.isclose(smat, 0), axis=1)
+            """note:
+            These A matrices will always be symmetric, positive, and real. Will
+            generally be sparse. Determinant is fastest to work with, but prone
+            to numerical instability when on the GPU. But since a good A matrix
+            will be positive definite, and positive definite determinants are 
+            always positve, we can check the sign! 0 means obviously bad, -1 
+            means we probably hit numerical instability.
+            """
+            sign, logdet = cp.linalg.slogdet(A)
+            lowrank = cp.not_equal(sign, 1)
 
             # Mask low rank
             A[lowrank] = cp.eye(self.nd-1)
@@ -298,9 +299,9 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Solve
             model = cp.linalg.solve(A, B)
 
-            # Filter nasty values
-            condition = cp.abs(model) > self.filter
-            model = cp.where(condition, np.nan, model)
+            # Filter nasty values # TODO: KILL ME
+            #condition = cp.abs(model) > self.filter
+            #model = cp.where(condition, np.nan, model)
 
             # Turn it into a cumulative timeseries
             changes = self.datediffs * model
