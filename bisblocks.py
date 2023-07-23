@@ -276,7 +276,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             odata = ospan.data.as_cupy()
 
             # Set up matrices to solve
-            M = ~cp.isnan(idata[0]).astype('float64')
+            M = ~(cp.isnan(idata[0])).astype('float64')
             A = cp.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :])
             B = cp.nansum(self.G.T[:, :, None] * (M*idata[0]).T[None, :, :], axis=1).T
 
