@@ -137,8 +137,8 @@ def make_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
     date0 = f'{date0[:4]}-{date0[4:6]}-{date0[6:]}'
 
     # Calculate some things
-    med = 0#np.nanmedian(data)
-    scale = 60#3*np.nanstd(data)
+    med = np.nanmedian(data)
+    scale = 3*np.nanstd(data)
 
     # Render figure
     fig, ax, im = make_image(data[0], header, vmin=med-scale, vmax=med+scale)
@@ -177,5 +177,5 @@ if __name__ == '__main__':
         make_image(fo['rates'][0], outfile='rates.png', vmin=-0.05, vmax=0.05)
         print('Made rates image')
 
-        make_video(fo, 'timeseries', 'testing.mp4', 24, 30*24)
+        make_video(fo, 'detrended', 'testing.mp4', 15, 60*15)
         print('Made video')
