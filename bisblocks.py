@@ -297,11 +297,11 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Solve
             model = cp.linalg.solve(A, B)
 
-            blockslogger.debug(f'>1e1: {np.sum(model>1e1)/model.size}')
-            blockslogger.debug(f'>1e2: {np.sum(model>1e2)/model.size}')
-            blockslogger.debug(f'>1e3: {np.sum(model>1e3)/model.size}')
-            blockslogger.debug(f'>1e4: {np.sum(model>1e4)/model.size}')
-            blockslogger.debug(f'>1e5: {np.sum(model>1e5)/model.size}')
+            blockslogger.debug(f'>1e1: {np.sum(model>1e1)}')
+            blockslogger.debug(f'>1e2: {np.sum(model>1e2)}')
+            blockslogger.debug(f'>1e3: {np.sum(model>1e3)}')
+            blockslogger.debug(f'>1e4: {np.sum(model>1e4)}')
+            blockslogger.debug(f'>1e5: {np.sum(model>1e5)}')
 
             # Filter nasty values # TODO: KILL ME
             #condition = cp.abs(model) > self.filter
