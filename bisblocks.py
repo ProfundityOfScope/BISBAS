@@ -248,7 +248,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         super().__init__(iring, *args, **kwargs)
         self.dates = cp.asarray(dates)
         self.nd = len(dates)
-        self.G = cp.asarray(G)
+        self.G = cp.asarray(G).astype('int32') # max-min < 2**31
         self.filter = filter_value
 
         # This will be useful
@@ -276,7 +276,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             odata = ospan.data.as_cupy()
 
             # Set up matrices to solve
-            M = (~cp.isnan(idata[0])).astype('float64')
+            M = ~cp.isnan(idata[0])
             A = cp.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :])
             B = cp.nansum(self.G.T[:, :, None] * (M*idata[0]).T[None, :, :], axis=1).T
 
@@ -284,10 +284,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             """note:
             These A matrices will always be symmetric, positive, and real. Will
             generally be sparse. Determinant is fastest to work with, but prone
-            to numerical instability when on the GPU. But since a good A matrix
-            will be positive definite, and positive definite determinants are 
-            always positve, we can check the sign! 0 means obviously bad, -1 
-            means we probably hit numerical instability.
+            to numerical instability when on the GPU. We still need to figure
+            out a good way to work around this
             """
             sign, logdet = cp.linalg.slogdet(A)
             lowrank = cp.less(sign, 1)
@@ -298,6 +296,12 @@ class GenTimeseriesBlock(bfp.TransformBlock):
 
             # Solve
             model = cp.linalg.solve(A, B)
+
+            blockslogger.debug('>1e1: {np.sum(model>1e1)/model.size}')
+            blockslogger.debug('>1e2: {np.sum(model>1e2)/model.size}')
+            blockslogger.debug('>1e3: {np.sum(model>1e3)/model.size}')
+            blockslogger.debug('>1e4: {np.sum(model>1e4)/model.size}')
+            blockslogger.debug('>1e5: {np.sum(model>1e5)/model.size}')
 
             # Filter nasty values # TODO: KILL ME
             #condition = cp.abs(model) > self.filter
