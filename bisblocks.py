@@ -244,7 +244,7 @@ class ReferenceBlock(bfp.TransformBlock):
 class GenTimeseriesBlock(bfp.TransformBlock):
     """Do the math to convert the interferograms to a timeseries."""
 
-    def __init__(self, iring, dates, G, filter_value=1e10, *args, **kwargs):
+    def __init__(self, iring, dates, G, filter_value=100, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
         self.dates = cp.asarray(dates)
         self.nd = len(dates)
@@ -297,15 +297,11 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Solve
             model = cp.linalg.solve(A, B)
 
-            blockslogger.debug(f'>1e1: {np.sum(model>1e1)}')
-            blockslogger.debug(f'>1e2: {np.sum(model>1e2)}')
-            blockslogger.debug(f'>1e3: {np.sum(model>1e3)}')
-            blockslogger.debug(f'>1e4: {np.sum(model>1e4)}')
-            blockslogger.debug(f'>1e5: {np.sum(model>1e5)}')
+            blockslogger.debug(f'Any above {self.filter}: {np.any(model>self.filter)}')
 
             # Filter nasty values # TODO: KILL ME
-            #condition = cp.abs(model) > self.filter
-            #model = cp.where(condition, np.nan, model)
+            condition = cp.abs(model) > self.filter
+            model = cp.where(condition, np.nan, model)
 
             # Turn it into a cumulative timeseries
             changes = self.datediffs * model
