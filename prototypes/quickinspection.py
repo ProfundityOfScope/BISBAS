@@ -14,97 +14,106 @@ from matplotlib.colors import LogNorm
 from astropy.time import Time
 from scipy.optimize import curve_fit
 from matplotlib.patches import Rectangle
-from tqdm import trange
+from matplotlib.animation import FuncAnimation
+from tqdm import tqdm
 from time import sleep, time
+import json
+import shapely.geometry as sg
+import shapely.ops as so
+from scipy.interpolate import CubicSpline
 
-import scipy
-        
-def intf2ts(px_intf, G, med, wave=0.05546576):
 
-    conv = -1000*wave/(4*np.pi)
-    px_ref = px_intf - med
-    px_ref *= conv
+def make_image(image, header: dict = None, outfile: str = None, 
+               vmin: float = None, vmax: float = None,
+               cmap: str = 'Spectral_r', interpolation: str = 'nearest',
+               origin: str = 'lower', rasterized: bool = True, 
+               *args, **kwargs):
+    # Handle extreme bounds
+    if vmin is None or vmax is None:
+        med = np.nanmedian(image)
+        scale = 3*np.nanstd(image)
+        vmin = med-scale if vmin is None else vmin
+        vmax = med+scale if vmax is None else vmax
 
-    M = ~np.isnan(px_ref)
-    A = np.linalg.multi_dot([G.T, np.diag(M), G]).astype('float32')
-    B = np.nansum(np.dot(G.T, np.diag(M)) * px_ref, axis=1)
+    # Set up the figure and axis
+    aspect = image.shape[0]/image.shape[1]*0.8
+    fig, ax = plt.subplots(figsize=(10, 10*aspect), dpi=1920/10)
+
+    ax.set_xlim(image.shape[1], 0)
+    ax.set_ylim(image.shape[0], 0)
+
+    # Plot initial image with limits
+    im = ax.imshow(image, cmap=cmap, interpolation=interpolation, 
+                   origin=origin, rasterized=rasterized, vmin=vmin, vmax=vmax,
+                   *args, **kwargs)
+    fig.colorbar(im, extend='both')
     
-    sign, abslogdet = np.linalg.slogdet(A)
-    cond = np.linalg.cond(A)
-    rank = np.linalg.matrix_rank(A, hermitian=True)
+    return fig, ax, im
+
+def make_video(data, dates):
+
+
+    r = np.nanstd(data)*5
     
-    return abslogdet, cond, rank
+    fps = 30
+    time = 30
+    nframes = int(fps*time)
+    
+    
+    # Render figure
+    fig, ax, im = make_image(data[1], vmin=-r, vmax=r)
+
+    tinterp = np.linspace(np.min(dates), np.max(dates),
+                          nframes, endpoint=False)
+    
+    valid_mask = np.all(~np.isnan(data[1:]), axis=0)
+    rows, columns = np.where(valid_mask)
+    
+    goodpixels = data[:,rows,columns]
+    
+    cs = CubicSpline(dates, goodpixels)
+    emptyimage = np.full_like(data[0], np.nan)
+    
+    pbar = tqdm(total=nframes)
+
+    # Define update function
+    def update(frame):
+        # Data
+        ti = tinterp[frame]
+        im_int = np.copy(emptyimage)
+        im_int[rows,columns] = cs(ti)
+        im.set_data(im_int)
+        pbar.update(1)
+        return (im,)
+
+    ani = FuncAnimation(fig, update, frames=nframes, blit=True)
+    ani.save('zoomedanim.mp4', writer='ffmpeg', fps=fps)
+    plt.close(fig)
 
 if __name__=='__main__':
     
-    image = np.load('../image_mostbig.npy')
-    yb, xb = np.where(np.abs(image)>1e10)
-    
-    G = np.load('../test_gmat.npy').astype('int32')
-    med = np.load('../test_med.npy')
-    
-    fig = plt.figure(figsize=(15,15), dpi=1920/15)
-    
-    with h5py.File('../ifgSlim.h5', 'r') as fo:
+    image = np.load('../cutout.npy')[1:]
+    dates = np.load('../datesnum.npy')[1:]
         
-        goodmap = np.sum(fo['coherence'][:]>0.4, axis=0)/len(fo['coherence'])
+    r = 36*2
+    make_video(image, dates)
+    
+    
+    # tgt = '/Users/bruzewskis/Downloads/geoBoundaries-IDN-ADM0_simplified.geojson'
+    # with open(tgt) as f:
+    #     data = json.load(f)
         
-        data = np.where(fo['coherence'][:]>0.4, fo['unwrapPhase'], np.nan)
-        ax0 = plt.subplot2grid((2,2),(0,0))
-        ax0.imshow(np.sum(~np.isnan(data), axis=0))
-        ax0.invert_xaxis()
-        
-        start = 1255
-        end = start + 200
-        dr = data.reshape(513, -1).T[start:end]
-        M = (~np.isnan(dr))
-        A = np.matmul(G.T[None, :, :], M[:, :, None] * G[None, :, :])
-        B = np.nansum(G.T[:, :, None] * (M*dr).T[None, :, :], axis=1).T
-        
-        for i in range(start, end):
-            plt.scatter(i%50, i//50, ec='k', fc='w', s=30, marker='s')
-        print(A.dtype, M.dtype)
-        
-        sign, logdet = np.linalg.slogdet(A)
-        low = np.isinf(logdet)
-        A[low] = np.eye(172)
-        B[low] = np.full(172, np.nan)
-        
-        M = np.linalg.solve(A, B)
-        plt.subplot2grid((2,2),(0,1))
-        plt.hist(M.ravel(), bins=20)
-        plt.semilogy()
-        
+    # geometries = [sg.shape(feature['geometry']) for feature in data['features']]
+
+    # coordinates = [(107.75, -7.3), (107.75, -5.6), (105.25, -5.6), (105.25, -7.3)]
+    # square = sg.Polygon(coordinates)
+    # xs, ys = square.exterior.xy
+    # # ax.fill(xs, ys, alpha=0.2)
     
-    ax3 = plt.subplot2grid((2,2),(1,1), fig=fig)
-    ax3.imshow(image, interpolation='nearest', cmap='Spectral', vmin=-45, vmax=60)
-    ax3.scatter(xb,yb, ec='k', fc='w', marker='s', s=30)
+    # water = square.difference(geometries[0] )
+    # for geom in water.geoms:
+    #     xs, ys = geom.exterior.xy
+    #     ax.fill(xs, ys, alpha=0.2, fc='C0', ec='gray')
+    #     plt.savefig('/Users/bruzewskis/Dropbox/waterline.png')
     
-        
-    for i in range(start, end):
-        plt.scatter(2250+i%50, 2275+i//50, ec='k', fc='m', s=30, marker='s')
-    ax3.invert_xaxis()
-    plt.xlim(2300, 2250)
-    plt.ylim(2325, 2275)
-    plt.title('Timeseries')
-    plt.show()
-    
-    
-    arrs = np.load('../parityMatrices.npy')
-    B = np.ones(172)
-    
-    start = time()
-    sign, logdet = np.linalg.slogdet(arrs)
-    is_singular = np.isinf(logdet)
-    print('Det', is_singular, time()-start)
-    
-    S = np.linalg.svd(arrs, compute_uv=False, hermitian=True)
-    print(np.any(np.isclose(S,0), axis=1))
-    
-    a = np.ones(10)*10
-    test = np.diag(a) + np.diag(a,-1)[:10,:10]/2 + np.diag(a,1)[:10,:10]/2
-    print(test)
-    
-    plt.show()
-    # plt.imshow(test)
-    print(np.linalg.det(test))
+    # fig.savefig('geographicrates.png', transparent=True)
