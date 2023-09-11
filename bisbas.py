@@ -74,7 +74,7 @@ def main(args):
     ratename    = config.get('timeseries-config', 'ratename')
     makeplots   = config.getboolean('timeseries-config', 'makeplots')
     ninterp     = config.getint('timeseries-config', 'ninterp')
-    mincoher    = 0.4 # TODO: add me to thing
+    mincoher    = 0.0 # TODO: add me to thing
 
     # Extract things from data
     with h5py.File(args.infile, 'r') as fo:
