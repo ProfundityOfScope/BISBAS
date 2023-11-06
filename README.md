@@ -1,2 +1,2 @@
 # BISBAS
-A GPU accelerated (via Bifrost) version of existing ISBAS codes
+A GPU accelerated (via Bifrost) version of existing Intermittent Sparse Baseline Subset (ISBAS) codes used for processing Interferometric Synthetic Aperture Radar (InSAR) datasets. The original scripts this code is based on were created by Dr. Eric Lindsey, with changes made to the algorythm to benefit from GPU parallelization. Current tests show significant speedups. As an example, a test case with 500 interferograms from 170 dates, each about 4500x4500 processed in about 18 minutes, having originally taken something like 80 hours. Exact scaling will depend on image size, number of interferograms, and number of dates.
