@@ -23,7 +23,7 @@ __author__ = "Seth Bruzewski"
 __credits__ = ["Seth Bruzewski", "Jayce Dowell", "Gregory Taylor"]
 
 __license__ = "MIT"
-__version__ = "1.0.4"
+__version__ = "1.1.0"
 __maintainer__ = "Seth Bruzewski"
 __email__ = "bruzewskis@unm.edu"
 __status__ = "development"
@@ -74,7 +74,7 @@ def main(args):
     ratename    = config.get('timeseries-config', 'ratename')
     makeplots   = config.getboolean('timeseries-config', 'makeplots')
     ninterp     = config.getint('timeseries-config', 'ninterp')
-    mincoher    = 0.0 # TODO: add me to thing
+    mincoher    = 0.3 # TODO: add me to thing
 
     # Extract things from data
     with h5py.File(args.infile, 'r') as fo:
@@ -106,6 +106,7 @@ def main(args):
 
         # Find best gulp size
         if args.gulp is None:
+            logger.info('No gulp size provided, calculating best size')
             imsize = fo[inname][0].size
             ni = len(datepairs)
             nd = len(dates)
@@ -161,7 +162,7 @@ def main(args):
 
     ts_time = time.time()
     ts_run = ts_time - start_time
-    logger.info(f'Finished timeseries generation in {ts_run:.4f} s')
+    logger.info('Finished timeseries generation in %.4f s', ts_run)
 
     # If user requested detrend, we do it
     if detrend:

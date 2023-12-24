@@ -21,7 +21,7 @@ __status__ = "development"
 helperslogger = logging.getLogger('__main__')
 
 def auto_best_gulp(ni, nd, imsize, mem_gpu=4):
-    # Calculates approximate best gulp_size based on inputs
+    '''Calculates approximate best gulp_size based on inputs'''
 
     # Calculate memory usage by biggest block
     mem_const = 2*nd + ni*nd
@@ -33,8 +33,8 @@ def auto_best_gulp(ni, nd, imsize, mem_gpu=4):
     for test_gulp in range(gulp, 0, -1):
         if imsize%test_gulp == 0:
             return test_gulp
-    else:
-        raise ValueError('Couldn\'t find a good gulp')
+
+    raise ValueError('Couldn\'t find a good gulp')
 
 
 def make_gmatrix(datepairs: np.array):
@@ -75,11 +75,11 @@ def make_gmatrix(datepairs: np.array):
     arr_greq = indpairs[:, 1][:, None] >= idarr
     bool_arr = np.logical_and(arr_less, arr_greq)
 
-    G = bool_arr * diffdates
-    if not np.linalg.matrix_rank(G) == len(dates)-1:
+    Gmat = bool_arr * diffdates
+    if not np.linalg.matrix_rank(Gmat) == len(dates)-1:
         raise ValueError('G is of incorrect order')
 
-    return G, dr
+    return Gmat, dr
 
 
 def data_near(data, x0, y0, min_points=10, max_size=20):
@@ -88,7 +88,7 @@ def data_near(data, x0, y0, min_points=10, max_size=20):
     min_size = np.ceil(np.sqrt(min_points)).astype(int)
 
     # Shorthands for use later
-    ts, ys, xs = data.shape
+    _, ys, xs = data.shape
 
     # We need to find a good chunk size
     for chunk_size in np.arange(min_size, max_size):
@@ -156,8 +156,8 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
                                            np.sum(xa*ya, axis=(1, 2), where=isgood)])
             dg[:, i] = (np.nanmean(za, axis=(1, 2)) - zg[i]) * numgood
 
-    helperslogger.debug(f'GPS Matrix:  {Gg.shape} and {dg.shape}')
-    helperslogger.debug(f'Data Matrix: {GTG.shape} and {GTd.shape}')
+    helperslogger.debug('GPS Matrix:  %s and %s', Gg.shape, dg.shape)
+    helperslogger.debug('Data Matrix: %s and %s', GTG.shape, GTd.shape)
     if constrained:
 
         # Assemble K matrix
@@ -178,7 +178,7 @@ def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
     # Solve for model params
     m = np.zeros((nd, nt))
     for i in range(nd):
-        md, res, rank, sng = np.linalg.lstsq(K[i], D[i], None)
+        md, _, _, _ = np.linalg.lstsq(K[i], D[i], None)
         m[i] = md[:nt]
 
     return m
@@ -196,21 +196,21 @@ if __name__=='__main__':
                                 np.full(5, 10),
                                 np.random.normal(0, 10, (5, 20))])
 
-    GTG = np.fromfile('testing_gtg.dat').reshape((6, 6, 20))
-    GTd = np.fromfile('testing_gtd.dat').reshape((6, 20))
+    GTG_test = np.fromfile('testing_gtg.dat').reshape((6, 6, 20))
+    GTd_test = np.fromfile('testing_gtd.dat').reshape((6, 20))
 
     print('='*10, 'Test 1', '='*10)
-    m1a = generate_model('timeseries_backup.h5', gpstest1, GTG, GTd, True, 4)
+    m1a = generate_model('timeseries_backup.h5', gpstest1, GTG_test, GTd_test, True, 4)
     print('No GPS, constrained:\n', m1a)
 
     print('='*10, 'Test 2', '='*10)
-    m2a = generate_model('timeseries_backup.h5', gpstest2, GTG, GTd, True, 4)
-    m2b = generate_model('timeseries_backup.h5', gpstest2, GTG, GTd, False, 4)
+    m2a = generate_model('timeseries_backup.h5', gpstest2, GTG_test, GTd_test, True, 4)
+    m2b = generate_model('timeseries_backup.h5', gpstest2, GTG_test, GTd_test, False, 4)
     print('GPS once, constrained:\n', m2a)
     print('GPS once, not constrained:\n', m2b)
 
     print('='*10, 'Test 3', '='*10)
-    m3a = generate_model('timeseries_backup.h5', gpstest3, GTG, GTd, True, 4)
-    m3b = generate_model('timeseries_backup.h5', gpstest3, GTG, GTd, False, 4)
+    m3a = generate_model('timeseries_backup.h5', gpstest3, GTG_test, GTd_test, True, 4)
+    m3b = generate_model('timeseries_backup.h5', gpstest3, GTG_test, GTd_test, False, 4)
     print('GPS multiple, constrained:\n', m3a)
     print('GPS multiple, not constrained:\n', m3b)
