@@ -3,11 +3,7 @@
 This file contains various blocks for the Bifrost-ISBAS pipeline
 """
 
-import os
-import sys
-import time
 import logging
-from datetime import datetime
 
 import h5py
 import numpy as np
@@ -28,6 +24,45 @@ __status__ = "development"
 plotslogger = logging.getLogger('__main__')
 matplotlib.use('Agg')
 
+def stretch_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
+                  time: float = 30):
+    '''Makes a stretched video.'''
+
+
+    # Shortcut name the data
+    data = fobj[dname]
+    header = dict(fobj.attrs)
+
+    # Extract some data info
+    dates = fobj['datenum']
+    date0 = fobj['datestr'][0].decode()
+    date0 = f'{date0[:4]}-{date0[4:6]}-{date0[6:]}'
+
+    # Calculate some things
+    med = np.nanmedian(data)
+    scale = 3*np.nanstd(data)
+
+    # Render figure
+    fig, ax = plt.subplots(figsize=(10, 10), dpi=1080/10)
+    image = ax.imshow(data[0], cmap='Spectral_r', interpolation='nearest',
+                      vmin=med-scale, vmax=med+scale)
+    title = ax.set_title(f'{dates[0]:<4.0f} since {date0}')
+
+    # This lets us stretch frames for a uniform video
+    n_frames = int(time*fps)
+    uniform_dates = np.linspace(np.min(dates), np.max(dates), n_frames)
+    frames = np.argmax(uniform_dates[:,None] <= dates[None,:], axis=1)
+
+    # Define update function
+    def update(frame):
+        # Data
+        image.set_data(data[frame])
+        title.set_text(f'{uniform_dates[frame]:<4.0f} since {date0}')
+        return (image, title)
+
+    ani = FuncAnimation(fig, update, frames=frames, blit=True)
+    ani.save(outfile, writer='ffmpeg', fps=fps)
+    plt.close(fig)
 
 def findAffineMeta(attrs: dict):
     """
@@ -56,11 +91,11 @@ def findAffineMeta(attrs: dict):
     M = np.dot(Ap, np.linalg.inv(Ao))
     return M
 
-def make_image(image, header: dict = None, outfile: str = None, 
-               vmin: float = None, vmax: float = None,
-               cmap: str = 'Spectral_r', interpolation: str = 'nearest',
-               origin: str = 'lower', rasterized: bool = True, 
-               *args, **kwargs):
+def make_image(image, *args, header: dict = None, outfile: str = None,
+               vmin: float = None, vmax: float = None, cmap: str = 'Spectral_r',
+               interpolation: str = 'nearest', origin: str = 'lower',
+               rasterized: bool = True, **kwargs):
+    '''Makes an image from a 2D array.'''
     # Handle extreme bounds
     if vmin is None or vmax is None:
         med = np.nanmedian(image)
@@ -90,7 +125,7 @@ def make_image(image, header: dict = None, outfile: str = None,
         ax.set_ylim(image.shape[0], 0)
 
     # Plot initial image with limits
-    im = ax.imshow(image, transform=tr, cmap=cmap, interpolation=interpolation, 
+    im = ax.imshow(image, transform=tr, cmap=cmap, interpolation=interpolation,
                    origin=origin, rasterized=rasterized, vmin=vmin, vmax=vmax,
                    *args, **kwargs)
     fig.colorbar(im, extend='both')
@@ -101,81 +136,7 @@ def make_image(image, header: dict = None, outfile: str = None,
         fig.savefig(outfile, bbox_inches='tight')
 
 
-def make_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
-               nframes: int = None):
-    """
-    Make a video.
-
-    Uses the output of the BISBAS pipeline to generate a pretty video that
-    does all the hard work for you.
-
-    Parameters
-    ----------
-    fobj : h5py.File
-        The output hdf5 file, ideally containing the detrended timeseries.
-    outfile : str
-        The name of the file to write to. Should include the extension.
-    fps : int, optional
-        Frames per second. The default is 10.
-    nframes : int, optional
-        Number of frames to interpolate to. The default is None, which will
-        produce no interpolation.
-
-    Returns
-    -------
-    im : TYPE
-        DESCRIPTION.
-
-    """
-    # Shortcut name the data
-    data = fobj[dname]
-    header = dict(fobj.attrs)
-
-    # Extract some data info
-    dates = fobj['datenum']
-    date0 = fobj['datestr'][0].decode()
-    date0 = f'{date0[:4]}-{date0[4:6]}-{date0[6:]}'
-
-    # Calculate some things
-    med = np.nanmedian(data)
-    scale = 3*np.nanstd(data)
-
-    # Render figure
-    fig, ax, im = make_image(data[0], header, vmin=med-scale, vmax=med+scale)
-
-    # Need these if we interpolate
-    interpolate = nframes is not None
-    nframes = len(data) if not interpolate else nframes
-    tinterp = np.linspace(np.min(dates), np.max(dates),
-                          nframes, endpoint=False)
-
-    # Define update function
-    def update(frame):
-        # Data
-        if not interpolate:
-            im.set_data(data[frame])
-        else:
-            ti = tinterp[frame]
-            ri = np.argmax(dates > ti)
-            td = (ti - dates[ri])/(dates[ri]-dates[ri-1])
-            im_int = (data[ri]-data[ri-1]) * td + data[ri]
-            im.set_data(im_int)
-
-        # Title
-        date = tinterp[frame] if interpolate else dates[frame]
-        ax.set_title(f'{date:<4.0f} since {date0}')
-        return (im,)
-
-    ani = FuncAnimation(fig, update, frames=nframes, blit=True)
-    ani.save(outfile, writer='ffmpeg', fps=fps)
-    plt.close(fig)
-
-
 if __name__ == '__main__':
-    outfile = 'timeseries.h5'
-    with h5py.File(outfile, 'r') as fo:
+    with h5py.File('timeseries.h5', 'r') as fo:
         make_image(fo['rates'][0], outfile='rates.png', vmin=-0.05, vmax=0.05)
         print('Made rates image')
-
-        make_video(fo, 'detrended', 'testing.mp4', 15, 60*15)
-        print('Made video')

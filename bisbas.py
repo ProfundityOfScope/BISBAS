@@ -30,30 +30,31 @@ __status__ = "development"
 
 
 def main(args):
+    '''Main function for bisbas.py'''
 
     # Setup a logger
     logger = logging.getLogger(__name__)
-    logFormat = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s',
+    log_format = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
-    logFormat.converter = time.gmtime
+    log_format.converter = time.gmtime
 
     # Decide to write to file or stdout
     if args.log is None:
-        logHandler = logging.StreamHandler(sys.stdout)
+        log_handler = logging.StreamHandler(sys.stdout)
     else:
-        logHandler = logging.FileHandler(args.log)
-    logHandler.setFormatter(logFormat)
-    logger.addHandler(logHandler)
+        log_handler = logging.FileHandler(args.log)
+    log_handler.setFormatter(log_format)
+    logger.addHandler(log_handler)
 
     # Decide what level to report
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
     # Useful info
-    logger.info(f'Starting bisbas.py with PID {os.getpid()}')
-    logger.info(f'Version: {__version__}')
+    logger.info('Starting bisbas.py with PID %s', os.getpid())
+    logger.info('Using bifrost version %s', bf.__version__)
 
     # Read in the config file
-    logger.info(f'Attempting to use {args.config} as config file')
+    logger.info('Attempting to use %s as config file', args.config)
     if not os.path.exists(args.config):
         logger.error('Could not find provided')
     config = configparser.ConfigParser()
@@ -65,24 +66,22 @@ def main(args):
     outfile     = config.get('timeseries-config', 'outfile')
     outname     = config.get('timeseries-config', 'outname')
     refnum      = config.getint('timeseries-config', 'refnum')
+    mincoher    = config.getfloat('timeseries-config', 'min_coherence')
     detrend     = config.getboolean('timeseries-config', 'detrend')
-    trendparams = config.getint('timeseries-config', 'trendparams')
     constrained = config.getboolean('timeseries-config', 'constrained')
+    trendparams = config.getint('timeseries-config', 'trendparams')
     gpsfile     = config.get('timeseries-config', 'gps_file')
     detrendname = config.get('timeseries-config', 'detrendname')
-    calcrate    = config.getboolean('timeseries-config', 'calcrate')
     ratename    = config.get('timeseries-config', 'ratename')
     makeplots   = config.getboolean('timeseries-config', 'makeplots')
-    ninterp     = config.getint('timeseries-config', 'ninterp')
-    mincoher    = 0.3 # TODO: add me to thing
 
     # Extract things from data
     with h5py.File(args.infile, 'r') as fo:
-        logger.debug(f'Getting some metadata from {args.infile}')
+        logger.debug('Getting some metadata from %s', args.infile)
 
         # Record attrs
         attrs = dict(fo.attrs)
-        logger.debug(f'Copying {len(attrs)} attributes')
+        logger.debug('Copying %s attributes', len(attrs))
 
         # Wavelength
         wave = float(attrs['radarWavelength'])
@@ -91,18 +90,19 @@ def main(args):
         # Reference coords
         ref_x = int(attrs['REF_X'])
         ref_y = int(attrs['REF_Y'])
-        logger.debug(f'Reference point: ({ref_x}, {ref_y})')
+        logger.debug('Reference point: (%s, %s)', ref_x, ref_y)
 
         # Get nearby data median
         _, _, ref_stack = helpers.data_near(fo[inname], ref_x, ref_y, refnum)
         median_stack = np.median(ref_stack, axis=(1, 2))
-        logger.debug(f'Found {len(median_stack)} median values')
+        logger.debug('Found %s median values', len(median_stack))
 
         # Get dates and date-matrix
-        datepairs = fo['date'][:]
+        datepairs = np.array(fo['date'][:])
         dates = np.sort(np.unique(datepairs))
-        G, dates_num = helpers.make_gmatrix(datepairs.astype(str))
-        logger.debug(f'Used {len(dates)} dates to generate G-matrix {G.shape}')
+        date_matrix, dates_num = helpers.make_gmatrix(datepairs.astype(str))
+        logger.debug('Used %s dates to generate G-matrix %s', len(dates),
+                     date_matrix.shape)
 
         # Find best gulp size
         if args.gulp is None:
@@ -116,7 +116,7 @@ def main(args):
 
 
     # Overwrite
-    logger.debug(f'Generating output file {outfile}')
+    logger.debug('Generating output file %s', outfile)
     if os.path.exists(outfile):
         os.remove(outfile)
 
@@ -134,7 +134,7 @@ def main(args):
     start_time = time.time()
 
     # Generates the timeseries
-    with bf.get_default_pipeline() as PIPELINE1:
+    with bf.get_default_pipeline() as pipeline1:
         # Read in data and move to GPU
         b_read = bisblocks.ReadH5Block(args.infile, gulp_size, inname,
                                        space='system')
@@ -145,20 +145,20 @@ def main(args):
 
         # Reference, generate, and convert timeseries
         b_reff_gpu = bisblocks.ReferenceBlock(b_mskd_gpu, median_stack)
-        b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates_num, G)
+        b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates_num, date_matrix)
         b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, conv)
         b_accm_gpu = bisblocks.AccumModelBlock(b_tsmm_gpu)
         b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
         # Write out data and accumulate useful things
-        b_write = bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
+        bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
 
         # Start the pipeline
-        PIPELINE1.run()
+        pipeline1.run()
 
         # Keep track of accumulated values
-        GTG = cp.asnumpy(b_accm_gpu.GTG)
-        GTd = cp.asnumpy(b_accm_gpu.GTd)
+        gtg_matrix = cp.asnumpy(b_accm_gpu.GTG)
+        gtd_matrix = cp.asnumpy(b_accm_gpu.GTd)
 
     ts_time = time.time()
     ts_run = ts_time - start_time
@@ -177,12 +177,12 @@ def main(args):
             gps = np.array([[ref_x, ref_y, refnum, 0]])
 
         # Generate model from accumulated matrices and constraints
-        model = helpers.generate_model(outfile, outname, gps, GTG, GTd, True,
-                                       trendparams)
-        logger.debug(f'Generated a model: {model.shape}, {model.dtype}')
+        model = helpers.generate_model(outfile, outname, gps, gtg_matrix,
+                                       gtd_matrix, constrained, trendparams)
+        logger.debug('Generated a model: %s %s', model.shape, model.dtype)
 
         # Second pipeline
-        with bf.Pipeline() as PIPELINE2:
+        with bf.Pipeline() as pipeline2:
             # Read in data and copy to GPU
             b_read = bisblocks.ReadH5Block(outfile, gulp_size, outname,
                                            space='system')
@@ -191,14 +191,14 @@ def main(args):
             # Apply the model to the data, then write to disk
             b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model)
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
-            b_write2 = bisblocks.WriteH5Block(b_amod, outfile, detrendname)
+            bisblocks.WriteH5Block(b_amod, outfile, detrendname)
 
             # Calculate average rates, then write rate image to disk
             b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, dates_num)
             b_rate = bf.blocks.copy(b_rate_gpu, space='cuda_host')
             b_rawr = bisblocks.WriteTempBlock(b_rate, f'{ratename}.dat')
 
-            PIPELINE2.run()
+            pipeline2.run()
 
             # Grab useful info
             rate_shape = b_rawr.outshape
@@ -206,10 +206,10 @@ def main(args):
 
         dt_time = time.time()
         dt_run = dt_time - ts_time
-        logger.info(f'Finished detrending in {dt_run:.2f} s')
+        logger.info('Finished detrending in %.4f s', dt_run)
 
         # Copy temp files to outfile
-        logger.debug(f'Copying temp files into {outfile}')
+        logger.debug('Copying temp files into %s', outfile)
         with h5py.File(outfile, 'a') as fo:
             rates_mm = np.memmap(f'{ratename}.dat', mode='r', shape=rate_shape,
                                  dtype=rate_dtype)
@@ -223,13 +223,11 @@ def main(args):
             rates = fo[ratename][0]
             plotting.make_image(rates, outfile='rates.png')
             logger.info('Generated a rate map')
-            plotting.make_video(fo, detrendname, 'rawdata.mp4', 5) #5
+            plotting.stretch_video(fo, 'detrended', 'detrended.mp4', 10)
             logger.info('Generated a data video')
-            plotting.make_video(fo, detrendname, 'intdata.mp4', 24, 30*24) #24 30*24
-            logger.info('Generated an interpolated data video')
 
     total_time = time.time() - start_time
-    logger.info(f'Total runtime was {total_time} seconds')
+    logger.info('Finished in %.2f s', total_time)
 
 
 if __name__=='__main__':
@@ -244,6 +242,6 @@ if __name__=='__main__':
                         help='print debug messages as well as info and higher')
     parser.add_argument('-g', '--gulp', type=int, default=None,
                         help='size of gulps to intake data with')
-    args = parser.parse_args()
+    pargs = parser.parse_args()
 
-    main(args)
+    main(pargs)
