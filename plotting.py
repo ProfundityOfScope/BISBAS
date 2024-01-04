@@ -31,10 +31,9 @@ def stretch_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
 
     # Shortcut name the data
     data = fobj[dname]
-    header = dict(fobj.attrs)
 
     # Extract some data info
-    dates = fobj['datenum']
+    dates = fobj['datenum'][:]
     date0 = fobj['datestr'][0].decode()
     date0 = f'{date0[:4]}-{date0[4:6]}-{date0[6:]}'
 
@@ -47,6 +46,7 @@ def stretch_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
     image = ax.imshow(data[0], cmap='Spectral_r', interpolation='nearest',
                       vmin=med-scale, vmax=med+scale)
     title = ax.set_title(f'{dates[0]:<4.0f} since {date0}')
+    ax.invert_xaxis()
 
     # This lets us stretch frames for a uniform video
     n_frames = int(time*fps)
@@ -64,7 +64,7 @@ def stretch_video(fobj: h5py.File, dname: str, outfile: str, fps: int = 10,
     ani.save(outfile, writer='ffmpeg', fps=fps)
     plt.close(fig)
 
-def findAffineMeta(attrs: dict):
+def find_affine_meta(attrs: dict):
     """
     Make an Affine matrix.
 
@@ -86,10 +86,10 @@ def findAffineMeta(attrs: dict):
                     float(attrs[f'LAT_REF{i+1}'])] for i in range(3)]).T
     xo = np.array([[0, float(attrs['WIDTH']), 0],
                    [0, 0, float(attrs['LENGTH'])]])
-    Ao = np.row_stack([xo, np.ones(3)])
-    Ap = np.row_stack([xp, np.ones(3)])
-    M = np.dot(Ap, np.linalg.inv(Ao))
-    return M
+    affine_o = np.row_stack([xo, np.ones(3)])
+    affine_p = np.row_stack([xp, np.ones(3)])
+    a2a_trans = np.dot(affine_p, np.linalg.inv(affine_o))
+    return a2a_trans
 
 def make_image(image, *args, header: dict = None, outfile: str = None,
                vmin: float = None, vmax: float = None, cmap: str = 'Spectral_r',
@@ -109,14 +109,14 @@ def make_image(image, *args, header: dict = None, outfile: str = None,
 
     # Get the Affine transform
     if header is not None:
-        M = findAffineMeta(header)
-        trA = transforms.Affine2D(M)
-        tr = trA + ax.transData
+        trans_mat = find_affine_meta(header)
+        tr_aff = transforms.Affine2D(trans_mat)
+        tr = tr_aff + ax.transData
 
         # Find corners
         corners = np.array([[0, image.shape[1], 0, image.shape[1]],
                             [0, 0, image.shape[0], image.shape[0]]]).T
-        tcorn = trA.transform(corners)
+        tcorn = tr_aff.transform(corners)
         ax.set_xlim(np.min(tcorn[:, 0]), np.max(tcorn[:, 0]))
         ax.set_ylim(np.min(tcorn[:, 1]), np.max(tcorn[:, 1]))
     else:

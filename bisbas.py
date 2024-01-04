@@ -63,6 +63,7 @@ def main(args):
 
     # Get configuration file paramters
     inname      = config.get('timeseries-config', 'inname')
+    outdir      = config.get('timeseries-config', 'outdir')
     outfile     = config.get('timeseries-config', 'outfile')
     outname     = config.get('timeseries-config', 'outname')
     refnum      = config.getint('timeseries-config', 'refnum')
@@ -104,6 +105,10 @@ def main(args):
         logger.debug('Used %s dates to generate G-matrix %s', len(dates),
                      date_matrix.shape)
 
+        # Find a model numerical threshold
+        num_thresh = helpers.auto_numerical_thresh(fo[inname], date_matrix, median_stack)
+        logger.info('Using numerical threshold of %.3f', num_thresh)
+
         # Find best gulp size
         if args.gulp is None:
             logger.info('No gulp size provided, calculating best size')
@@ -114,14 +119,18 @@ def main(args):
         else:
             gulp_size = args.gulp
 
+        logger.info('Using gulp size of %s', gulp_size)
+
 
     # Overwrite
-    logger.debug('Generating output file %s', outfile)
-    if os.path.exists(outfile):
-        os.remove(outfile)
+    os.makedirs(outdir, exist_ok=True)
+    outpath = os.path.join(outdir, outfile)
+    logger.debug('Generating output file %s', outpath)
+    if os.path.exists(outpath):
+        os.remove(outpath)
 
     # Generate output file and pass along attrs
-    with h5py.File(outfile, 'w') as fo:
+    with h5py.File(outpath, 'w') as fo:
         # Copy over attrs
         for key in attrs:
             fo.attrs[key] = attrs[key]
@@ -145,13 +154,14 @@ def main(args):
 
         # Reference, generate, and convert timeseries
         b_reff_gpu = bisblocks.ReferenceBlock(b_mskd_gpu, median_stack)
-        b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates_num, date_matrix)
+        b_tser_gpu = bisblocks.GenTimeseriesBlock(b_reff_gpu, dates_num,
+                                                  date_matrix, num_thresh)
         b_tsmm_gpu = bisblocks.ConvertToMillimetersBlock(b_tser_gpu, conv)
         b_accm_gpu = bisblocks.AccumModelBlock(b_tsmm_gpu)
         b_tsmm = bf.blocks.copy(b_tsmm_gpu, space='cuda_host')
 
         # Write out data and accumulate useful things
-        bisblocks.WriteH5Block(b_tsmm, outfile, outname, True)
+        bisblocks.WriteH5Block(b_tsmm, outpath, outname, True)
 
         # Start the pipeline
         pipeline1.run()
@@ -177,21 +187,21 @@ def main(args):
             gps = np.array([[ref_x, ref_y, refnum, 0]])
 
         # Generate model from accumulated matrices and constraints
-        model = helpers.generate_model(outfile, outname, gps, gtg_matrix,
+        model = helpers.generate_model(outpath, outname, gps, gtg_matrix,
                                        gtd_matrix, constrained, trendparams)
         logger.debug('Generated a model: %s %s', model.shape, model.dtype)
 
         # Second pipeline
         with bf.Pipeline() as pipeline2:
             # Read in data and copy to GPU
-            b_read = bisblocks.ReadH5Block(outfile, gulp_size, outname,
+            b_read = bisblocks.ReadH5Block(outpath, gulp_size, outname,
                                            space='system')
             b_read_gpu = bf.blocks.copy(b_read, space='cuda')
 
             # Apply the model to the data, then write to disk
             b_amod_gpu = bisblocks.ApplyModelBlock(b_read_gpu, model)
             b_amod = bf.blocks.copy(b_amod_gpu, space='cuda_host')
-            bisblocks.WriteH5Block(b_amod, outfile, detrendname)
+            bisblocks.WriteH5Block(b_amod, outpath, detrendname)
 
             # Calculate average rates, then write rate image to disk
             b_rate_gpu = bisblocks.CalcRatesBlock(b_amod_gpu, dates_num)
@@ -209,8 +219,8 @@ def main(args):
         logger.info('Finished detrending in %.4f s', dt_run)
 
         # Copy temp files to outfile
-        logger.debug('Copying temp files into %s', outfile)
-        with h5py.File(outfile, 'a') as fo:
+        logger.debug('Copying temp files into %s', outpath)
+        with h5py.File(outpath, 'a') as fo:
             rates_mm = np.memmap(f'{ratename}.dat', mode='r', shape=rate_shape,
                                  dtype=rate_dtype)
             fo[ratename] = rates_mm[:]
@@ -219,15 +229,22 @@ def main(args):
     # Make plots
     if makeplots:
         logger.info('Plots requested')
-        with h5py.File(outfile, 'r') as fo:
+        with h5py.File(outpath, 'r') as fo:
             rates = fo[ratename][0]
-            plotting.make_image(rates, outfile='rates.png')
+            plotting.make_image(rates, outfile=f'{outdir}/rates.png')
             logger.info('Generated a rate map')
-            plotting.stretch_video(fo, 'detrended', 'detrended.mp4', 10)
+            plotting.make_image(fo['timeseries'][30], outfile=f'{outdir}/im30.png')
+            logger.info('Generated a sample map')
+            plotting.stretch_video(fo, 'detrended', f'{outdir}/detrended.mp4', 10)
             logger.info('Generated a data video')
 
+    pl_time = time.time()
+    pl_run = pl_time - dt_time
+    logger.info('Finished plotting in %.4f s', pl_run)
+
+
     total_time = time.time() - start_time
-    logger.info('Finished in %.2f s', total_time)
+    logger.info('Entire program took %.2f s', total_time)
 
 
 if __name__=='__main__':

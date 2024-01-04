@@ -36,6 +36,33 @@ def auto_best_gulp(ni, nd, imsize, mem_gpu=4):
 
     raise ValueError('Couldn\'t find a good gulp')
 
+def auto_numerical_thresh(data, G, meds, n_test=500):
+    '''
+    Automatically calculates a numerical threshold for the data.
+    
+    Cupy seems to exhibit numerical differences from numpy under rare and
+    unpredictable circumstances. In the GenTimeseries block, we use a slogdet
+    to test if a matrix is singular, and sometimes cupy gets this wrong, which
+    results in insane values for the model. This function picks a bunch of
+    random pixels and attempts to solve them, only succeeding if we have no NaN
+    values, representing good pixels to query. We then check the model values
+    this spits out to find a safety threshold for Cupy.
+    '''
+
+    # Grab totally random sample points
+    rinds = np.random.randint(0, data[0].size, n_test)
+    ry, rx, *_ = np.unravel_index(rinds, data[0].shape)
+
+    # Have to select one at a time for h5py
+    pixels = np.zeros((np.size(data, 0), n_test))
+    for i in range(n_test):
+        pixels[:, i] = data[:, ry[i], rx[i]] - meds
+
+    # Solve for the model, then find a threshhold
+    x, _, _, _ = np.linalg.lstsq(G, pixels, rcond=None)
+    thresh = 10*np.nanstd(x)
+
+    return thresh
 
 def make_gmatrix(datepairs: np.array):
     """
@@ -123,6 +150,8 @@ def data_near(data, x0, y0, min_points=10, max_size=20):
 
 def generate_model(filename, dname, gps, GTG, GTd, constrained=True, nt=3):
     """Generate the model from the accumulated matrices."""
+    # pylint: disable=E1123
+
     # Warnings
     ng = len(gps)
     if not constrained and len(gps) < nt:

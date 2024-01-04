@@ -5,7 +5,7 @@ This file contains various blocks for the Bifrost-ISBAS pipeline
 
 import logging
 from copy import deepcopy
-from time import time
+from ast import literal_eval
 
 import h5py
 import cupy as cp
@@ -24,8 +24,8 @@ __email__ = "bruzewskis@unm.edu"
 __status__ = "development"
 
 blockslogger = logging.getLogger('__main__')
-#cpx.seterr(linalg='raise')
 
+# pylint: disable=W1113
 
 class H5Reader(object):
     """File read object."""
@@ -46,18 +46,19 @@ class H5Reader(object):
         else:
             raise ValueError(f'Gulp {gulp_size} must evenly divide imsize {self.imsize}')
 
-        # log
-        blockslogger.debug(f'Reading {dataname} {self.shape} from {filename}')
+        blockslogger.debug('Reading %s %s from %s', dataname, self.shape,
+                           filename)
 
         # Make a buffer for reading (hdf5 being picky)
         self.linelen = np.size(self, 2)
         bsize = 2*max(self.gulp_size, self.linelen)
         self.buffer = np.zeros((bsize, np.size(self, 0)), dtype=self.dtype)
-        blockslogger.debug(f'Created read buffer of shape {self.buffer.shape}')
+        blockslogger.debug('Created read buffer of shape %s', self.buffer.shape)
         self.head = 0
         self.linecount = 0
 
     def read(self):
+        '''Reads a gulp of data from the file.'''
 
         try:
             # This will read via the buffer
@@ -81,9 +82,9 @@ class H5Reader(object):
         return self
 
     def close(self):
-        pass
+        """Close the file."""
 
-    def __exit__(self, type, value, tb):
+    def __exit__(self, exc_type, value, traceback):
         self.fo.close()
 
 
@@ -103,12 +104,12 @@ class ReadH5Block(bfp.SourceBlock):
         self.dataname = dataname
         self.gulp_pixels = gulp_pixels
 
-    def create_reader(self, filename):
-        return H5Reader(filename, self.dataname, self.gulp_pixels)
+    def create_reader(self, sourcename):
+        return H5Reader(sourcename, self.dataname, self.gulp_pixels)
 
-    def on_sequence(self, ireader, filename):
-        dshape = ireader.shape
-        dtype_str = numpy2string(ireader.dtype)
+    def on_sequence(self, reader, sourcename):
+        dshape = reader.shape
+        dtype_str = numpy2string(reader.dtype)
         ohdr = {'name':     self.filename,
                 'dataname': self.dataname,
                 'inshape':  str(dshape),
@@ -130,6 +131,14 @@ class ReadH5Block(bfp.SourceBlock):
 
 
 class WriteH5Block(bfp.SinkBlock):
+    '''Block for writing to HDF5 files.'''
+    # Things we'll set up along the way
+    gulp_size = None
+    data = None
+    linelen = None
+    buffer = None
+    head = None
+    linecount = None
 
     def __init__(self, iring, filename, dataname, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -137,18 +146,21 @@ class WriteH5Block(bfp.SinkBlock):
         self.filename = filename
         self.dataname = dataname
 
+
+
     def on_sequence(self, iseq):
 
         # Grab useful things from header
         hdr = iseq.header
-        span, self.gulp_size, depth = hdr['_tensor']['shape']
+        _, self.gulp_size, depth = hdr['_tensor']['shape']
         dtype_np = string2numpy(hdr['_tensor']['dtype'])
 
         # Grab useful things from file
-        inshape = eval(hdr['inshape'])
+        inshape = literal_eval(hdr['inshape'])
         outshape = (depth, inshape[1], inshape[2])
 
-        blockslogger.debug(f'Writing to {self.dataname} {outshape} in {self.filename}')
+        blockslogger.debug('Writing to %s %s in %s', self.dataname, outshape,
+                           self.filename)
 
         # Create dataset
         if self.dataname in self.fo:
@@ -163,7 +175,7 @@ class WriteH5Block(bfp.SinkBlock):
         self.linelen = outshape[2]
         self.buffer = np.empty((2*max([self.gulp_size, self.linelen]), depth),
                                dtype=dtype_np)
-        blockslogger.debug(f'Created write buffer with shape {self.buffer.shape}')
+        blockslogger.debug('Created write buffer with shape %s', self.buffer.shape)
         self.head = 0
         self.linecount = 0
 
@@ -174,36 +186,42 @@ class WriteH5Block(bfp.SinkBlock):
         self.head += self.gulp_size
 
         # Write out as many times as needed
-        while self.head > self.linelen:
+        while self.head >= self.linelen:
             self.data[:,self.linecount] = self.buffer[:self.linelen].T
             self.linecount += 1
 
             self.head -= self.linelen
             self.buffer = np.roll(self.buffer, -self.linelen, axis=0)
 
-            blockslogger.debug(f'Wrote out line {self.linecount-1}')
+            blockslogger.debug('Wrote out line %s', self.linecount-1)
+
+    def on_skip(self, *args, **kwargs):
+        raise NotImplementedError
 
 class MaskBlock(bfp.MultiTransformBlock):
+    '''Block for masking out low coherence values.'''
+
     def __init__(self, iring1, iring2, min_coherence=0.3, *args, **kwargs):
         super().__init__([iring1, iring2], *args, **kwargs)
         self.cutoff = min_coherence
 
-    def on_sequence(self, iseql):
-        hdrs = [ iseql[0].header ]
+    def on_sequence(self, iseqs):
+        hdrs = [ iseqs[0].header ]
         return hdrs
 
-    def on_data(self, ispanl, ospanl):
-        in_nframe1 = ispanl[0].nframe
-        in_nframe2 = ispanl[1].nframe
+    def on_data(self, ispans, ospans):
+        in_nframe1 = ispans[0].nframe
         out_nframe = in_nframe1
 
-        idata = ispanl[0].data
-        imask = ispanl[1].data
-        odata = ospanl[0].data
+        idata = ispans[0].data
+        imask = ispans[1].data
+        odata = ospans[0].data
 
         odata[...] = np.where(imask > self.cutoff, idata, np.nan)
-
         return [out_nframe]
+
+    def on_skip(self, *args, **kwargs):
+        raise NotImplementedError
 
 
 class ReferenceBlock(bfp.TransformBlock):
@@ -244,7 +262,7 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         super().__init__(iring, *args, **kwargs)
         self.dates = cp.asarray(dates)
         self.nd = len(dates)
-        self.G = cp.asarray(G).astype('int32') # max-min < 2**31
+        self.time_mat = cp.asarray(G).astype('int32') # max-min < 2**31
         self.filter = filter_value
 
         # This will be useful
@@ -264,39 +282,37 @@ class GenTimeseriesBlock(bfp.TransformBlock):
         in_nframe = ispan.nframe
         out_nframe = in_nframe
 
-        tstart = time()
-
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
             idata = ispan.data.as_cupy()
             odata = ospan.data.as_cupy()
 
             # Set up matrices to solve
-            M = ~cp.isnan(idata[0])
-            A = cp.matmul(self.G.T[None, :, :], M[:, :, None] * self.G[None, :, :])
-            B = cp.nansum(self.G.T[:, :, None] * (M*idata[0]).T[None, :, :], axis=1).T
+            mask = ~cp.isnan(idata[0])
+            left = cp.matmul(self.time_mat.T[None, :, :],
+                             mask[:, :, None] * self.time_mat[None, :, :])
+            right = cp.nansum(self.time_mat.T[:, :, None] * (mask*idata[0]).T[None, :, :], axis=1).T
 
             # Mask out low-rank values
-            """note:
-            These A matrices will always be symmetric, positive, and real. Will
-            generally be sparse. Determinant is fastest to work with, but prone
-            to numerical instability when on the GPU. We still need to figure
-            out a good way to work around this
-            """
-            sign, logdet = cp.linalg.slogdet(A)
+            # note: These A matrices will always be symmetric, positive, and
+            # real. Will generally be sparse. Determinant is fastest to work
+            # with, but prone to numerical instability when on the GPU. We
+            # still need to figure out a good way to work around this
+            sign, _ = cp.linalg.slogdet(left)
             lowrank = cp.less(sign, 1)
 
             # Mask low rank
-            A[lowrank] = cp.eye(self.nd-1)
-            B[lowrank] = cp.full(self.nd-1, np.nan)
+            left[lowrank] = cp.eye(self.nd-1)
+            left[lowrank] = cp.full(self.nd-1, np.nan)
 
             # Solve
-            model = cp.linalg.solve(A, B)
+            model = cp.linalg.solve(left, right)
 
-            # Filter nasty values # TODO: KILL ME
+            # Filter nasty values, warn if we find any
             condition = cp.abs(model) > self.filter
             if cp.any(condition):
-                blockslogger.warning(f'Found {np.sum(condition)} values bigger than filter({self.filter})')
+                blockslogger.warning('Found %s values bigger than filter(%.3f)',
+                                     np.sum(condition), self.filter)
             model = cp.where(condition, np.nan, model)
 
             # Turn it into a cumulative timeseries
@@ -343,22 +359,26 @@ class ConvertToMillimetersBlock(bfp.TransformBlock):
 class AccumModelBlock(bfp.SinkBlock):
     """Accumate matrix for future dot product."""
 
-    def __init__(self, iring, *args, **kwargs):
-        super().__init__(iring, *args, **kwargs)
+    # Initialize things we'll need along the way
+    gulp_size = None
+    imshape = None
+    leftmat = None
+    rightmat = None
+    niter = None
 
     def on_sequence(self, iseq):
 
         # Grab useful things from header
         hdr = iseq.header
-        span, self.gulp_size, depth = hdr['_tensor']['shape']
+        _, self.gulp_size, depth = hdr['_tensor']['shape']
 
         # Grab useful things from file
-        inshape = eval(hdr['inshape'])
+        inshape = literal_eval(hdr['inshape'])
         self.imshape = (inshape[1], inshape[2])
 
         # Set up some stuff for the accumulation (keeping all terms)
-        self.GTG = cp.zeros((depth, 6, 6))
-        self.GTd = cp.zeros((depth, 6))
+        self.leftmat = cp.zeros((depth, 6, 6))
+        self.rightmat = cp.zeros((depth, 6))
         self.niter = 0
 
     def on_data(self, ispan):
@@ -369,27 +389,28 @@ class AccumModelBlock(bfp.SinkBlock):
 
             # Figure out what the G matrix should look like
             inds = self.niter * self.gulp_size + cp.arange(0, self.gulp_size)
-            yinds, xinds = cp.unravel_index(inds, self.imshape)
+            yinds, xinds, *_ = cp.unravel_index(inds, self.imshape)
             ones = cp.ones_like(xinds)
-            G = cp.column_stack([ones, xinds, yinds,
+            coords = cp.column_stack([ones, xinds, yinds,
                                  xinds**2, yinds**2, xinds*yinds])
 
             # Accumulate dot-product
-            """
-            By elevating to a tensor problem, we can perform multiple solves
-            and avoid a lot of nasty NaN values
-
-            GTG = (ng,nd)(ng,6)(ng,6)->(nd,6,6)
-            GTd = (ng,6)(ng,nd)->(nd,6)
-            """
-            M = ~cp.isnan(idata)
-            self.GTG += cp.einsum('jl,ji,jk->lik', M, G, G)
-            self.GTd += cp.nansum(cp.einsum('jk,ji->ijk', G, idata), axis=1)
+            # [left] GTG = (ng,nd)(ng,6)(ng,6)->(nd,6,6)
+            # [right] GTd = (ng,6)(ng,nd)->(nd,6)
+            mask = ~cp.isnan(idata)
+            self.leftmat += cp.einsum('jl,ji,jk->lik', mask, coords, coords)
+            self.rightmat += cp.nansum(cp.einsum('jk,ji->ijk', coords, idata),
+                                       axis=1)
             self.niter += 1
+
+    def on_skip(self, *args, **kwargs):
+        raise NotImplementedError
 
 
 class ApplyModelBlock(bfp.TransformBlock):
     """Applies the model we built with the previous block."""
+
+    imshape = None
 
     def __init__(self, iring, models, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
@@ -400,7 +421,7 @@ class ApplyModelBlock(bfp.TransformBlock):
 
     def on_sequence(self, iseq):
         ohdr = deepcopy(iseq.header)
-        nd, ny, nx = eval(ohdr['inshape'])
+        _, ny, nx = literal_eval(ohdr['inshape'])
         self.imshape = (ny, nx)
 
         blockslogger.debug('Started ApplyModelBlock')
@@ -408,8 +429,7 @@ class ApplyModelBlock(bfp.TransformBlock):
         return ohdr
 
     def on_data(self, ispan, ospan):
-        in_nframe = ispan.nframe
-        out_nframe = in_nframe
+        out_nframe = ispan.nframe
 
         stream = bf.device.get_stream()
         with cp.cuda.ExternalStream(stream):
@@ -420,12 +440,12 @@ class ApplyModelBlock(bfp.TransformBlock):
             gulp_size = cp.size(idata[0], 0)
             r_start = self.step * gulp_size
             r_end = (self.step+1) * gulp_size
-            yc, xc = cp.unravel_index(cp.arange(r_start, r_end), self.imshape)
+            yc, xc, *_ = cp.unravel_index(cp.arange(r_start, r_end), self.imshape)
 
             # d(7800,3) m(3,20) -> c(7800,20)
             ones = cp.ones(len(xc)).astype(np.float64)
-            A = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])[:, :self.ntrend]
-            corr = cp.dot(A, self.models)
+            coords = cp.column_stack([ones, xc, yc, xc**2, yc**2, xc*yc])[:, :self.ntrend]
+            corr = cp.dot(coords, self.models)
             corr = cp.expand_dims(corr, axis=0)
 
             self.step += 1
@@ -473,6 +493,13 @@ class CalcRatesBlock(bfp.TransformBlock):
 class WriteTempBlock(bfp.SinkBlock):
     """Write out a temparary file, since we can't parallel write to HDF5."""
 
+    # Initialize things we need later
+    gulp_size = None
+    dtype = None
+    outshape = None
+    imshape = None
+    mmap = None
+
     def __init__(self, iring, outfile, *args, **kwargs):
         super().__init__(iring, *args, **kwargs)
 
@@ -486,27 +513,30 @@ class WriteTempBlock(bfp.SinkBlock):
 
         # Grab useful things from header
         hdr = iseq.header
-        span, self.gulp_size, depth = hdr['_tensor']['shape']
+        _, self.gulp_size, depth = hdr['_tensor']['shape']
         self.dtype = string2numpy(hdr['_tensor']['dtype'])
 
         # Grab useful things from file
-        inshape = eval(hdr['inshape'])
+        inshape = literal_eval(hdr['inshape'])
         self.outshape = (depth, inshape[1], inshape[2])
         self.imshape = (inshape[1], inshape[2])
 
         self.mmap = np.memmap(self.file, dtype=self.dtype, mode='w+',
                               shape=self.outshape)
 
-        blockslogger.debug(f'Started WriteTempBlock to file {self.file}')
-        blockslogger.debug(f'Writing shape={self.outshape}, dtype={self.dtype}')
+        blockslogger.debug('Started WriteTempBlock to file %s', self.file)
+        blockslogger.debug('Writing shape=%s, dtype=%s', self.outshape, self.dtype)
 
     def on_data(self, ispan):
 
         r_start = self.niter * self.gulp_size
         r_end = (self.niter+1) * self.gulp_size
-        yc, xc = np.unravel_index(np.arange(r_start, r_end), self.imshape)
+        yc, xc, *_ = np.unravel_index(np.arange(r_start, r_end), self.imshape)
 
         idata = ispan.data[0].T
         self.mmap[:, yc, xc] = idata
 
         self.niter += 1
+
+    def on_skip(self, *args, **kwargs):
+        raise NotImplementedError
