@@ -149,7 +149,8 @@ def main(args):
                                        space='system')
         b_mask = bisblocks.ReadH5Block(args.infile, gulp_size, 'coherence',
                                        space='system')
-        b_mskd = bisblocks.MaskBlock(b_read, b_mask, mincoher)
+        b_mskd = bisblocks.MaskCoherence(b_read, b_mask, mincoher)
+        b_mskd = bisblocks.MaskConnComp(b_read, b_mask, 0)
         b_mskd_gpu = bf.blocks.copy(b_mskd, space='cuda')
 
         # Reference, generate, and convert timeseries

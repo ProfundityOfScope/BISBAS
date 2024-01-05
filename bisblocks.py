@@ -198,7 +198,7 @@ class WriteH5Block(bfp.SinkBlock):
     def on_skip(self, *args, **kwargs):
         raise NotImplementedError
 
-class MaskBlock(bfp.MultiTransformBlock):
+class MaskCoherence(bfp.MultiTransformBlock):
     '''Block for masking out low coherence values.'''
 
     def __init__(self, iring1, iring2, min_coherence=0.3, *args, **kwargs):
@@ -218,6 +218,32 @@ class MaskBlock(bfp.MultiTransformBlock):
         odata = ospans[0].data
 
         odata[...] = np.where(imask > self.cutoff, idata, np.nan)
+        return [out_nframe]
+
+    def on_skip(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+class MaskConnComp(bfp.MultiTransformBlock):
+    '''Block for masking out low coherence values.'''
+
+    def __init__(self, iring1, iring2, mask_comp=0, *args, **kwargs):
+        super().__init__([iring1, iring2], *args, **kwargs)
+        self.comp = mask_comp
+
+    def on_sequence(self, iseqs):
+        hdrs = [ iseqs[0].header ]
+        return hdrs
+
+    def on_data(self, ispans, ospans):
+        in_nframe1 = ispans[0].nframe
+        out_nframe = in_nframe1
+
+        idata = ispans[0].data
+        imask = ispans[1].data
+        odata = ospans[0].data
+
+        odata[...] = np.where(imask == self.comp, idata, np.nan)
         return [out_nframe]
 
     def on_skip(self, *args, **kwargs):
