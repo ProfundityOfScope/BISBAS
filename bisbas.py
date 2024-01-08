@@ -147,11 +147,13 @@ def main(args):
         # Read in data and move to GPU
         b_read = bisblocks.ReadH5Block(args.infile, gulp_size, inname,
                                        space='system')
-        b_mask = bisblocks.ReadH5Block(args.infile, gulp_size, 'coherence',
+        b_cohr = bisblocks.ReadH5Block(args.infile, gulp_size, 'coherence',
                                        space='system')
-        b_mskd = bisblocks.MaskCoherence(b_read, b_mask, mincoher)
-        b_mskd = bisblocks.MaskConnComp(b_read, b_mask, 0)
-        b_mskd_gpu = bf.blocks.copy(b_mskd, space='cuda')
+        b_watr = bisblocks.ReadH5Block('waterMask.h5', gulp_size, 'mask',
+                                       space='system')
+        b_msk1 = bisblocks.MaskWater(b_read, b_watr)
+        b_msk2 = bisblocks.MaskCoherence(b_msk1, b_cohr, mincoher)
+        b_mskd_gpu = bf.blocks.copy(b_msk2, space='cuda')
 
         # Reference, generate, and convert timeseries
         b_reff_gpu = bisblocks.ReferenceBlock(b_mskd_gpu, median_stack)
@@ -168,8 +170,8 @@ def main(args):
         pipeline1.run()
 
         # Keep track of accumulated values
-        gtg_matrix = cp.asnumpy(b_accm_gpu.GTG)
-        gtd_matrix = cp.asnumpy(b_accm_gpu.GTd)
+        gtg_matrix = cp.asnumpy(b_accm_gpu.leftmat)
+        gtd_matrix = cp.asnumpy(b_accm_gpu.rightmat)
 
     ts_time = time.time()
     ts_run = ts_time - start_time

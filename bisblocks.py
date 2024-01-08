@@ -35,9 +35,13 @@ class H5Reader(object):
         # Initialize our reader object
         self.fo = h5py.File(filename, 'a')
         self.data = self.fo[dataname]
-        self.dtype = self.data.dtype
+
+        # This handles the water mask
+        if self.data.ndim==2:
+            self.data = self.data[:][None, :, :].astype(int)
 
         # Double check this gulp-size is acceptable
+        self.dtype = self.data.dtype
         self.shape = self.data.shape
         self.size = np.product(self.shape)
         self.imsize = np.product(self.shape[-2:])
@@ -50,7 +54,7 @@ class H5Reader(object):
                            filename)
 
         # Make a buffer for reading (hdf5 being picky)
-        self.linelen = np.size(self, 2)
+        self.linelen = np.size(self, -1)
         bsize = 2*max(self.gulp_size, self.linelen)
         self.buffer = np.zeros((bsize, np.size(self, 0)), dtype=self.dtype)
         blockslogger.debug('Created read buffer of shape %s', self.buffer.shape)
@@ -147,7 +151,6 @@ class WriteH5Block(bfp.SinkBlock):
         self.dataname = dataname
 
 
-
     def on_sequence(self, iseq):
 
         # Grab useful things from header
@@ -198,6 +201,7 @@ class WriteH5Block(bfp.SinkBlock):
     def on_skip(self, *args, **kwargs):
         raise NotImplementedError
 
+
 class MaskCoherence(bfp.MultiTransformBlock):
     '''Block for masking out low coherence values.'''
 
@@ -224,12 +228,11 @@ class MaskCoherence(bfp.MultiTransformBlock):
         raise NotImplementedError
 
 
-class MaskConnComp(bfp.MultiTransformBlock):
+class MaskWater(bfp.MultiTransformBlock):
     '''Block for masking out low coherence values.'''
 
-    def __init__(self, iring1, iring2, mask_comp=0, *args, **kwargs):
+    def __init__(self, iring1, iring2, *args, **kwargs):
         super().__init__([iring1, iring2], *args, **kwargs)
-        self.comp = mask_comp
 
     def on_sequence(self, iseqs):
         hdrs = [ iseqs[0].header ]
@@ -243,11 +246,12 @@ class MaskConnComp(bfp.MultiTransformBlock):
         imask = ispans[1].data
         odata = ospans[0].data
 
-        odata[...] = np.where(imask == self.comp, idata, np.nan)
+        odata[...] = np.where(imask, idata, np.nan)
         return [out_nframe]
 
     def on_skip(self, *args, **kwargs):
         raise NotImplementedError
+
 
 
 class ReferenceBlock(bfp.TransformBlock):
