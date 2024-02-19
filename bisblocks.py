@@ -340,8 +340,10 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Filter nasty values, warn if we find any
             condition = cp.abs(model) > self.filter
             if cp.any(condition):
-                blockslogger.warning('Found %s big values, largest %.3f',
-                                     np.sum(condition), np.max(np.abs(model)))
+                blockslogger.warning('Found %s big values (of %s), largest %.3f',
+                                     np.sum(condition),
+                                     condition.size,
+                                     np.nanmax(np.abs(model)))
             model = cp.where(condition, np.nan, model)
 
             # Turn it into a cumulative timeseries
