@@ -253,7 +253,6 @@ class MaskWater(bfp.MultiTransformBlock):
         raise NotImplementedError
 
 
-
 class ReferenceBlock(bfp.TransformBlock):
     """Reference the data to a particular coordinate."""
 
@@ -341,8 +340,8 @@ class GenTimeseriesBlock(bfp.TransformBlock):
             # Filter nasty values, warn if we find any
             condition = cp.abs(model) > self.filter
             if cp.any(condition):
-                blockslogger.warning('Found %s values bigger than filter(%.3f)',
-                                     np.sum(condition), self.filter)
+                blockslogger.warning('Found %s big values, largest %.3f',
+                                     np.sum(condition), np.max(np.abs(model)))
             model = cp.where(condition, np.nan, model)
 
             # Turn it into a cumulative timeseries
